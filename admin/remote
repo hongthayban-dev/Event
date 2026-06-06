@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>รีโมทจับรางวัล</title>
+  <link rel="stylesheet" href="../theme.css" />
+  <style>
+    .mode-toggle { display: flex; gap: 8px; }
+    .mode-toggle button {
+      flex: 1; padding: 12px; border: 1.5px solid var(--line); background: #fff; border-radius: var(--radius-sm);
+      font-family: var(--font-body); font-weight: 600; color: var(--ink-soft); cursor: pointer;
+    }
+    .mode-toggle button.active { background: var(--navy-grad); color: #fff; border-color: transparent; }
+    .count-pill {
+      display: inline-flex; align-items: center; gap: 6px; background: rgba(217,165,33,.15);
+      color: var(--accent-600); font-weight: 700; padding: 6px 14px; border-radius: 999px; font-size: 1.1rem;
+    }
+    .spin-btn { font-size: 1.4rem !important; padding: 22px !important; }
+    .winner-row { padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); margin-bottom: 8px; }
+    .winner-row .nm { font-weight: 700; font-family: var(--font-display); font-size: 1.1rem; }
+  </style>
+</head>
+<body class="app-bg">
+  <div class="app-bar">
+    <img class="logo" data-logo alt="" />
+    <div>
+      <div class="title">รีโมทจับรางวัล</div>
+      <div class="subtitle">ADMIN · REMOTE</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div id="loading" class="loading"><div class="spinner"></div>กำลังโหลด...</div>
+
+    <div id="app" style="display:none">
+      <!-- ฟิลเตอร์ -->
+      <div class="card gold-top">
+        <h2>เลือกกลุ่มผู้มีสิทธิ์</h2>
+        <div class="row">
+          <div class="field">
+            <label>เพศ</label>
+            <select id="f_gender" onchange="updateCount()">
+              <option value="">ทั้งหมด</option>
+              <option value="ชาย">ชาย</option>
+              <option value="หญิง">หญิง</option>
+              <option value="อื่นๆ">อื่นๆ</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>รุ่น</label>
+            <input class="input" id="f_gen" placeholder="ว่าง = ทุกรุ่น" oninput="updateCount()" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>อายุต่ำสุด</label>
+            <input class="input" id="f_amin" type="number" inputmode="numeric" placeholder="-" oninput="updateCount()" />
+          </div>
+          <div class="field">
+            <label>อายุสูงสุด</label>
+            <input class="input" id="f_amax" type="number" inputmode="numeric" placeholder="-" oninput="updateCount()" />
+          </div>
+        </div>
+        <div class="center mt">
+          <span class="count-pill">ผู้มีสิทธิ์ <span id="eligCount">–</span> คน</span>
+        </div>
+      </div>
+
+      <!-- ของรางวัล + โหมด -->
+      <div class="card">
+        <div class="field">
+          <label>ของรางวัล</label>
+          <select id="reward"></select>
+        </div>
+
+        <label style="display:block;font-size:.85rem;font-weight:600;color:var(--ink-soft);margin-bottom:6px">โหมดการจับ</label>
+        <div class="mode-toggle">
+          <button id="m-one" class="active" onclick="setMode('one')">ทีละคน</button>
+          <button id="m-multi" onclick="setMode('multi')">หลายคนพร้อมกัน</button>
+        </div>
+
+        <div class="field mt" id="countWrap" style="display:none">
+          <label>จำนวนผู้ชนะต่อการหมุน 1 ครั้ง</label>
+          <input class="input" id="count" type="number" inputmode="numeric" value="3" min="1" max="16" />
+        </div>
+        <p class="hint muted mt" id="modeHint" style="font-size:.82rem">กดหมุน 1 ครั้ง = สุ่ม 1 คน (กดซ้ำเพื่อจับคนต่อไป)</p>
+      </div>
+
+      <!-- หมุน -->
+      <button class="btn btn-gold spin-btn" id="spinBtn" onclick="spin()">🎉 หมุนวงล้อ</button>
+
+      <div class="row mt">
+        <button class="btn btn-ghost btn-sm" style="background:#fff" onclick="resetWheel()">↺ ล้างจอ/เริ่มรอบใหม่</button>
+        <button class="btn btn-ghost btn-sm" style="background:#fff" onclick="openDisplay()">🖥️ เปิดหน้าจอวงล้อ</button>
+      </div>
+
+      <!-- ผลล่าสุด -->
+      <div id="result" class="card" style="display:none"></div>
+    </div>
+  </div>
+
+  <script src="../config.js"></script>
+  <script src="../api.js"></script>
+  <script>
+    var session, mode = 'one', rewards = [], countTimer;
+
+    (async function () {
+      session = API.getSession();
+      if (!session || !session.username) { location.href = '../staff/index.html'; return; }
+      await API.bootTheme().catch(function () {});
+      // โหลดของรางวัล
+      var rw = await API.get('getRewards');
+      rewards = (rw.rewards || []);
+      var sel = API.qs('#reward');
+      sel.innerHTML = '<option value="">— ไม่ระบุของรางวัล —</option>';
+      rewards.forEach(function (r, i) {
+        var label = (r.name || '') + (r.value ? ' (' + r.value + ')' : '') + (r.quantity ? ' · เหลือ ' + r.quantity : '');
+        sel.innerHTML += '<option value="' + i + '">' + label + '</option>';
+      });
+      API.qs('#loading').style.display = 'none';
+      API.qs('#app').style.display = 'block';
+      updateCount();
+    })();
+
+    function getFilters() {
+      var f = {};
+      var g = API.qs('#f_gender').value; if (g) f.gender = g;
+      var gen = API.qs('#f_gen').value.trim(); if (gen) f.generation = gen;
+      var amin = API.qs('#f_amin').value; if (amin) f.age_min = amin;
+      var amax = API.qs('#f_amax').value; if (amax) f.age_max = amax;
+      return f;
+    }
+
+    function updateCount() {
+      clearTimeout(countTimer);
+      countTimer = setTimeout(async function () {
+        API.qs('#eligCount').textContent = '…';
+        var res = await API.getAuth('getEligible', { filters: getFilters() });
+        API.qs('#eligCount').textContent = res.ok ? res.count : '?';
+      }, 300);
+    }
+
+    function setMode(m) {
+      mode = m;
+      API.qs('#m-one').classList.toggle('active', m === 'one');
+      API.qs('#m-multi').classList.toggle('active', m === 'multi');
+      API.qs('#countWrap').style.display = (m === 'multi') ? 'block' : 'none';
+      API.qs('#modeHint').textContent = (m === 'multi')
+        ? 'กดหมุน 1 ครั้ง = สุ่มหลายคนพร้อมกันตามจำนวนที่กำหนด'
+        : 'กดหมุน 1 ครั้ง = สุ่ม 1 คน (กดซ้ำเพื่อจับคนต่อไป)';
+    }
+
+    function selectedReward() {
+      var i = API.qs('#reward').value;
+      if (i === '') return { name: '', value: '' };
+      var r = rewards[Number(i)] || {};
+      return { name: r.name || '', value: r.value || '' };
+    }
+
+    async function spin() {
+      var count = (mode === 'multi') ? Math.max(1, parseInt(API.qs('#count').value || 1, 10)) : 1;
+      var rw = selectedReward();
+      var btn = API.qs('#spinBtn'); btn.disabled = true; btn.textContent = 'กำลังหมุน...';
+
+      var res = await API.postAuth('requestSpin', {
+        filters: getFilters(), count: count,
+        reward_name: rw.name, reward_value: rw.value
+      });
+
+      btn.disabled = false; btn.textContent = '🎉 หมุนวงล้อ';
+
+      if (!res.ok) { API.toast(res.error === 'no eligible participants' ? 'ไม่มีผู้มีสิทธิ์ในกลุ่มนี้' : (res.error || 'หมุนไม่สำเร็จ')); return; }
+
+      showResult(res.state);
+      updateCount(); // จำนวนสิทธิ์ลดลงหลังมีผู้ชนะ
+    }
+
+    function showResult(state) {
+      var box = API.qs('#result');
+      box.style.display = 'block';
+      box.className = 'card gold-top';
+      var rewardLabel = state.reward_name || state.reward_value || 'ของรางวัล';
+      var html = '<h2>🏆 ผู้ชนะรอบ ' + state.round + '</h2><p class="muted">รางวัล: ' + rewardLabel + ' · ส่ง LINE แล้ว ✅</p>';
+      (state.winners || []).forEach(function (w) {
+        html += '<div class="winner-row"><span class="nm">' +
+          (w.first_name || '') + ' ' + (w.last_name || '') +
+          (w.nickname ? ' (' + w.nickname + ')' : '') + '</span></div>';
+      });
+      box.innerHTML = html;
+      box.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function resetWheel() {
+      await API.postAuth('resetWheel', {});
+      API.qs('#result').style.display = 'none';
+      API.toast('ล้างจอแล้ว');
+    }
+
+    function openDisplay() {
+      window.open('rewards.html', '_blank');
+    }
+  </script>
+</body>
+</html>
