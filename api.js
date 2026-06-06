@@ -35,14 +35,27 @@
   }
 
   // POST สำหรับ staff/admin — แนบ key อัตโนมัติ
+  // key สำหรับ staff/admin: ใช้จาก config ก่อน ถ้าไม่มีดึงจาก localStorage (พิมพ์ครั้งเดียวบนเครื่อง)
+  function getKey() {
+    if (CFG.ADMIN_KEY) return CFG.ADMIN_KEY;
+    try { return localStorage.getItem('event_admin_key') || ''; } catch (e) { return ''; }
+  }
+  function setKey(k) { try { localStorage.setItem('event_admin_key', k || ''); } catch (e) {} }
+  function clearKey() { try { localStorage.removeItem('event_admin_key'); } catch (e) {} }
+
+  // session ของ staff/admin (เก็บ username/display_name/role)
+  function setSession(o) { try { localStorage.setItem('staff_session', JSON.stringify(o || {})); } catch (e) {} }
+  function getSession() { try { var s = localStorage.getItem('staff_session'); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
+  function clearSession() { try { localStorage.removeItem('staff_session'); } catch (e) {} }
+
   async function apiPostAuth(action, payload) {
     payload = payload || {};
-    payload.key = CFG.ADMIN_KEY || '';
+    payload.key = getKey();
     return apiPost(action, payload);
   }
   async function apiGetAuth(action, params) {
     params = params || {};
-    params.key = CFG.ADMIN_KEY || '';
+    params.key = getKey();
     return apiGet(action, params);
   }
 
@@ -144,6 +157,8 @@
   window.API = {
     get: apiGet, post: apiPost,
     getAuth: apiGetAuth, postAuth: apiPostAuth,
+    getKey: getKey, setKey: setKey, clearKey: clearKey,
+    setSession: setSession, getSession: getSession, clearSession: clearSession,
     liffInit: liffInit, getProfile: getProfile,
     loadSettings: loadSettings, applyTheme: applyTheme, bootTheme: bootTheme,
     driveImg: driveImg, fmtBaht: fmtBaht, fieldOn: fieldOn,
