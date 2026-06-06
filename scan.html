@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>สแกนเข้างาน</title>
+  <link rel="stylesheet" href="../theme.css" />
+  <style>
+    #reader { width: 100%; border-radius: var(--radius-sm); overflow: hidden; }
+    #reader video { border-radius: var(--radius-sm); }
+    .result-card { text-align: center; padding: 26px 18px; }
+    .result-card .big { font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; margin: 8px 0 2px; }
+    .result-icon { font-size: 3rem; line-height: 1; }
+    .seg { display: flex; gap: 8px; margin-bottom: 14px; }
+    .seg button {
+      flex: 1; padding: 10px; border: 1.5px solid var(--line); background: #fff; border-radius: var(--radius-sm);
+      font-family: var(--font-body); font-weight: 600; color: var(--ink-soft); cursor: pointer;
+    }
+    .seg button.active { background: var(--navy-grad); color: #fff; border-color: transparent; }
+    .person {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); margin-bottom: 10px;
+    }
+    .person .nm { font-weight: 600; }
+    .person .meta { font-size: .82rem; color: var(--ink-soft); }
+  </style>
+</head>
+<body class="app-bg">
+  <div class="app-bar">
+    <img class="logo" data-logo alt="" />
+    <div>
+      <div class="title">สแกนเข้างาน</div>
+      <div class="subtitle" id="staffname">STAFF</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="seg">
+      <button id="tab-scan" class="active" onclick="switchTab('scan')">📷 สแกน QR</button>
+      <button id="tab-phone" onclick="switchTab('phone')">🔍 ค้นด้วยเบอร์</button>
+    </div>
+
+    <!-- SCAN -->
+    <div id="pane-scan">
+      <div class="card">
+        <div id="reader"></div>
+        <button class="btn btn-primary mt" id="startBtn" onclick="startScan()">เริ่มสแกน</button>
+        <p class="muted center mt" style="font-size:.82rem">หันกล้องไปที่ QR บนบัตรของผู้ร่วมงาน</p>
+      </div>
+    </div>
+
+    <!-- PHONE SEARCH -->
+    <div id="pane-phone" style="display:none">
+      <div class="card">
+        <div class="field" style="margin-bottom:10px">
+          <label>เบอร์โทรผู้ร่วมงาน</label>
+          <input class="input" id="phone" type="tel" inputmode="tel" placeholder="08xxxxxxxx" />
+        </div>
+        <button class="btn btn-primary" onclick="searchPhone()">ค้นหา</button>
+        <div id="searchResults" class="mt"></div>
+      </div>
+    </div>
+
+    <!-- RESULT -->
+    <div id="result" class="card" style="display:none"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+  <script src="../config.js"></script>
+  <script src="../api.js"></script>
+  <script>
+    var session, html5Qr, scanning = false, busy = false;
+
+    (async function () {
+      session = API.getSession();
+      if (!session || !session.username) { location.href = 'index.html'; return; }
+      API.qs('#staffname').textContent = session.display_name || session.username;
+      await API.bootTheme().catch(function () {});
+    })();
+
+    function switchTab(t) {
+      API.qs('#tab-scan').classList.toggle('active', t === 'scan');
+      API.qs('#tab-phone').classList.toggle('active', t === 'phone');
+      API.qs('#pane-scan').style.display = (t === 'scan') ? 'block' : 'none';
+      API.qs('#pane-phone').style.display = (t === 'phone') ? 'block' : 'none';
+      if (t !== 'scan') stopScan();
+    }
+
+    // ----- SCAN -----
+    function startScan() {
+      if (scanning) return;
+      API.qs('#startBtn').style.display = 'none';
+      html5Qr = new Html5Qrcode('reader');
+      scanning = true;
+      html5Qr.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 240, height: 240 } },
+        onScan,
+        function () {}
+      ).catch(function (e) {
+        scanning = false;
+        API.qs('#startBtn').style.display = 'block';
+        API.toast('เปิดกล้องไม่ได้: ' + e);
+      });
+    }
+
+    function stopScan() {
+      if (html5Qr && scanning) {
+        html5Qr.stop().then(function () { html5Qr.clear(); }).catch(function () {});
+      }
+      scanning = false;
+      API.qs('#startBtn').style.display = 'block';
+    }
+
+    async function onScan(decodedText) {
+      if (busy) return;
+      busy = true;
+      if (navigator.vibrate) navigator.vibrate(80);
+      stopScan();
+      await checkin({ reg_id: String(decodedText).trim() });
+      busy = false;
+    }
+
+    // ----- PHONE -----
+    async function searchPhone() {
+      var phone = API.qs('#phone').value.trim();
+      if (!phone) return API.toast('กรอกเบอร์โทร');
+      var box = API.qs('#searchResults');
+      box.innerHTML = '<div class="loading"><div class="spinner"></div>กำลังค้นหา...</div>';
+      var res = await API.getAuth('searchByPhone', { phone: phone });
+      if (!res.ok) { box.innerHTML = '<p class="muted">เกิดข้อผิดพลาด: ' + (res.error || '') + '</p>'; return; }
+      if (!res.results || res.results.length === 0) { box.innerHTML = '<p class="muted center">ไม่พบผู้ลงทะเบียนเบอร์นี้</p>'; return; }
+      box.innerHTML = '';
+      res.results.forEach(function (r) {
+        var checked = String(r.checked_in).toUpperCase() === 'TRUE';
+        var div = document.createElement('div');
+        div.className = 'person';
+        div.innerHTML =
+          '<div><div class="nm">' + (r.first_name || '') + ' ' + (r.last_name || '') +
+          (r.nickname ? ' (' + r.nickname + ')' : '') + '</div>' +
+          '<div class="meta">' + (r.generation ? 'รุ่น ' + r.generation + ' · ' : '') + (r.phone || '') + '</div></div>';
+        var btn = document.createElement('button');
+        btn.className = 'btn btn-sm ' + (checked ? 'btn-ghost' : 'btn-gold');
+        btn.textContent = checked ? 'เช็คอินแล้ว' : 'เช็คอิน';
+        btn.disabled = checked;
+        btn.onclick = function () { checkin({ reg_id: r.reg_id }); };
+        div.appendChild(btn);
+        box.appendChild(div);
+      });
+    }
+
+    // ----- CHECK-IN -----
+    async function checkin(params) {
+      params.checkin_by = session.display_name || session.username;
+      var box = API.qs('#result');
+      box.style.display = 'block';
+      box.className = 'card';
+      box.innerHTML = '<div class="loading"><div class="spinner"></div>กำลังเช็คอิน...</div>';
+      box.scrollIntoView({ behavior: 'smooth' });
+
+      try {
+        var res = await API.postAuth('checkin', params);
+        if (!res.ok) { showResult('error', 'ไม่พบบัตรนี้', res.error || 'ไม่พบข้อมูลผู้ลงทะเบียน'); return; }
+        var r = res.registration;
+        var name = (r.first_name || '') + ' ' + (r.last_name || '') + (r.nickname ? ' (' + r.nickname + ')' : '');
+        var sub = (r.generation ? 'รุ่น ' + r.generation + ' · ' : '') + (r.phone || '');
+        if (res.already_checked_in) showResult('warn', name, '⚠️ เช็คอินไปแล้วก่อนหน้านี้<br>' + sub);
+        else showResult('ok', name, '✅ เช็คอินสำเร็จ<br>' + sub);
+      } catch (e) { showResult('error', 'ผิดพลาด', e.message); }
+    }
+
+    function showResult(type, big, sub) {
+      var icon = type === 'ok' ? '✅' : (type === 'warn' ? '⚠️' : '❌');
+      var color = type === 'ok' ? 'var(--ok)' : (type === 'warn' ? 'var(--accent-600)' : 'var(--danger)');
+      var box = API.qs('#result');
+      box.className = 'card result-card gold-top';
+      box.innerHTML =
+        '<div class="result-icon">' + icon + '</div>' +
+        '<div class="big" style="color:' + color + '">' + big + '</div>' +
+        '<div class="muted">' + sub + '</div>' +
+        '<button class="btn btn-primary mt" onclick="nextScan()">สแกนคนต่อไป</button>';
+      if (navigator.vibrate) navigator.vibrate(type === 'ok' ? [60, 40, 60] : 200);
+    }
+
+    function nextScan() {
+      API.qs('#result').style.display = 'none';
+      if (API.qs('#pane-scan').style.display !== 'none') startScan();
+    }
+  </script>
+</body>
+</html>
