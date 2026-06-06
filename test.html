@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ทดสอบระบบ</title>
+  <link rel="stylesheet" href="theme.css" />
+</head>
+<body class="app-bg">
+  <div class="app-bar">
+    <img class="logo" data-logo alt="" />
+    <div>
+      <div class="title" data-event-name>ตรวจสอบระบบ</div>
+      <div class="subtitle">Foundation health check</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card gold-top">
+      <h2>ผลตรวจสอบ</h2>
+      <div id="results">
+        <div class="loading"><div class="spinner"></div>กำลังตรวจสอบ...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>ข้อมูลงาน (จาก settings)</h2>
+      <p>ชื่องาน: <b data-event-name></b></p>
+      <p>วันที่: <b data-event-date></b></p>
+      <p>สถานที่: <b data-event-location></b></p>
+      <hr class="gold-divider" />
+      <div class="row">
+        <button class="btn btn-gold btn-sm" onclick="testLine()">ทดสอบยิง LINE หาตัวเอง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIFF SDK -->
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script>
+    var lines = [];
+    function row(label, ok, detail) {
+      lines.push(
+        '<p>' + (ok ? '✅' : '❌') + ' <b>' + label + '</b>' +
+        (detail ? ' — <span class="muted">' + detail + '</span>' : '') + '</p>'
+      );
+      API.qs('#results').innerHTML = lines.join('');
+    }
+
+    (async function () {
+      // 1) LIFF init + login
+      try {
+        await API.liffInit(true);
+        row('LIFF init', true, CONFIG.LIFF_ID);
+      } catch (e) {
+        row('LIFF init', false, e.message);
+        return;
+      }
+
+      // 2) โปรไฟล์
+      try {
+        var p = await API.getProfile();
+        row('โปรไฟล์ LINE', !!p, p ? (p.displayName + ' / ' + p.userId) : 'ไม่พบ');
+        window._uid = p ? p.userId : '';
+      } catch (e) { row('โปรไฟล์ LINE', false, e.message); }
+
+      // 3) ปิง backend
+      try {
+        var ping = await API.get('ping');
+        row('เชื่อมต่อ backend', ping.ok, ping.time || JSON.stringify(ping));
+      } catch (e) { row('เชื่อมต่อ backend', false, e.message); }
+
+      // 4) settings + theme
+      try {
+        var s = await API.bootTheme();
+        row('โหลด settings + ทาธีม', true,
+          'primary ' + (s.color_primary || '-') + ' / accent ' + (s.color_accent || '-'));
+      } catch (e) { row('โหลด settings + ทาธีม', false, e.message); }
+
+      // 5) สินค้า/รางวัล
+      try {
+        var pr = await API.get('getProducts');
+        row('โหลดสินค้า', pr.ok, (pr.products || []).length + ' รายการ');
+      } catch (e) { row('โหลดสินค้า', false, e.message); }
+      try {
+        var rw = await API.get('getRewards');
+        row('โหลดรางวัล', rw.ok, (rw.rewards || []).length + ' รายการ');
+      } catch (e) { row('โหลดรางวัล', false, e.message); }
+    })();
+
+    function testLine() {
+      // การยิง LINE ทดสอบ ให้รันฟังก์ชัน testLineToMe() ใน Apps Script editor
+      // (ใส่ userId ของตัวเองในฟังก์ชันนั้น) เพื่อไม่เปิด action ยิงข้อความสู่ public
+      API.toast('ทดสอบยิง LINE: รัน testLineToMe() ใน Apps Script editor');
+    }
+  </script>
+</body>
+</html>
