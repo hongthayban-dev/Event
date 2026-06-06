@@ -1,0 +1,154 @@
+/* ============================================================
+   theme.css — ดีไซน์เบสกลางของทั้งระบบ (น้ำเงิน–ทอง–ขาว)
+   โทน: ทางการ/พิธีการ (regal) สำหรับงานศิษย์เก่า
+   ทุกสีอ้างอิง CSS variables — แก้จากแท็บ settings ได้ผ่าน applyTheme()
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Trirong:wght@500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* สีหลัก (ค่า default ตรงกับ settings) */
+  --primary:        #0d2b5e;   /* น้ำเงินเข้ม */
+  --primary-700:    #0a2049;
+  --primary-300:    #2f5aa0;
+  --accent:         #f0c040;   /* ทอง */
+  --accent-600:     #d9a521;
+  --bg:             #f4f6fb;
+  --surface:        #ffffff;
+  --ink:            #14213d;
+  --ink-soft:       #5b6b86;
+  --line:           #e3e8f2;
+  --danger:         #c0392b;
+  --ok:             #1e8e5a;
+
+  /* วงล้อ */
+  --wheel-a:        #b71c1c;
+  --wheel-b:        #fafafa;
+  --wheel-text-a:   #ffffff;
+  --wheel-text-b:   #1a1a1a;
+
+  --radius:         16px;
+  --radius-sm:      10px;
+  --shadow:         0 10px 30px rgba(13, 43, 94, .12);
+  --shadow-soft:    0 4px 14px rgba(13, 43, 94, .08);
+  --gold-grad:      linear-gradient(135deg, #f6d365 0%, var(--accent) 45%, var(--accent-600) 100%);
+  --navy-grad:      linear-gradient(160deg, var(--primary-300) 0%, var(--primary) 55%, var(--primary-700) 100%);
+
+  --font-display:   'Trirong', serif;
+  --font-body:      'Sarabun', sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* พื้นหลังลายพรีเมียม (เส้นทองจาง ๆ) */
+body.app-bg {
+  background:
+    radial-gradient(1200px 400px at 50% -120px, rgba(240, 192, 64, .10), transparent 70%),
+    var(--bg);
+  min-height: 100vh;
+}
+
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; letter-spacing: .2px; margin: 0 0 .4em; }
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.25rem; }
+a { color: var(--primary); }
+
+/* ---------- layout ---------- */
+.container { width: 100%; max-width: 520px; margin: 0 auto; padding: 16px; }
+
+/* ---------- app bar ---------- */
+.app-bar {
+  background: var(--navy-grad);
+  color: #fff;
+  padding: 18px 16px;
+  display: flex; align-items: center; gap: 12px;
+  position: relative;
+  box-shadow: var(--shadow-soft);
+}
+.app-bar::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+  background: var(--gold-grad);
+}
+.app-bar img.logo { width: 40px; height: 40px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
+.app-bar .title { font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; }
+.app-bar .subtitle { font-size: .8rem; opacity: .8; }
+
+/* ---------- card ---------- */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  margin: 16px 0;
+  border: 1px solid var(--line);
+}
+.card.gold-top { border-top: 4px solid transparent; border-image: var(--gold-grad) 1; }
+
+/* ---------- form ---------- */
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: .85rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 6px; }
+.field label .req { color: var(--danger); }
+.input, select, textarea {
+  width: 100%; padding: 12px 14px;
+  border: 1.5px solid var(--line); border-radius: var(--radius-sm);
+  font-family: var(--font-body); font-size: 1rem; background: #fff; color: var(--ink);
+  transition: border-color .15s, box-shadow .15s;
+}
+.input:focus, select:focus, textarea:focus {
+  outline: none; border-color: var(--primary-300);
+  box-shadow: 0 0 0 3px rgba(47, 90, 160, .15);
+}
+.row { display: flex; gap: 12px; }
+.row > * { flex: 1; }
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 14px 18px; border: none; border-radius: var(--radius-sm);
+  font-family: var(--font-body); font-size: 1.05rem; font-weight: 600; cursor: pointer;
+  transition: transform .08s, filter .15s, box-shadow .15s;
+}
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--navy-grad); color: #fff; box-shadow: var(--shadow-soft); }
+.btn-gold    { background: var(--gold-grad); color: #3a2c00; box-shadow: 0 6px 16px rgba(217,165,33,.35); }
+.btn-ghost   { background: transparent; color: var(--primary); border: 1.5px solid var(--line); }
+.btn-danger  { background: var(--danger); color: #fff; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-sm { width: auto; padding: 9px 14px; font-size: .9rem; }
+
+/* ---------- badges / chips ---------- */
+.badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: .78rem; font-weight: 600; }
+.badge-ok { background: rgba(30,142,90,.12); color: var(--ok); }
+.badge-wait { background: rgba(217,165,33,.15); color: var(--accent-600); }
+.badge-no { background: rgba(192,57,43,.12); color: var(--danger); }
+
+/* ---------- toast ---------- */
+.toast {
+  position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px);
+  background: var(--primary-700); color: #fff; padding: 12px 20px; border-radius: 999px;
+  font-size: .92rem; box-shadow: var(--shadow); opacity: 0; transition: all .3s; z-index: 9999;
+  max-width: 90vw; text-align: center;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- helpers ---------- */
+.muted { color: var(--ink-soft); }
+.center { text-align: center; }
+.mt { margin-top: 16px; }
+.gold-divider { height: 2px; background: var(--gold-grad); border: 0; margin: 18px 0; opacity: .7; }
+.loading { text-align: center; padding: 40px 0; color: var(--ink-soft); }
+.spinner {
+  width: 28px; height: 28px; border: 3px solid var(--line); border-top-color: var(--accent);
+  border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 10px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

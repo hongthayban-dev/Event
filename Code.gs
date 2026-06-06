@@ -1,0 +1,547 @@
+/**
+ * ============================================================
+ *  EVENT LINE OA — Backend (Google Apps Script)
+ *  ระบบลงทะเบียนงาน + ร้านค้า + วงล้อจับรางวัล
+ * ============================================================
+ *  วิธีใช้ (ดู SETUP.md ประกอบ):
+ *   1. วางโค้ดนี้ในโปรเจกต์ Apps Script ที่ผูกกับ/เปิดชีตได้
+ *   2. ตั้งค่า Script Properties:
+ *        LINE_TOKEN  = Channel Access Token ของ LINE OA
+ *        ADMIN_KEY   = รหัสลับสำหรับหน้า staff/admin (ตั้งเองอะไรก็ได้)
+ *   3. Deploy > New deployment > Web app
+ *        Execute as: Me   |   Who has access: Anyone
+ *   4. เอา URL /exec ไปใส่ใน config.js (API_URL)
+ * ============================================================
+ */
+
+// ---- ค่าคงที่ ----
+const SHEET_ID       = '1QCQM1Y65YG9Mgt1g9VlCSdYlOQ5ZAFLVTyunJgn62no';
+const SLIP_FOLDER_ID = '1uuF70gDDiPQ8qnpYasKwjCojR7nuGW6R'; // โฟลเดอร์เก็บสลิป
+const LINE_PUSH_URL  = 'https://api.line.me/v2/bot/message/push';
+
+// ---- ตัวช่วยพื้นฐาน ----
+function props_()  { return PropertiesService.getScriptProperties(); }
+function token_()  { return props_().getProperty('LINE_TOKEN'); }
+function ss_()     { return SpreadsheetApp.openById(SHEET_ID); }
+function sheet_(n) { return ss_().getSheetByName(n); }
+
+function json_(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ============================================================
+//  ROUTER
+// ============================================================
+function doGet(e)  { return handle_(e, 'GET'); }
+function doPost(e) { return handle_(e, 'POST'); }
+
+function handle_(e, method) {
+  var p = {};
+  try {
+    if (method === 'POST' && e.postData && e.postData.contents) {
+      p = JSON.parse(e.postData.contents);
+    } else {
+      p = (e && e.parameter) ? e.parameter : {};
+    }
+  } catch (err) {
+    p = (e && e.parameter) ? e.parameter : {};
+  }
+  var action = p.action;
+  var result;
+  try {
+    result = route_(action, p);
+  } catch (err) {
+    result = { ok: false, error: String((err && err.message) || err) };
+  }
+  return json_(result);
+}
+
+function route_(action, p) {
+  switch (action) {
+    // ---------- public reads ----------
+    case 'ping':            return { ok: true, time: new Date().toISOString() };
+    case 'getSettings':     return { ok: true, settings: getPublicSettings_() };
+    case 'getProducts':     return { ok: true, products: getRows_('products') };
+    case 'getRewards':      return { ok: true, rewards: getRows_('rewards') };
+    case 'getRegistration': return getRegistration_(p);
+
+    // ---------- public writes ----------
+    case 'register':     return register_(p);
+    case 'createOrder':  return createOrder_(p);
+    case 'uploadSlip':   return uploadSlip_(p);
+    case 'staffLogin':   return staffLogin_(p);
+    case 'verifyPin':    return verifyPin_(p);
+
+    // ---------- staff/admin (ต้องมี key) ----------
+    case 'searchByPhone':    requireKey_(p); return searchByPhone_(p);
+    case 'checkin':          requireKey_(p); return checkin_(p);
+    case 'getRegistrations': requireKey_(p); return { ok: true, registrations: getRows_('registrations') };
+    case 'getWinners':       requireKey_(p); return { ok: true, winners: getRows_('winners') };
+    case 'getOrders':        requireKey_(p); return { ok: true, orders: getRows_('orders') };
+    case 'getStaff':         requireKey_(p); return getStaffList_();
+    case 'getEligible':      requireKey_(p); return eligible_(p);
+
+    // ---------- wheel ----------
+    case 'getWheelState':  return { ok: true, state: getWheelState_() }; // จอ poll ได้ ไม่ต้อง key
+    case 'requestSpin':    requireKey_(p); return requestSpin_(p);
+    case 'resetWheel':     requireKey_(p); return resetWheel_(p);
+
+    // ---------- admin manage ----------
+    case 'verifyOrder':    requireKey_(p); return verifyOrder_(p);
+    case 'updateSettings': requireKey_(p); return updateSettings_(p);
+    case 'saveProduct':    requireKey_(p); return saveProduct_(p);
+    case 'deleteProduct':  requireKey_(p); return deleteRowById_('products', 'id', p.id);
+    case 'saveStaff':      requireKey_(p); return saveStaff_(p);
+    case 'deleteStaff':    requireKey_(p); return deleteRowById_('staff', 'username', p.username);
+    case 'saveReward':     requireKey_(p); return saveReward_(p);
+    case 'deleteReward':   requireKey_(p); return deleteRowById_('rewards', 'order', p.order);
+
+    default: return { ok: false, error: 'unknown action: ' + action };
+  }
+}
+
+// ============================================================
+//  SHEET HELPERS
+// ============================================================
+function getHeaders_(name) {
+  var sh = sheet_(name);
+  return sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+}
+
+function getRows_(name) {
+  var sh = sheet_(name);
+  if (!sh) return [];
+  var values = sh.getDataRange().getValues();
+  if (values.length < 2) return [];
+  var headers = values[0].map(String);
+  var out = [];
+  for (var i = 1; i < values.length; i++) {
+    var row = values[i];
+    if (row.join('') === '') continue;
+    var obj = {};
+    for (var c = 0; c < headers.length; c++) obj[headers[c]] = row[c];
+    obj._row = i + 1;
+    out.push(obj);
+  }
+  return out;
+}
+
+function appendByHeaders_(name, obj) {
+  var sh = sheet_(name);
+  var headers = getHeaders_(name);
+  var row = headers.map(function (h) { return obj.hasOwnProperty(h) ? obj[h] : ''; });
+  sh.appendRow(row);
+}
+
+function findRow_(name, col, val) {
+  var sh = sheet_(name);
+  var values = sh.getDataRange().getValues();
+  var headers = values[0].map(String);
+  var idx = headers.indexOf(col);
+  if (idx < 0) return null;
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][idx]) === String(val)) return i + 1;
+  }
+  return null;
+}
+
+function rowObj_(name, rowNum) {
+  var sh = sheet_(name);
+  var headers = getHeaders_(name);
+  var row = sh.getRange(rowNum, 1, 1, headers.length).getValues()[0];
+  var o = {};
+  for (var i = 0; i < headers.length; i++) o[headers[i]] = row[i];
+  o._row = rowNum;
+  return o;
+}
+
+function deleteRowById_(name, col, id) {
+  var rowNum = findRow_(name, col, id);
+  if (!rowNum) return { ok: false, error: 'not found' };
+  sheet_(name).deleteRow(rowNum);
+  return { ok: true };
+}
+
+// ============================================================
+//  SETTINGS  (แท็บ settings เป็น key,value ไม่มี header)
+// ============================================================
+function getSettingsMap_() {
+  var sh = sheet_('settings');
+  var values = sh.getDataRange().getValues();
+  var map = {};
+  values.forEach(function (r) { if (r[0] !== '') map[String(r[0])] = r[1]; });
+  return map;
+}
+
+function getPublicSettings_() {
+  var m = getSettingsMap_();
+  var hide = ['pin_lottery', 'pin_remote']; // ห้ามส่ง pin ออกหน้าเว็บ
+  var out = {};
+  Object.keys(m).forEach(function (k) { if (hide.indexOf(k) < 0) out[k] = m[k]; });
+  return out;
+}
+
+function updateSettings_(p) {
+  var sh = sheet_('settings');
+  var values = sh.getDataRange().getValues();
+  var rowOf = {};
+  values.forEach(function (r, i) { if (r[0] !== '') rowOf[String(r[0])] = i + 1; });
+  var upd = p.settings || {};
+  Object.keys(upd).forEach(function (k) {
+    if (rowOf[k]) sh.getRange(rowOf[k], 2).setValue(upd[k]);
+    else sh.appendRow([k, upd[k]]);
+  });
+  return { ok: true };
+}
+
+// ============================================================
+//  AUTH
+// ============================================================
+function requireKey_(p) {
+  var need = props_().getProperty('ADMIN_KEY');
+  if (!need) return true; // ยังไม่ตั้ง = โหมด dev (อนุญาต)
+  if (String(p.key) === String(need)) return true;
+  throw new Error('unauthorized');
+}
+
+function staffLogin_(p) {
+  var rows = getRows_('staff');
+  var u = rows.filter(function (x) {
+    return String(x.username) === String(p.username) &&
+           String(x.password) === String(p.password);
+  })[0];
+  if (!u) return { ok: false, error: 'invalid credentials' };
+  return { ok: true, username: u.username, display_name: u.display_name, role: u.role };
+}
+
+function verifyPin_(p) {
+  var m = getSettingsMap_();
+  var key = (p.type === 'remote') ? 'pin_remote' : 'pin_lottery';
+  return { ok: String(m[key]) === String(p.pin) };
+}
+
+function getStaffList_() {
+  var rows = getRows_('staff').map(function (r) {
+    return { username: r.username, display_name: r.display_name, role: r.role, created_at: r.created_at };
+  });
+  return { ok: true, staff: rows };
+}
+
+function saveStaff_(p) {
+  var s = p.staff || p;
+  var rowNum = s.username ? findRow_('staff', 'username', s.username) : null;
+  if (!rowNum) {
+    appendByHeaders_('staff', {
+      username: s.username, password: s.password || '',
+      display_name: s.display_name || '', role: s.role || 'staff',
+      created_at: new Date()
+    });
+  } else {
+    var sh = sheet_('staff'); var h = getHeaders_('staff');
+    ['password', 'display_name', 'role'].forEach(function (f) {
+      if (s[f] !== undefined && s[f] !== '') sh.getRange(rowNum, h.indexOf(f) + 1).setValue(s[f]);
+    });
+  }
+  return { ok: true };
+}
+
+// ============================================================
+//  REGISTRATION
+// ============================================================
+function getRegistration_(p) {
+  var r = findRow_('registrations', 'line_user_id', p.line_user_id);
+  if (!r) return { ok: true, found: false };
+  return { ok: true, found: true, registration: rowObj_('registrations', r) };
+}
+
+function register_(p) {
+  // กันลงทะเบียนซ้ำด้วย line_user_id
+  if (p.line_user_id) {
+    var existing = findRow_('registrations', 'line_user_id', p.line_user_id);
+    if (existing) {
+      return { ok: true, duplicate: true, registration: rowObj_('registrations', existing) };
+    }
+  }
+  var reg_id = 'R' + Date.now().toString(36).toUpperCase() + Math.floor(Math.random() * 900 + 100);
+  appendByHeaders_('registrations', {
+    reg_id: reg_id,
+    line_user_id: p.line_user_id || '',
+    first_name: p.first_name || '',
+    last_name: p.last_name || '',
+    nickname: p.nickname || '',
+    gender: p.gender || '',
+    age: p.age || '',
+    phone: p.phone || '',
+    generation: p.generation || '',
+    province: p.province || '',
+    occupation: p.occupation || '',
+    organization: p.organization || '',
+    email: p.email || '',
+    address: p.address || '',
+    registered_at: new Date(),
+    checked_in: 'FALSE',
+    checkin_at: '',
+    checkin_by: ''
+  });
+  // ทักทายผ่าน LINE
+  if (p.line_user_id) {
+    var m = getSettingsMap_();
+    var greet = String(m.line_greeting || '').replace('{name}', p.nickname || p.first_name || '');
+    if (greet) sendLineText_(p.line_user_id, greet);
+  }
+  return { ok: true, reg_id: reg_id, registration: rowObj_('registrations', findRow_('registrations', 'reg_id', reg_id)) };
+}
+
+function searchByPhone_(p) {
+  var phone = String(p.phone || '').replace(/\D/g, '');
+  var rows = getRows_('registrations').filter(function (x) {
+    return String(x.phone).replace(/\D/g, '') === phone && phone !== '';
+  });
+  return { ok: true, results: rows };
+}
+
+function checkin_(p) {
+  var rowNum = null;
+  if (p.reg_id) rowNum = findRow_('registrations', 'reg_id', p.reg_id);
+  if (!rowNum && p.line_user_id) rowNum = findRow_('registrations', 'line_user_id', p.line_user_id);
+  if (!rowNum) return { ok: false, error: 'not found' };
+
+  var sh = sheet_('registrations'); var h = getHeaders_('registrations');
+  var ci = h.indexOf('checked_in') + 1;
+  var already = String(sh.getRange(rowNum, ci).getValue()).toUpperCase() === 'TRUE';
+  sh.getRange(rowNum, ci).setValue('TRUE');
+  sh.getRange(rowNum, h.indexOf('checkin_at') + 1).setValue(new Date());
+  sh.getRange(rowNum, h.indexOf('checkin_by') + 1).setValue(p.checkin_by || '');
+  return { ok: true, already_checked_in: already, registration: rowObj_('registrations', rowNum) };
+}
+
+// ============================================================
+//  PRODUCTS / ORDERS
+// ============================================================
+function saveProduct_(p) {
+  var prod = p.product || p;
+  var rowNum = prod.id ? findRow_('products', 'id', prod.id) : null;
+  if (!rowNum) {
+    var rows = getRows_('products');
+    var maxId = rows.reduce(function (mx, r) { return Math.max(mx, Number(r.id) || 0); }, 0);
+    prod.id = prod.id || (maxId + 1);
+    appendByHeaders_('products', {
+      id: prod.id, name: prod.name || '', price: prod.price || 0,
+      img_url: prod.img_url || '', stock: prod.stock || 0, description: prod.description || ''
+    });
+  } else {
+    var sh = sheet_('products'); var h = getHeaders_('products');
+    ['name', 'price', 'img_url', 'stock', 'description'].forEach(function (f) {
+      if (prod[f] !== undefined) sh.getRange(rowNum, h.indexOf(f) + 1).setValue(prod[f]);
+    });
+  }
+  return { ok: true, id: prod.id };
+}
+
+function createOrder_(p) {
+  var order_id = 'O' + Date.now().toString(36).toUpperCase();
+  appendByHeaders_('orders', {
+    order_id: order_id,
+    line_user_id: p.line_user_id || '',
+    customer_name: p.customer_name || '',
+    phone: p.phone || '',
+    items: (typeof p.items === 'string') ? p.items : JSON.stringify(p.items || []),
+    total_amount: p.total_amount || 0,
+    promptpay_ref: p.promptpay_ref || '',
+    slip_url: p.slip_url || '',
+    status: 'pending',
+    created_at: new Date(),
+    verified_at: '',
+    verified_by: ''
+  });
+  return { ok: true, order_id: order_id };
+}
+
+function verifyOrder_(p) {
+  var rowNum = findRow_('orders', 'order_id', p.order_id);
+  if (!rowNum) return { ok: false, error: 'order not found' };
+  var sh = sheet_('orders'); var h = getHeaders_('orders');
+  var status = p.status || 'verified';
+  sh.getRange(rowNum, h.indexOf('status') + 1).setValue(status);
+  sh.getRange(rowNum, h.indexOf('verified_at') + 1).setValue(new Date());
+  sh.getRange(rowNum, h.indexOf('verified_by') + 1).setValue(p.verified_by || '');
+  var o = rowObj_('orders', rowNum);
+  if (o.line_user_id) {
+    var msg = (status === 'rejected')
+      ? '❌ คำสั่งซื้อ ' + o.order_id + ' ไม่ผ่านการตรวจสอบ กรุณาติดต่อเจ้าหน้าที่'
+      : '✅ ยืนยันคำสั่งซื้อ ' + o.order_id + ' เรียบร้อยแล้ว ขอบคุณครับ';
+    sendLineText_(o.line_user_id, msg);
+  }
+  return { ok: true };
+}
+
+// บันทึกสลิปลง Drive แล้วคืน URL
+function uploadSlip_(p) {
+  var m = String(p.dataUrl || '').match(/^data:(.+);base64,(.*)$/);
+  if (!m) return { ok: false, error: 'bad dataUrl' };
+  var folder = DriveApp.getFolderById(SLIP_FOLDER_ID);
+  var blob = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], p.filename || ('slip_' + Date.now()));
+  var file = folder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return { ok: true, id: file.getId(), url: 'https://drive.google.com/uc?export=view&id=' + file.getId() };
+}
+
+// ============================================================
+//  REWARDS / WHEEL  (วงล้อ 2 เครื่องผ่าน polling)
+// ============================================================
+function saveReward_(p) {
+  var r = p.reward || p;
+  var rowNum = r.order ? findRow_('rewards', 'order', r.order) : null;
+  if (!rowNum) {
+    var rows = getRows_('rewards');
+    var maxO = rows.reduce(function (mx, x) { return Math.max(mx, Number(x.order) || 0); }, 0);
+    r.order = r.order || (maxO + 1);
+    appendByHeaders_('rewards', {
+      order: r.order, name: r.name || '', value: r.value || '',
+      img_url: r.img_url || '', quantity: r.quantity || 0
+    });
+  } else {
+    var sh = sheet_('rewards'); var h = getHeaders_('rewards');
+    ['name', 'value', 'img_url', 'quantity'].forEach(function (f) {
+      if (r[f] !== undefined) sh.getRange(rowNum, h.indexOf(f) + 1).setValue(r[f]);
+    });
+  }
+  return { ok: true, order: r.order };
+}
+
+// รายชื่อผู้มีสิทธิ์ลุ้น (เช็คอินแล้ว + ยังไม่เคยถูก + ตรงฟิลเตอร์)
+function getEligible_(f) {
+  f = f || {};
+  var won = getRows_('winners').map(function (w) { return String(w.line_user_id); });
+  var rows = getRows_('registrations').filter(function (r) {
+    return String(r.checked_in).toUpperCase() === 'TRUE';
+  });
+  rows = rows.filter(function (r) {
+    return !r.line_user_id || won.indexOf(String(r.line_user_id)) < 0;
+  });
+  if (f.gender)     rows = rows.filter(function (r) { return String(r.gender) === String(f.gender); });
+  if (f.generation) rows = rows.filter(function (r) { return String(r.generation) === String(f.generation); });
+  if (f.age_min)    rows = rows.filter(function (r) { return Number(r.age) >= Number(f.age_min); });
+  if (f.age_max)    rows = rows.filter(function (r) { return Number(r.age) <= Number(f.age_max); });
+  return rows;
+}
+
+function eligible_(p) {
+  var list = getEligible_(p.filters || {});
+  return {
+    ok: true,
+    count: list.length,
+    eligible: list.map(function (r) {
+      return {
+        reg_id: r.reg_id, line_user_id: r.line_user_id,
+        first_name: r.first_name, last_name: r.last_name,
+        nickname: r.nickname, gender: r.gender, age: r.age, generation: r.generation
+      };
+    })
+  };
+}
+
+function getWheelState_() {
+  var s = props_().getProperty('WHEEL_STATE');
+  return s ? JSON.parse(s) : { status: 'idle', round: 0 };
+}
+function setWheelState_(obj) {
+  props_().setProperty('WHEEL_STATE', JSON.stringify(obj));
+  return obj;
+}
+
+// รีโมทสั่งหมุน: server สุ่มผู้ชนะ -> บันทึก -> ตั้ง state ให้จอ poll -> ยิง LINE
+function requestSpin_(p) {
+  var count = parseInt(p.count || 1, 10);
+  var filters = p.filters || {};
+  var pool = getEligible_(filters);
+  if (pool.length === 0) return { ok: false, error: 'no eligible participants' };
+
+  var winners = [];
+  var work = pool.slice();
+  for (var i = 0; i < count && work.length > 0; i++) {
+    var idx = Math.floor(Math.random() * work.length);
+    winners.push(work.splice(idx, 1)[0]);
+  }
+
+  var round = (getWheelState_().round || 0) + 1;
+  recordWinners_(round, winners, p.reward_name, p.reward_value);
+
+  var state = {
+    status: 'spinning',
+    round: round,
+    ts: Date.now(),
+    count: count,
+    filters: filters,
+    reward_name: p.reward_name || '',
+    reward_value: p.reward_value || '',
+    winners: winners.map(function (w) {
+      return {
+        reg_id: w.reg_id, line_user_id: w.line_user_id,
+        first_name: w.first_name, last_name: w.last_name, nickname: w.nickname
+      };
+    })
+  };
+  setWheelState_(state);
+  notifyWinners_(winners, p.reward_name || p.reward_value || 'ของรางวัล');
+  return { ok: true, state: state };
+}
+
+function recordWinners_(round, winners, reward_name, reward_value) {
+  winners.forEach(function (w) {
+    appendByHeaders_('winners', {
+      round: round,
+      line_user_id: w.line_user_id || '',
+      first_name: w.first_name || '',
+      last_name: w.last_name || '',
+      nickname: w.nickname || '',
+      reward_name: reward_name || '',
+      reward_value: reward_value || '',
+      won_at: new Date(),
+      notified: 'TRUE'
+    });
+  });
+}
+
+function notifyWinners_(winners, rewardLabel) {
+  var m = getSettingsMap_();
+  var tmpl = String(m.line_winner_msg || '🏆 ยินดีด้วย {name} ได้รับ {reward}');
+  winners.forEach(function (w) {
+    if (!w.line_user_id) return;
+    var name = w.nickname || w.first_name || '';
+    var msg = tmpl.replace('{name}', name).replace('{reward}', rewardLabel);
+    sendLineText_(w.line_user_id, msg);
+  });
+}
+
+function resetWheel_(p) {
+  return { ok: true, state: setWheelState_({ status: 'idle', round: getWheelState_().round || 0 }) };
+}
+
+// ============================================================
+//  LINE MESSAGING
+// ============================================================
+function sendLineText_(userId, text) {
+  if (!userId || !text) return { ok: false, error: 'missing userId/text' };
+  var tk = token_();
+  if (!tk) return { ok: false, error: 'LINE_TOKEN not set' };
+  var res = UrlFetchApp.fetch(LINE_PUSH_URL, {
+    method: 'post',
+    contentType: 'application/json',
+    headers: { Authorization: 'Bearer ' + tk },
+    payload: JSON.stringify({ to: userId, messages: [{ type: 'text', text: String(text) }] }),
+    muteHttpExceptions: true
+  });
+  return { ok: res.getResponseCode() === 200, code: res.getResponseCode(), body: res.getContentText() };
+}
+
+// ============================================================
+//  ฟังก์ชันทดสอบ (รันจาก editor ได้ — ลบทิ้งได้หลังเทสต์)
+// ============================================================
+function testPing()    { Logger.log(getPublicSettings_()); }
+function testLineToMe() {
+  // ใส่ line_user_id ของตัวเองเพื่อทดสอบยิงข้อความ
+  Logger.log(sendLineText_('PUT_YOUR_LINE_USER_ID', 'ทดสอบจาก backend ✅'));
+}
