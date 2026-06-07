@@ -96,7 +96,7 @@
           <label>จำนวนผู้ชนะต่อการหมุน</label>
           <input class="input" id="count" type="number" inputmode="numeric" value="3" min="1" max="50" oninput="onChange()" />
         </div>
-        <button class="btn btn-primary mt" onclick="togglePanel()">เสร็จ</button>
+        <button class="btn btn-primary mt" onclick="donePanel()">เสร็จ</button>
       </div>
 
       <!-- โซนหมุน -->
@@ -197,25 +197,39 @@
       API.qs('#gaugeLabel').textContent = 'กดเตรียมวงล้อก่อนหมุน';
     }
 
+    function donePanel() { API.qs('#panel').classList.remove('open'); renderSummary(); prepare(); }
+
     // ----- เตรียม -----
-    async function prepare() {
+    async function prepare(opts) {
+      opts = opts || {};
       var rw = selectedReward();
       var count = (mode === 'multi') ? Math.max(1, parseInt(API.qs('#count').value || 1, 10)) : 1;
-      var btn = API.qs('#prepBtn'); btn.disabled = true; btn.textContent = 'กำลังส่งรายชื่อขึ้นจอ...';
-      var res = await API.postAuth('prepare', { filters: getFilters(), mode: mode, count: count, reward_name: rw.name, reward_value: rw.value });
-      btn.disabled = false; btn.textContent = '📋 เตรียมวงล้อ (ส่งรายชื่อขึ้นจอ)';
-      if (!res.ok) { API.toast(res.error === 'no eligible participants' ? 'ไม่มีผู้มีสิทธิ์ในกลุ่มนี้' : (res.error || 'เตรียมไม่สำเร็จ')); return; }
-
+      var pbtn = API.qs('#prepBtn');
+      if (!opts.silent) { pbtn.disabled = true; pbtn.textContent = 'กำลังส่งรายชื่อขึ้นจอ...'; }
       API.qs('#spinZone').style.display = 'block';
-      API.qs('#gaugeLabel').textContent = 'กำลังให้จอโหลดรายชื่อ...';
-      API.qs('#result').style.display = 'none';
-      // รอจอ poll รับรายชื่อ (~2 วิ) แล้วค่อยเปิดปุ่ม
+      API.qs('#gaugeLabel').textContent = 'กำลังเตรียมวงล้อ...';
+      var b = API.qs('#bigBtn'); b.disabled = true;
+
+      var res = await API.postAuth('prepare', { filters: getFilters(), mode: mode, count: count, reward_name: rw.name, reward_value: rw.value });
+      if (!opts.silent) { pbtn.disabled = false; pbtn.textContent = '📋 เตรียมวงล้อ (ส่งรายชื่อขึ้นจอ)'; }
+
+      if (!res.ok) {
+        prepared = false;
+        API.qs('#gaugeLabel').textContent = (res.error === 'no eligible participants') ? 'ไม่มีผู้มีสิทธิ์เหลือแล้ว' : 'เตรียมไม่สำเร็จ';
+        if (!opts.silent) API.toast(res.error === 'no eligible participants' ? 'ไม่มีผู้มีสิทธิ์ในกลุ่มนี้' : (res.error || 'เตรียมไม่สำเร็จ'));
+        return;
+      }
+      // อัปเดตจำนวนผู้มีสิทธิ์ในสรุป
+      API.qs('#summary').dataset.c = res.people; renderSummary();
+      if (!opts.keepResult) API.qs('#result').style.display = 'none';
+
+      // รอจอรับรายชื่อ (~1.8 วิ) แล้วเปิดปุ่มหมุน
       setTimeout(function () {
         prepared = true;
-        var b = API.qs('#bigBtn'); b.disabled = false; b.innerHTML = 'กดค้าง<br>เพื่อหมุน';
+        b.disabled = false; b.innerHTML = 'กดค้าง<br>เพื่อหมุน';
         API.qs('#gaugeLabel').textContent = (mode === 'multi' ? ('พร้อม! จับ ' + count + ' คน — กดค้างแล้วปล่อย') : 'พร้อม! กดค้างชาร์จพลังแล้วปล่อย');
-        API.toast('พร้อมหมุนแล้ว (' + res.people + ' คน)');
-      }, 2000);
+        if (!opts.silent) API.toast('พร้อมหมุนแล้ว (' + res.people + ' คน)');
+      }, 1800);
     }
 
     // ----- ปุ่มกดค้าง -----
@@ -268,8 +282,8 @@
         var st = await API.get('getWheelState');
         showResult(st.state || {});
         API.qs('#gaugeFill').style.width = '0%';
-        API.qs('#gaugeLabel').textContent = 'จับรอบนี้เสร็จ — กด "เตรียมวงล้อ" เพื่อจับต่อ';
-        onChange(); // อัปเดตจำนวนสิทธิ์
+        // เตรียมรอบใหม่อัตโนมัติ (รายชื่ออัปเดต/ตัดคนที่เพิ่งได้) — กดหมุนต่อได้เลย
+        prepare({ silent: true, keepResult: true });
       }, dur * 1000 + 400);
     }
 

@@ -154,7 +154,7 @@
       w.innerHTML = buildWheel(pool);
       w.classList.remove('appear'); void w.offsetWidth; w.classList.add('appear');
       API.qs('#status').textContent = 'พร้อมจับรางวัล — รอหมุน';
-      closeReveal();
+      // ไม่ปิด reveal ที่ค้างอยู่ (ให้โชว์ผู้ชนะต่อจนกว่าจะหมุนรอบใหม่/แตะจอ)
     }
 
     function spinToIndex(index, n, power) {
@@ -238,7 +238,7 @@
         showIdle(); return;
       }
 
-      if (st.status === 'ready' && st.prepToken !== lastToken) {
+      if (st.status === 'ready' && st.prepToken !== lastToken && !busy) {
         lastToken = st.prepToken;
         var pool = await ensurePool(st);
         renderReady(pool);
