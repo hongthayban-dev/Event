@@ -14,6 +14,12 @@
       color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;
       position: relative;
     }
+    .navback-fixed {
+      position: fixed; top: 16px; left: 16px; z-index: 60;
+      background: rgba(255,255,255,.16); border: none; color: #fff; width: 42px; height: 42px;
+      border-radius: 12px; font-size: 1.5rem; cursor: pointer;
+    }
+    .navback-fixed:active { background: rgba(255,255,255,.32); }
     .ev-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.4rem, 4vw, 2.6rem); text-align: center; margin-bottom: 4px; text-shadow: 0 2px 10px rgba(0,0,0,.4); }
     .ev-sub { color: var(--accent); letter-spacing: 3px; font-size: clamp(.7rem,1.5vw,1rem); margin-bottom: 18px; text-transform: uppercase; }
 
@@ -37,7 +43,6 @@
     }
     .idle-spin { animation: idleSpin 22s linear infinite; }
     @keyframes idleSpin { to { transform: rotate(360deg); } }
-
     .status { margin-top: 22px; font-size: clamp(1rem,2.5vw,1.5rem); color: var(--accent); font-weight: 600; min-height: 1.4em; text-align: center; }
 
     /* reveal overlay */
@@ -58,9 +63,17 @@
     }
     @keyframes pop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     .confetti { position: fixed; top: -10px; width: 10px; height: 14px; z-index: 49; pointer-events: none; }
+
+    /* start (เปิดเสียง) */
+    #startScreen {
+      position: fixed; inset: 0; z-index: 80; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: var(--navy-grad); text-align: center; padding: 24px;
+    }
+    #startScreen.hide { display: none; }
   </style>
 </head>
 <body>
+  <button class="navback-fixed" onclick="goBack()">‹</button>
   <div class="ev-title" data-event-name>วงล้อจับรางวัล</div>
   <div class="ev-sub">LUCKY DRAW</div>
 
@@ -77,25 +90,79 @@
     <div class="winners" id="revWinners"></div>
   </div>
 
+  <!-- หน้าจอเริ่ม (แตะเพื่อเปิดเสียง) -->
+  <div id="startScreen">
+    <div class="ev-title" data-event-name style="margin-bottom:18px">วงล้อจับรางวัล</div>
+    <button class="btn btn-gold" style="max-width:320px;font-size:1.2rem;padding:20px" onclick="startDisplay()">▶ แตะเพื่อเริ่ม (เปิดเสียง)</button>
+    <p style="color:var(--accent);margin-top:18px;font-size:.9rem">เปิดบนจอใหญ่ แล้วแตะ 1 ครั้งเพื่ออนุญาตเสียง</p>
+  </div>
+
+  <audio id="fanfare" src="../Fanfare_For_Winner.mp3" preload="auto"></audio>
+
   <script src="../config.js"></script>
   <script src="../api.js"></script>
   <script>
     var WA = '#b71c1c', WB = '#fafafa', TA = '#ffffff', TB = '#1a1a1a';
     var currentRotation = 0, lastRound = -1, lastStatus = '', busy = false;
+    var audioCtx = null, soundOn = false, started = false;
+
+    function goBack() { location.href = 'remote.html'; }
 
     (async function () {
       var s = await API.bootTheme().catch(function () { return {}; });
       WA = s.wheel_color_a || WA; WB = s.wheel_color_b || WB;
       TA = s.wheel_text_a || TA; TB = s.wheel_text_b || TB;
       showIdle();
-      poll();
-      setInterval(poll, 1500);
     })();
 
+    // เริ่มจอ + ปลดล็อกเสียง (ต้องมาจากการแตะของผู้ใช้)
+    function startDisplay() {
+      if (started) return;
+      started = true;
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        var f = document.getElementById('fanfare');
+        f.muted = true; f.play().then(function () { f.pause(); f.currentTime = 0; f.muted = false; soundOn = true; }).catch(function () { soundOn = true; });
+        soundOn = true;
+      } catch (e) { soundOn = false; }
+      API.qs('#startScreen').classList.add('hide');
+      poll();
+      setInterval(poll, 1500);
+    }
+
+    // ---------- เสียง ----------
+    function tick() {
+      if (!audioCtx) return;
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'square'; o.frequency.value = 880;
+      g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.18, audioCtx.currentTime + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.05);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime + 0.06);
+    }
+    function playSpinTicks() {
+      if (!audioCtx) return;
+      var N = 46, dur = 5000;
+      for (var k = 0; k < N; k++) {
+        var frac = k / N;
+        var t = dur * (1 - Math.pow(1 - frac, 2.3)); // ติ๊กถี่ตอนต้น แล้วค่อย ๆ ห่างออก
+        setTimeout(tick, t);
+      }
+    }
+    function playFanfare() {
+      if (!soundOn) return;
+      var f = document.getElementById('fanfare');
+      try { f.currentTime = 0; f.play(); } catch (e) {}
+    }
+
+    // ---------- วงล้อ ----------
     function pointAt(angle, radius) {
       var rad = angle * Math.PI / 180;
       return { x: 200 + radius * Math.sin(rad), y: 200 - radius * Math.cos(rad) };
     }
+    function escapeHtml(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
     function buildWheel(segs) {
       var n = segs.length || 1;
@@ -122,8 +189,6 @@
       return svg;
     }
 
-    function escapeHtml(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-
     function showIdle() {
       var deco = [];
       for (var i = 0; i < 12; i++) deco.push({ name: '🎁' });
@@ -145,7 +210,6 @@
       var base = currentRotation - (currentRotation % 360);
       var target = base + 360 * 6 + (360 - center);
       currentRotation = target;
-      // force reflow before applying transition
       void wrap.offsetWidth;
       wrap.style.transition = 'transform 5s cubic-bezier(.12,.84,.28,1)';
       wrap.style.transform = 'rotate(' + target + 'deg)';
@@ -169,7 +233,7 @@
       for (var i = 0; i < pool.length; i++) { if (String(pool[i].id) === String(winId)) { idx = i; break; } }
 
       API.qs('#status').textContent = 'กำลังจับรางวัล...';
-      setTimeout(function () { spinTo(idx, n); }, 60);
+      setTimeout(function () { spinTo(idx, n); playSpinTicks(); }, 60);
       setTimeout(function () { showReveal(state); busy = false; }, 5400);
     }
 
@@ -187,6 +251,7 @@
       });
       API.qs('#reveal').classList.add('open');
       API.qs('#status').textContent = '🎉 ยินดีด้วย!';
+      playFanfare();
       confetti();
     }
 
@@ -204,10 +269,7 @@
           var dur = 2.5 + Math.random() * 2;
           c.style.transition = 'top ' + dur + 's linear, opacity ' + dur + 's linear';
           document.body.appendChild(c);
-          requestAnimationFrame(function () {
-            c.style.top = (100 + Math.random() * 20) + 'vh';
-            c.style.opacity = '0';
-          });
+          requestAnimationFrame(function () { c.style.top = (100 + Math.random() * 20) + 'vh'; c.style.opacity = '0'; });
           setTimeout(function () { c.remove(); }, dur * 1000 + 200);
         })();
       }
@@ -219,14 +281,12 @@
       var st = res.state || {};
 
       if (lastRound < 0) {
-        // โหลดครั้งแรก: sync ไม่ replay ของเก่า
         lastRound = st.round || 0;
         lastStatus = st.status || 'idle';
         if (st.status === 'spinning' && st.winners) showReveal(st);
         else showIdle();
         return;
       }
-
       if ((st.round || 0) > lastRound && st.status === 'spinning') {
         lastRound = st.round;
         handleSpin(st);

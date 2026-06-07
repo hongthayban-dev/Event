@@ -6,16 +6,26 @@
   <title>รีโมทจับรางวัล</title>
   <link rel="stylesheet" href="../theme.css" />
   <style>
+    .summary { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 14px; font-size: .9rem; }
+    .summary b { color: var(--ink); }
+    .summary .count { color: var(--accent-600); font-weight: 700; }
+    .panel { display: none; }
+    .panel.open { display: block; }
     .mode-toggle { display: flex; gap: 8px; }
     .mode-toggle button {
       flex: 1; padding: 12px; border: 1.5px solid var(--line); background: #fff; border-radius: var(--radius-sm);
       font-family: var(--font-body); font-weight: 600; color: var(--ink-soft); cursor: pointer;
     }
     .mode-toggle button.active { background: var(--navy-grad); color: #fff; border-color: transparent; }
-    .count-pill {
-      display: inline-flex; align-items: center; gap: 6px; background: rgba(217,165,33,.15);
-      color: var(--accent-600); font-weight: 700; padding: 6px 14px; border-radius: 999px; font-size: 1.1rem;
-    }
+    .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; border: 1.5px solid var(--line); border-radius: var(--radius-sm); margin-bottom: 12px; }
+    .switch-row .lbl { font-weight: 600; font-size: .92rem; }
+    .switch-row .sub { font-size: .76rem; color: var(--ink-soft); }
+    .sw { position: relative; width: 52px; height: 30px; flex-shrink: 0; }
+    .sw input { display: none; }
+    .sw .track { position: absolute; inset: 0; background: var(--line); border-radius: 999px; transition: .2s; }
+    .sw .track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; background: #fff; border-radius: 50%; transition: .2s; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+    .sw input:checked + .track { background: var(--ok); }
+    .sw input:checked + .track::after { transform: translateX(22px); }
     .spin-btn { font-size: 1.4rem !important; padding: 22px !important; }
     .winner-row { padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); margin-bottom: 8px; }
     .winner-row .nm { font-weight: 700; font-family: var(--font-display); font-size: 1.1rem; }
@@ -23,6 +33,7 @@
 </head>
 <body class="app-bg">
   <div class="app-bar">
+    <button class="navback" onclick="goBack()">‹</button>
     <img class="logo" data-logo alt="" />
     <div>
       <div class="title">รีโมทจับรางวัล</div>
@@ -34,13 +45,21 @@
     <div id="loading" class="loading"><div class="spinner"></div>กำลังโหลด...</div>
 
     <div id="app" style="display:none">
-      <!-- ฟิลเตอร์ -->
+      <!-- การ์ดควบคุมหลัก -->
       <div class="card gold-top">
-        <h2>เลือกกลุ่มผู้มีสิทธิ์</h2>
+        <div class="summary" id="summary"></div>
+        <button class="btn btn-ghost" style="background:#fff;margin-bottom:14px" onclick="togglePanel()">⚙️ ตั้งค่าการจับ</button>
+        <button class="btn btn-gold spin-btn" id="spinBtn" onclick="spin()">🎉 หมุนวงล้อ</button>
+      </div>
+
+      <!-- แผงตั้งค่า (ซ่อนไว้) -->
+      <div class="card panel" id="panel">
+        <h2>ตั้งค่าการจับ</h2>
+
         <div class="row">
           <div class="field">
             <label>เพศ</label>
-            <select id="f_gender" onchange="updateCount()">
+            <select id="f_gender" onchange="onChange()">
               <option value="">ทั้งหมด</option>
               <option value="ชาย">ชาย</option>
               <option value="หญิง">หญิง</option>
@@ -49,29 +68,34 @@
           </div>
           <div class="field">
             <label>รุ่น</label>
-            <input class="input" id="f_gen" placeholder="ว่าง = ทุกรุ่น" oninput="updateCount()" />
+            <input class="input" id="f_gen" placeholder="ว่าง = ทุกรุ่น" oninput="onChange()" />
           </div>
         </div>
         <div class="row">
           <div class="field">
             <label>อายุต่ำสุด</label>
-            <input class="input" id="f_amin" type="number" inputmode="numeric" placeholder="-" oninput="updateCount()" />
+            <input class="input" id="f_amin" type="number" inputmode="numeric" placeholder="-" oninput="onChange()" />
           </div>
           <div class="field">
             <label>อายุสูงสุด</label>
-            <input class="input" id="f_amax" type="number" inputmode="numeric" placeholder="-" oninput="updateCount()" />
+            <input class="input" id="f_amax" type="number" inputmode="numeric" placeholder="-" oninput="onChange()" />
           </div>
         </div>
-        <div class="center mt">
-          <span class="count-pill">ผู้มีสิทธิ์ <span id="eligCount">–</span> คน</span>
-        </div>
-      </div>
 
-      <!-- ของรางวัล + โหมด -->
-      <div class="card">
+        <div class="switch-row">
+          <div>
+            <div class="lbl">กันคนที่เคยถูกรางวัล</div>
+            <div class="sub">เปิด = คนที่ถูกแล้วจะไม่ถูกซ้ำ</div>
+          </div>
+          <label class="sw">
+            <input type="checkbox" id="f_excl" checked onchange="onChange()" />
+            <span class="track"></span>
+          </label>
+        </div>
+
         <div class="field">
           <label>ของรางวัล</label>
-          <select id="reward"></select>
+          <select id="reward" onchange="onChange()"></select>
         </div>
 
         <label style="display:block;font-size:.85rem;font-weight:600;color:var(--ink-soft);margin-bottom:6px">โหมดการจับ</label>
@@ -82,17 +106,16 @@
 
         <div class="field mt" id="countWrap" style="display:none">
           <label>จำนวนผู้ชนะต่อการหมุน 1 ครั้ง</label>
-          <input class="input" id="count" type="number" inputmode="numeric" value="3" min="1" max="16" />
+          <input class="input" id="count" type="number" inputmode="numeric" value="3" min="1" max="16" oninput="onChange()" />
         </div>
-        <p class="hint muted mt" id="modeHint" style="font-size:.82rem">กดหมุน 1 ครั้ง = สุ่ม 1 คน (กดซ้ำเพื่อจับคนต่อไป)</p>
+
+        <button class="btn btn-primary mt" onclick="togglePanel()">เสร็จ</button>
       </div>
 
-      <!-- หมุน -->
-      <button class="btn btn-gold spin-btn" id="spinBtn" onclick="spin()">🎉 หมุนวงล้อ</button>
-
+      <!-- ปุ่มรอง -->
       <div class="row mt">
-        <button class="btn btn-ghost btn-sm" style="background:#fff" onclick="resetWheel()">↺ ล้างจอ/เริ่มรอบใหม่</button>
-        <button class="btn btn-ghost btn-sm" style="background:#fff" onclick="openDisplay()">🖥️ เปิดหน้าจอวงล้อ</button>
+        <button class="btn btn-ghost btn-sm" style="background:#fff" onclick="resetWheel()">↺ ล้างจอ</button>
+        <button class="btn btn-ghost btn-sm" style="background:#fff" onclick="openDisplay()">🖥️ เปิดจอวงล้อ</button>
       </div>
 
       <!-- ผลล่าสุด -->
@@ -105,11 +128,12 @@
   <script>
     var session, mode = 'one', rewards = [], countTimer;
 
+    function goBack() { location.href = '../staff/index.html'; }
+
     (async function () {
       session = API.getSession();
       if (!session || !session.username) { location.href = '../staff/index.html'; return; }
       await API.bootTheme().catch(function () {});
-      // โหลดของรางวัล
       var rw = await API.get('getRewards');
       rewards = (rw.rewards || []);
       var sel = API.qs('#reward');
@@ -120,8 +144,13 @@
       });
       API.qs('#loading').style.display = 'none';
       API.qs('#app').style.display = 'block';
-      updateCount();
+      onChange();
     })();
+
+    function togglePanel() {
+      API.qs('#panel').classList.toggle('open');
+      renderSummary();
+    }
 
     function getFilters() {
       var f = {};
@@ -129,26 +158,8 @@
       var gen = API.qs('#f_gen').value.trim(); if (gen) f.generation = gen;
       var amin = API.qs('#f_amin').value; if (amin) f.age_min = amin;
       var amax = API.qs('#f_amax').value; if (amax) f.age_max = amax;
+      if (!API.qs('#f_excl').checked) f.include_past_winners = true; // ปิดสวิตช์ = อนุญาตให้ซ้ำ
       return f;
-    }
-
-    function updateCount() {
-      clearTimeout(countTimer);
-      countTimer = setTimeout(async function () {
-        API.qs('#eligCount').textContent = '…';
-        var res = await API.getAuth('getEligible', { filters: getFilters() });
-        API.qs('#eligCount').textContent = res.ok ? res.count : '?';
-      }, 300);
-    }
-
-    function setMode(m) {
-      mode = m;
-      API.qs('#m-one').classList.toggle('active', m === 'one');
-      API.qs('#m-multi').classList.toggle('active', m === 'multi');
-      API.qs('#countWrap').style.display = (m === 'multi') ? 'block' : 'none';
-      API.qs('#modeHint').textContent = (m === 'multi')
-        ? 'กดหมุน 1 ครั้ง = สุ่มหลายคนพร้อมกันตามจำนวนที่กำหนด'
-        : 'กดหมุน 1 ครั้ง = สุ่ม 1 คน (กดซ้ำเพื่อจับคนต่อไป)';
     }
 
     function selectedReward() {
@@ -156,6 +167,38 @@
       if (i === '') return { name: '', value: '' };
       var r = rewards[Number(i)] || {};
       return { name: r.name || '', value: r.value || '' };
+    }
+
+    function onChange() {
+      clearTimeout(countTimer);
+      countTimer = setTimeout(async function () {
+        renderSummary('…');
+        var res = await API.getAuth('getEligible', { filters: getFilters() });
+        renderSummary(res.ok ? res.count : '?');
+      }, 300);
+    }
+
+    function renderSummary(count) {
+      var f = getFilters();
+      var rw = selectedReward();
+      var parts = [];
+      parts.push('กลุ่ม: <b>' + (f.gender || 'ทั้งหมด') + (f.generation ? ' · รุ่น ' + f.generation : '') +
+        ((f.age_min || f.age_max) ? ' · อายุ ' + (f.age_min || '0') + '-' + (f.age_max || '∞') : '') + '</b>');
+      parts.push('รางวัล: <b>' + (rw.name || rw.value || 'ไม่ระบุ') + '</b>');
+      parts.push('โหมด: <b>' + (mode === 'multi' ? ('หลายคน ×' + (API.qs('#count').value || 1)) : 'ทีละคน') + '</b>');
+      parts.push('กันคนซ้ำ: <b>' + (API.qs('#f_excl').checked ? 'เปิด' : 'ปิด') + '</b>');
+      var c = (count === undefined) ? (API.qs('#summary').dataset.c || '–') : count;
+      if (count !== undefined) API.qs('#summary').dataset.c = count;
+      parts.push('ผู้มีสิทธิ์: <span class="count">' + c + ' คน</span>');
+      API.qs('#summary').innerHTML = parts.join(' · ');
+    }
+
+    function setMode(m) {
+      mode = m;
+      API.qs('#m-one').classList.toggle('active', m === 'one');
+      API.qs('#m-multi').classList.toggle('active', m === 'multi');
+      API.qs('#countWrap').style.display = (m === 'multi') ? 'block' : 'none';
+      renderSummary();
     }
 
     async function spin() {
@@ -169,11 +212,10 @@
       });
 
       btn.disabled = false; btn.textContent = '🎉 หมุนวงล้อ';
-
       if (!res.ok) { API.toast(res.error === 'no eligible participants' ? 'ไม่มีผู้มีสิทธิ์ในกลุ่มนี้' : (res.error || 'หมุนไม่สำเร็จ')); return; }
 
       showResult(res.state);
-      updateCount(); // จำนวนสิทธิ์ลดลงหลังมีผู้ชนะ
+      onChange();
     }
 
     function showResult(state) {
@@ -197,9 +239,7 @@
       API.toast('ล้างจอแล้ว');
     }
 
-    function openDisplay() {
-      window.open('rewards.html', '_blank');
-    }
+    function openDisplay() { window.open('rewards.html', '_blank'); }
   </script>
 </body>
 </html>
