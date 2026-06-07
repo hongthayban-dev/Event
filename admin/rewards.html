@@ -84,10 +84,11 @@
   </div>
   <div class="status" id="status">พร้อมจับรางวัล</div>
 
-  <div id="reveal">
+  <div id="reveal" onclick="closeReveal()">
     <div class="label">🏆 ผู้โชคดี</div>
     <div class="reward" id="revReward"></div>
     <div class="winners" id="revWinners"></div>
+    <div style="position:absolute;bottom:20px;left:0;right:0;text-align:center;color:rgba(255,255,255,.5);font-size:.85rem">แตะที่จอเพื่อปิด</div>
   </div>
 
   <!-- หน้าจอเริ่ม (แตะเพื่อเปิดเสียง) -->
@@ -281,10 +282,10 @@
       var st = res.state || {};
 
       if (lastRound < 0) {
+        // โหลดครั้งแรก: sync round ปัจจุบัน และเริ่มที่ idle เสมอ (ไม่เด้งผลรอบเก่า)
         lastRound = st.round || 0;
         lastStatus = st.status || 'idle';
-        if (st.status === 'spinning' && st.winners) showReveal(st);
-        else showIdle();
+        showIdle();
         return;
       }
       if ((st.round || 0) > lastRound && st.status === 'spinning') {
