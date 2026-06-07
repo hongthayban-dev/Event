@@ -2,20 +2,17 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>รีโมทจับรางวัล</title>
   <link rel="stylesheet" href="../theme.css" />
   <style>
-    .summary { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 14px; font-size: .9rem; }
+    .summary { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 14px; font-size: .88rem; }
     .summary b { color: var(--ink); }
     .summary .count { color: var(--accent-600); font-weight: 700; }
     .panel { display: none; }
     .panel.open { display: block; }
     .mode-toggle { display: flex; gap: 8px; }
-    .mode-toggle button {
-      flex: 1; padding: 12px; border: 1.5px solid var(--line); background: #fff; border-radius: var(--radius-sm);
-      font-family: var(--font-body); font-weight: 600; color: var(--ink-soft); cursor: pointer;
-    }
+    .mode-toggle button { flex: 1; padding: 12px; border: 1.5px solid var(--line); background: #fff; border-radius: var(--radius-sm); font-family: var(--font-body); font-weight: 600; color: var(--ink-soft); cursor: pointer; }
     .mode-toggle button.active { background: var(--navy-grad); color: #fff; border-color: transparent; }
     .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; border: 1.5px solid var(--line); border-radius: var(--radius-sm); margin-bottom: 12px; }
     .switch-row .lbl { font-weight: 600; font-size: .92rem; }
@@ -26,7 +23,22 @@
     .sw .track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; background: #fff; border-radius: 50%; transition: .2s; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
     .sw input:checked + .track { background: var(--ok); }
     .sw input:checked + .track::after { transform: translateX(22px); }
-    .spin-btn { font-size: 1.4rem !important; padding: 22px !important; }
+
+    /* ปุ่มแดงใหญ่ + เกจ */
+    .spin-zone { text-align: center; padding: 8px 0 4px; }
+    .gauge { height: 18px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 0 0 18px; box-shadow: inset 0 2px 4px rgba(0,0,0,.15); }
+    .gauge .fill { height: 100%; width: 0%; border-radius: 999px; background: linear-gradient(90deg,#2ecc71,#f1c40f 55%,#e74c3c); transition: width .05s linear; }
+    .gauge-label { font-size: .8rem; color: var(--ink-soft); margin-top: -12px; margin-bottom: 14px; }
+    .bigbtn {
+      width: 200px; height: 200px; border-radius: 50%; border: none; margin: 0 auto;
+      background: radial-gradient(circle at 38% 32%, #ff6a5a, #e1241b 60%, #a8160f);
+      color: #fff; font-family: var(--font-display); font-weight: 700; font-size: 1.5rem;
+      box-shadow: 0 12px 30px rgba(200,30,20,.5), inset 0 -8px 16px rgba(0,0,0,.25), inset 0 6px 12px rgba(255,255,255,.3);
+      cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: none;
+      transition: transform .08s, filter .1s; display: flex; align-items: center; justify-content: center; line-height: 1.2; text-align: center;
+    }
+    .bigbtn:active, .bigbtn.holding { transform: scale(.94); filter: brightness(1.1); }
+    .bigbtn:disabled { background: #c7ccd6; box-shadow: none; cursor: not-allowed; color: #eef; }
     .winner-row { padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); margin-bottom: 8px; }
     .winner-row .nm { font-weight: 700; font-family: var(--font-display); font-size: 1.1rem; }
   </style>
@@ -45,25 +57,20 @@
     <div id="loading" class="loading"><div class="spinner"></div>กำลังโหลด...</div>
 
     <div id="app" style="display:none">
-      <!-- การ์ดควบคุมหลัก -->
       <div class="card gold-top">
         <div class="summary" id="summary"></div>
-        <button class="btn btn-ghost" style="background:#fff;margin-bottom:14px" onclick="togglePanel()">⚙️ ตั้งค่าการจับ</button>
-        <button class="btn btn-gold spin-btn" id="spinBtn" onclick="spin()">🎉 หมุนวงล้อ</button>
+        <button class="btn btn-ghost" style="background:#fff;margin-bottom:12px" onclick="togglePanel()">⚙️ ตั้งค่าการจับ</button>
+        <button class="btn btn-primary" id="prepBtn" onclick="prepare()">📋 เตรียมวงล้อ (ส่งรายชื่อขึ้นจอ)</button>
       </div>
 
-      <!-- แผงตั้งค่า (ซ่อนไว้) -->
+      <!-- แผงตั้งค่า -->
       <div class="card panel" id="panel">
         <h2>ตั้งค่าการจับ</h2>
-
         <div class="row">
           <div class="field">
             <label>เพศ</label>
             <select id="f_gender" onchange="onChange()">
-              <option value="">ทั้งหมด</option>
-              <option value="ชาย">ชาย</option>
-              <option value="หญิง">หญิง</option>
-              <option value="อื่นๆ">อื่นๆ</option>
+              <option value="">ทั้งหมด</option><option value="ชาย">ชาย</option><option value="หญิง">หญิง</option><option value="อื่นๆ">อื่นๆ</option>
             </select>
           </div>
           <div class="field">
@@ -72,53 +79,38 @@
           </div>
         </div>
         <div class="row">
-          <div class="field">
-            <label>อายุต่ำสุด</label>
-            <input class="input" id="f_amin" type="number" inputmode="numeric" placeholder="-" oninput="onChange()" />
-          </div>
-          <div class="field">
-            <label>อายุสูงสุด</label>
-            <input class="input" id="f_amax" type="number" inputmode="numeric" placeholder="-" oninput="onChange()" />
-          </div>
+          <div class="field"><label>อายุต่ำสุด</label><input class="input" id="f_amin" type="number" inputmode="numeric" placeholder="-" oninput="onChange()" /></div>
+          <div class="field"><label>อายุสูงสุด</label><input class="input" id="f_amax" type="number" inputmode="numeric" placeholder="-" oninput="onChange()" /></div>
         </div>
-
         <div class="switch-row">
-          <div>
-            <div class="lbl">กันคนที่เคยถูกรางวัล</div>
-            <div class="sub">เปิด = คนที่ถูกแล้วจะไม่ถูกซ้ำ</div>
-          </div>
-          <label class="sw">
-            <input type="checkbox" id="f_excl" checked onchange="onChange()" />
-            <span class="track"></span>
-          </label>
+          <div><div class="lbl">กันคนที่เคยถูกรางวัล</div><div class="sub">เปิด = คนถูกแล้วไม่ถูกซ้ำ</div></div>
+          <label class="sw"><input type="checkbox" id="f_excl" checked onchange="onChange()" /><span class="track"></span></label>
         </div>
-
-        <div class="field">
-          <label>ของรางวัล</label>
-          <select id="reward" onchange="onChange()"></select>
-        </div>
-
+        <div class="field"><label>ของรางวัล</label><select id="reward" onchange="onChange()"></select></div>
         <label style="display:block;font-size:.85rem;font-weight:600;color:var(--ink-soft);margin-bottom:6px">โหมดการจับ</label>
         <div class="mode-toggle">
-          <button id="m-one" class="active" onclick="setMode('one')">ทีละคน</button>
+          <button id="m-one" class="active" onclick="setMode('single')">ทีละคน</button>
           <button id="m-multi" onclick="setMode('multi')">หลายคนพร้อมกัน</button>
         </div>
-
         <div class="field mt" id="countWrap" style="display:none">
-          <label>จำนวนผู้ชนะต่อการหมุน 1 ครั้ง</label>
-          <input class="input" id="count" type="number" inputmode="numeric" value="3" min="1" max="16" oninput="onChange()" />
+          <label>จำนวนผู้ชนะต่อการหมุน</label>
+          <input class="input" id="count" type="number" inputmode="numeric" value="3" min="1" max="50" oninput="onChange()" />
         </div>
-
         <button class="btn btn-primary mt" onclick="togglePanel()">เสร็จ</button>
       </div>
 
-      <!-- ปุ่มรอง -->
+      <!-- โซนหมุน -->
+      <div class="card spin-zone" id="spinZone" style="display:none">
+        <div class="gauge"><div class="fill" id="gaugeFill"></div></div>
+        <div class="gauge-label" id="gaugeLabel">กดปุ่มค้างเพื่อชาร์จพลัง แล้วปล่อย</div>
+        <button class="bigbtn" id="bigBtn" disabled>กดค้าง<br>เพื่อหมุน</button>
+      </div>
+
       <div class="row mt">
         <button class="btn btn-ghost btn-sm" style="background:#fff" onclick="resetWheel()">↺ ล้างจอ</button>
         <button class="btn btn-ghost btn-sm" style="background:#fff" onclick="openDisplay()">🖥️ เปิดจอวงล้อ</button>
       </div>
 
-      <!-- ผลล่าสุด -->
       <div id="result" class="card" style="display:none"></div>
     </div>
   </div>
@@ -126,7 +118,9 @@
   <script src="../config.js"></script>
   <script src="../api.js"></script>
   <script>
-    var session, mode = 'one', rewards = [], countTimer;
+    var session, mode = 'single', rewards = [], countTimer;
+    var prepared = false, holding = false, holdRAF = null, holdStart = 0, power = 0;
+    var CHARGE_MS = 1600;
 
     function goBack() { location.href = '../staff/index.html'; }
 
@@ -139,18 +133,15 @@
       var sel = API.qs('#reward');
       sel.innerHTML = '<option value="">— ไม่ระบุของรางวัล —</option>';
       rewards.forEach(function (r, i) {
-        var label = (r.name || '') + (r.value ? ' (' + r.value + ')' : '') + (r.quantity ? ' · เหลือ ' + r.quantity : '');
-        sel.innerHTML += '<option value="' + i + '">' + label + '</option>';
+        sel.innerHTML += '<option value="' + i + '">' + ((r.name || '') + (r.value ? ' (' + r.value + ')' : '')) + '</option>';
       });
       API.qs('#loading').style.display = 'none';
       API.qs('#app').style.display = 'block';
+      bindHold();
       onChange();
     })();
 
-    function togglePanel() {
-      API.qs('#panel').classList.toggle('open');
-      renderSummary();
-    }
+    function togglePanel() { API.qs('#panel').classList.toggle('open'); renderSummary(); }
 
     function getFilters() {
       var f = {};
@@ -158,10 +149,9 @@
       var gen = API.qs('#f_gen').value.trim(); if (gen) f.generation = gen;
       var amin = API.qs('#f_amin').value; if (amin) f.age_min = amin;
       var amax = API.qs('#f_amax').value; if (amax) f.age_max = amax;
-      if (!API.qs('#f_excl').checked) f.include_past_winners = true; // ปิดสวิตช์ = อนุญาตให้ซ้ำ
+      if (!API.qs('#f_excl').checked) f.include_past_winners = true;
       return f;
     }
-
     function selectedReward() {
       var i = API.qs('#reward').value;
       if (i === '') return { name: '', value: '' };
@@ -170,6 +160,8 @@
     }
 
     function onChange() {
+      // แก้ค่าใด ๆ = ต้องเตรียมใหม่
+      invalidatePrepare();
       clearTimeout(countTimer);
       countTimer = setTimeout(async function () {
         renderSummary('…');
@@ -179,66 +171,122 @@
     }
 
     function renderSummary(count) {
-      var f = getFilters();
-      var rw = selectedReward();
+      var f = getFilters(), rw = selectedReward();
       var parts = [];
-      parts.push('กลุ่ม: <b>' + (f.gender || 'ทั้งหมด') + (f.generation ? ' · รุ่น ' + f.generation : '') +
-        ((f.age_min || f.age_max) ? ' · อายุ ' + (f.age_min || '0') + '-' + (f.age_max || '∞') : '') + '</b>');
+      parts.push('กลุ่ม: <b>' + (f.gender || 'ทั้งหมด') + (f.generation ? ' · รุ่น ' + f.generation : '') + ((f.age_min || f.age_max) ? ' · อายุ ' + (f.age_min || '0') + '-' + (f.age_max || '∞') : '') + '</b>');
       parts.push('รางวัล: <b>' + (rw.name || rw.value || 'ไม่ระบุ') + '</b>');
       parts.push('โหมด: <b>' + (mode === 'multi' ? ('หลายคน ×' + (API.qs('#count').value || 1)) : 'ทีละคน') + '</b>');
       parts.push('กันคนซ้ำ: <b>' + (API.qs('#f_excl').checked ? 'เปิด' : 'ปิด') + '</b>');
-      var c = (count === undefined) ? (API.qs('#summary').dataset.c || '–') : count;
       if (count !== undefined) API.qs('#summary').dataset.c = count;
-      parts.push('ผู้มีสิทธิ์: <span class="count">' + c + ' คน</span>');
+      parts.push('ผู้มีสิทธิ์: <span class="count">' + (API.qs('#summary').dataset.c || '–') + ' คน</span>');
       API.qs('#summary').innerHTML = parts.join(' · ');
     }
 
     function setMode(m) {
       mode = m;
-      API.qs('#m-one').classList.toggle('active', m === 'one');
+      API.qs('#m-one').classList.toggle('active', m === 'single');
       API.qs('#m-multi').classList.toggle('active', m === 'multi');
       API.qs('#countWrap').style.display = (m === 'multi') ? 'block' : 'none';
-      renderSummary();
+      invalidatePrepare(); renderSummary();
     }
 
-    async function spin() {
-      var count = (mode === 'multi') ? Math.max(1, parseInt(API.qs('#count').value || 1, 10)) : 1;
+    function invalidatePrepare() {
+      prepared = false;
+      API.qs('#bigBtn').disabled = true;
+      API.qs('#bigBtn').innerHTML = 'กดค้าง<br>เพื่อหมุน';
+      API.qs('#gaugeLabel').textContent = 'กดเตรียมวงล้อก่อนหมุน';
+    }
+
+    // ----- เตรียม -----
+    async function prepare() {
       var rw = selectedReward();
-      var btn = API.qs('#spinBtn'); btn.disabled = true; btn.textContent = 'กำลังหมุน...';
+      var count = (mode === 'multi') ? Math.max(1, parseInt(API.qs('#count').value || 1, 10)) : 1;
+      var btn = API.qs('#prepBtn'); btn.disabled = true; btn.textContent = 'กำลังส่งรายชื่อขึ้นจอ...';
+      var res = await API.postAuth('prepare', { filters: getFilters(), mode: mode, count: count, reward_name: rw.name, reward_value: rw.value });
+      btn.disabled = false; btn.textContent = '📋 เตรียมวงล้อ (ส่งรายชื่อขึ้นจอ)';
+      if (!res.ok) { API.toast(res.error === 'no eligible participants' ? 'ไม่มีผู้มีสิทธิ์ในกลุ่มนี้' : (res.error || 'เตรียมไม่สำเร็จ')); return; }
 
-      var res = await API.postAuth('requestSpin', {
-        filters: getFilters(), count: count,
-        reward_name: rw.name, reward_value: rw.value
-      });
+      API.qs('#spinZone').style.display = 'block';
+      API.qs('#gaugeLabel').textContent = 'กำลังให้จอโหลดรายชื่อ...';
+      API.qs('#result').style.display = 'none';
+      // รอจอ poll รับรายชื่อ (~2 วิ) แล้วค่อยเปิดปุ่ม
+      setTimeout(function () {
+        prepared = true;
+        var b = API.qs('#bigBtn'); b.disabled = false; b.innerHTML = 'กดค้าง<br>เพื่อหมุน';
+        API.qs('#gaugeLabel').textContent = (mode === 'multi' ? ('พร้อม! จับ ' + count + ' คน — กดค้างแล้วปล่อย') : 'พร้อม! กดค้างชาร์จพลังแล้วปล่อย');
+        API.toast('พร้อมหมุนแล้ว (' + res.people + ' คน)');
+      }, 2000);
+    }
 
-      btn.disabled = false; btn.textContent = '🎉 หมุนวงล้อ';
-      if (!res.ok) { API.toast(res.error === 'no eligible participants' ? 'ไม่มีผู้มีสิทธิ์ในกลุ่มนี้' : (res.error || 'หมุนไม่สำเร็จ')); return; }
+    // ----- ปุ่มกดค้าง -----
+    function bindHold() {
+      var b = API.qs('#bigBtn');
+      b.addEventListener('pointerdown', startHold);
+      b.addEventListener('pointerup', endHold);
+      b.addEventListener('pointerleave', cancelHold);
+      b.addEventListener('pointercancel', cancelHold);
+      b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    }
+    function startHold(e) {
+      if (!prepared) return;
+      e.preventDefault();
+      holding = true; holdStart = performance.now();
+      API.qs('#bigBtn').classList.add('holding');
+      tickHold();
+    }
+    function tickHold() {
+      if (!holding) return;
+      var el = performance.now() - holdStart;
+      power = Math.min(100, Math.round(el / CHARGE_MS * 100));
+      API.qs('#gaugeFill').style.width = power + '%';
+      API.qs('#gaugeLabel').textContent = 'พลัง ' + power + '%';
+      holdRAF = requestAnimationFrame(tickHold);
+    }
+    function endHold(e) {
+      if (!holding) return;
+      holding = false; cancelAnimationFrame(holdRAF);
+      API.qs('#bigBtn').classList.remove('holding');
+      var p = Math.max(8, power); // กันกดเร็วเกินจนแรง 0
+      doSpin(p);
+    }
+    function cancelHold() {
+      if (!holding) return;
+      holding = false; cancelAnimationFrame(holdRAF);
+      API.qs('#bigBtn').classList.remove('holding');
+      API.qs('#gaugeFill').style.width = '0%';
+    }
 
-      showResult(res.state);
-      onChange();
+    async function doSpin(p) {
+      prepared = false;
+      var b = API.qs('#bigBtn'); b.disabled = true; b.innerHTML = 'กำลัง<br>หมุน...';
+      API.qs('#gaugeLabel').textContent = 'หมุนที่จอ... แรง ' + p + '%';
+      var res = await API.postAuth('spinPhysics', { power: p });
+      if (!res.ok) { API.toast(res.error === 'no eligible participants' ? 'ไม่มีผู้มีสิทธิ์' : (res.error || 'หมุนไม่สำเร็จ')); invalidatePrepare(); return; }
+
+      var dur = 3.5 + (p / 100) * 3.5;
+      setTimeout(async function () {
+        var st = await API.get('getWheelState');
+        showResult(st.state || {});
+        API.qs('#gaugeFill').style.width = '0%';
+        API.qs('#gaugeLabel').textContent = 'จับรอบนี้เสร็จ — กด "เตรียมวงล้อ" เพื่อจับต่อ';
+        onChange(); // อัปเดตจำนวนสิทธิ์
+      }, dur * 1000 + 400);
     }
 
     function showResult(state) {
-      var box = API.qs('#result');
-      box.style.display = 'block';
-      box.className = 'card gold-top';
+      var winners = state.winners || (state.winner ? [state.winner] : []);
+      var box = API.qs('#result'); box.style.display = 'block'; box.className = 'card gold-top';
       var rewardLabel = state.reward_name || state.reward_value || 'ของรางวัล';
-      var html = '<h2>🏆 ผู้ชนะรอบ ' + state.round + '</h2><p class="muted">รางวัล: ' + rewardLabel + ' · ส่ง LINE แล้ว ✅</p>';
-      (state.winners || []).forEach(function (w) {
-        html += '<div class="winner-row"><span class="nm">' +
-          (w.first_name || '') + ' ' + (w.last_name || '') +
-          (w.nickname ? ' (' + w.nickname + ')' : '') + '</span></div>';
+      var html = '<h2>🏆 ผู้ชนะรอบ ' + (state.round || '') + '</h2><p class="muted">รางวัล: ' + rewardLabel + ' · ส่ง LINE แล้ว ✅</p>';
+      winners.forEach(function (w) {
+        html += '<div class="winner-row"><span class="nm">' + (w.first_name || '') + ' ' + (w.last_name || '') + (w.nickname ? ' (' + w.nickname + ')' : '') + '</span></div>';
       });
+      if (!winners.length) html += '<p class="muted">—</p>';
       box.innerHTML = html;
       box.scrollIntoView({ behavior: 'smooth' });
     }
 
-    async function resetWheel() {
-      await API.postAuth('resetWheel', {});
-      API.qs('#result').style.display = 'none';
-      API.toast('ล้างจอแล้ว');
-    }
-
+    async function resetWheel() { await API.postAuth('resetWheel', {}); API.qs('#result').style.display = 'none'; invalidatePrepare(); API.toast('ล้างจอแล้ว'); }
     function openDisplay() { window.open('rewards.html', '_blank'); }
   </script>
 </body>
