@@ -46,6 +46,7 @@
 </head>
 <body class="app-bg">
   <div class="app-bar">
+    <button class="navback" onclick="goBack()">‹</button>
     <img class="logo" data-logo alt="" />
     <div>
       <div class="title" data-event-name>ลงทะเบียนเข้างาน</div>
@@ -167,6 +168,11 @@
   <script src="api.js"></script>
   <script>
     var profile, settings, current;
+
+    function goBack() {
+      if (typeof liff !== 'undefined' && liff.closeWindow) { try { liff.closeWindow(); return; } catch (e) {} }
+      if (history.length > 1) history.back();
+    }
 
     (async function boot() {
       try {

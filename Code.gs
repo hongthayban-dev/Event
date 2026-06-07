@@ -285,13 +285,17 @@ function register_(p) {
     checkin_at: '',
     checkin_by: ''
   });
-  // ทักทายผ่าน LINE
+  var reg = rowObj_('registrations', findRow_('registrations', 'reg_id', reg_id));
+  // ทักทาย + ส่งบัตร (Flex card) เข้าแชต LINE
   if (p.line_user_id) {
     var m = getSettingsMap_();
+    var msgs = [];
     var greet = String(m.line_greeting || '').replace('{name}', p.nickname || p.first_name || '');
-    if (greet) sendLineText_(p.line_user_id, greet);
+    if (greet) msgs.push({ type: 'text', text: greet });
+    msgs.push(buildRegFlex_(reg));
+    pushLine_(p.line_user_id, msgs);
   }
-  return { ok: true, reg_id: reg_id, registration: rowObj_('registrations', findRow_('registrations', 'reg_id', reg_id)) };
+  return { ok: true, reg_id: reg_id, registration: reg };
 }
 
 function searchByPhone_(p) {
@@ -414,13 +418,16 @@ function saveReward_(p) {
 // รายชื่อผู้มีสิทธิ์ลุ้น (เช็คอินแล้ว + ยังไม่เคยถูก + ตรงฟิลเตอร์)
 function getEligible_(f) {
   f = f || {};
-  var won = getRows_('winners').map(function (w) { return String(w.line_user_id); });
   var rows = getRows_('registrations').filter(function (r) {
     return String(r.checked_in).toUpperCase() === 'TRUE';
   });
-  rows = rows.filter(function (r) {
-    return !r.line_user_id || won.indexOf(String(r.line_user_id)) < 0;
-  });
+  // ปกติคัดคนที่เคยได้รางวัลออก เว้นแต่สั่ง include_past_winners
+  if (!f.include_past_winners) {
+    var won = getRows_('winners').map(function (w) { return String(w.line_user_id); });
+    rows = rows.filter(function (r) {
+      return !r.line_user_id || won.indexOf(String(r.line_user_id)) < 0;
+    });
+  }
   if (f.gender)     rows = rows.filter(function (r) { return String(r.gender) === String(f.gender); });
   if (f.generation) rows = rows.filter(function (r) { return String(r.generation) === String(f.generation); });
   if (f.age_min)    rows = rows.filter(function (r) { return Number(r.age) >= Number(f.age_min); });
@@ -429,7 +436,7 @@ function getEligible_(f) {
 }
 
 function eligible_(p) {
-  var list = getEligible_(p.filters || {});
+  var list = getEligible_(parseFilters_(p.filters));
   return {
     ok: true,
     count: list.length,
@@ -441,6 +448,20 @@ function eligible_(p) {
       };
     })
   };
+}
+
+function shuffle_(a) {
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+// filters อาจมาเป็น object (POST) หรือ JSON string (GET) — แปลงให้เป็น object เสมอ
+function parseFilters_(f) {
+  if (typeof f === 'string') { try { return JSON.parse(f); } catch (e) { return {}; } }
+  return f || {};
 }
 
 function getWheelState_() {
@@ -455,7 +476,7 @@ function setWheelState_(obj) {
 // รีโมทสั่งหมุน: server สุ่มผู้ชนะ -> บันทึก -> ตั้ง state ให้จอ poll -> ยิง LINE
 function requestSpin_(p) {
   var count = parseInt(p.count || 1, 10);
-  var filters = p.filters || {};
+  var filters = parseFilters_(p.filters);
   var pool = getEligible_(filters);
   if (pool.length === 0) return { ok: false, error: 'no eligible participants' };
 
@@ -469,6 +490,15 @@ function requestSpin_(p) {
   var round = (getWheelState_().round || 0) + 1;
   recordWinners_(round, winners, p.reward_name, p.reward_value);
 
+  // ชุดชื่อสำหรับแสดงบนวงล้อ: ผู้ชนะ + สุ่มคนอื่นมาเติม รวมไม่เกิน 16 ช่อง
+  var MAXSEG = 16;
+  var display = winners.map(function (w) { return { id: w.reg_id, name: w.nickname || w.first_name || '—' }; });
+  var fillers = shuffle_(work.slice());
+  for (var j = 0; j < fillers.length && display.length < MAXSEG; j++) {
+    display.push({ id: fillers[j].reg_id, name: fillers[j].nickname || fillers[j].first_name || '—' });
+  }
+  shuffle_(display);
+
   var state = {
     status: 'spinning',
     round: round,
@@ -477,6 +507,7 @@ function requestSpin_(p) {
     filters: filters,
     reward_name: p.reward_name || '',
     reward_value: p.reward_value || '',
+    pool: display,
     winners: winners.map(function (w) {
       return {
         reg_id: w.reg_id, line_user_id: w.line_user_id,
@@ -523,25 +554,80 @@ function resetWheel_(p) {
 // ============================================================
 //  LINE MESSAGING
 // ============================================================
-function sendLineText_(userId, text) {
-  if (!userId || !text) return { ok: false, error: 'missing userId/text' };
+function pushLine_(userId, messages) {
+  if (!userId || !messages || !messages.length) return { ok: false, error: 'missing userId/messages' };
   var tk = token_();
   if (!tk) return { ok: false, error: 'LINE_TOKEN not set' };
   var res = UrlFetchApp.fetch(LINE_PUSH_URL, {
     method: 'post',
     contentType: 'application/json',
     headers: { Authorization: 'Bearer ' + tk },
-    payload: JSON.stringify({ to: userId, messages: [{ type: 'text', text: String(text) }] }),
+    payload: JSON.stringify({ to: userId, messages: messages.slice(0, 5) }),
     muteHttpExceptions: true
   });
   return { ok: res.getResponseCode() === 200, code: res.getResponseCode(), body: res.getContentText() };
 }
 
+function sendLineText_(userId, text) {
+  if (!text) return { ok: false, error: 'missing text' };
+  return pushLine_(userId, [{ type: 'text', text: String(text) }]);
+}
+
+// สร้างบัตรลงทะเบียนแบบ Flex (QR + ชื่อ/ชื่อเล่น/รุ่น)
+function buildRegFlex_(reg) {
+  var m = getSettingsMap_();
+  var primary = String(m.color_primary || '#0d2b5e');
+  var accent  = String(m.color_accent  || '#f0c040');
+  var eventName = String(m.event_name || 'ลงทะเบียนเข้างาน');
+  var qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=12&data=' +
+              encodeURIComponent(reg.reg_id);
+  var fullName = ((reg.first_name || '') + ' ' + (reg.last_name || '')).trim();
+
+  var body = [
+    { type: 'text', text: fullName || '-', weight: 'bold', size: 'xl', align: 'center', color: '#14213d', wrap: true }
+  ];
+  if (reg.nickname)   body.push({ type: 'text', text: '(' + reg.nickname + ')', size: 'sm', align: 'center', color: '#5b6b86' });
+  if (reg.generation) body.push({ type: 'text', text: 'รุ่น ' + reg.generation, size: 'md', align: 'center', color: primary, weight: 'bold', margin: 'sm' });
+  body.push({ type: 'separator', margin: 'lg', color: '#e3e8f2' });
+  body.push({ type: 'text', text: 'รหัส: ' + reg.reg_id, size: 'xxs', align: 'center', color: '#9aa6bd', margin: 'md' });
+
+  return {
+    type: 'flex',
+    altText: 'บัตรลงทะเบียน ' + eventName,
+    contents: {
+      type: 'bubble',
+      header: {
+        type: 'box', layout: 'vertical', backgroundColor: primary, paddingAll: '16px', spacing: 'xs',
+        contents: [
+          { type: 'text', text: eventName, color: '#ffffff', weight: 'bold', size: 'lg', align: 'center', wrap: true },
+          { type: 'text', text: 'บัตรลงทะเบียนเข้างาน', color: accent, size: 'xs', align: 'center' }
+        ]
+      },
+      hero: { type: 'image', url: qrUrl, size: 'full', aspectRatio: '1:1', aspectMode: 'fit', backgroundColor: '#ffffff' },
+      body: { type: 'box', layout: 'vertical', spacing: 'sm', contents: body },
+      footer: {
+        type: 'box', layout: 'vertical', backgroundColor: '#f4f6fb', paddingAll: '12px',
+        contents: [{ type: 'text', text: 'แสดงบัตรนี้ที่จุดลงทะเบียน', size: 'xs', color: '#5b6b86', align: 'center', wrap: true }]
+      },
+      styles: { footer: { separator: true } }
+    }
+  };
+}
+
 // ============================================================
-//  ฟังก์ชันทดสอบ (รันจาก editor ได้ — ลบทิ้งได้หลังเทสต์)
+//  ฟังก์ชันทดสอบ (รันจาก editor — ดูผลที่เมนู Executions / Logs)
 // ============================================================
-function testPing()    { Logger.log(getPublicSettings_()); }
+function testPing() { Logger.log(getPublicSettings_()); }
+
 function testLineToMe() {
-  // ใส่ line_user_id ของตัวเองเพื่อทดสอบยิงข้อความ
-  Logger.log(sendLineText_('PUT_YOUR_LINE_USER_ID', 'ทดสอบจาก backend ✅'));
+  var uid = 'Uebbfa9ffd9a018650b95b39b175da80c'; // userId ของ "ยุ่น" จากหน้า test
+
+  Logger.log('1) LINE_TOKEN ตั้งไว้ไหม: ' + (token_() ? 'ใช่ (ยาว ' + token_().length + ' ตัว)' : '❌ ยังไม่ได้ตั้ง'));
+
+  var t = sendLineText_(uid, 'ทดสอบข้อความธรรมดา ✅');
+  Logger.log('2) ผลส่งข้อความธรรมดา: ' + JSON.stringify(t));
+
+  var reg = { reg_id: 'TEST123', first_name: 'จักรกริช', last_name: 'เลิศวิทยารัตน์', nickname: 'ยุ่น', generation: '44' };
+  var f = pushLine_(uid, [ buildRegFlex_(reg) ]);
+  Logger.log('3) ผลส่ง Flex card: ' + JSON.stringify(f));
 }
