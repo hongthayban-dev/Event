@@ -141,6 +141,7 @@
     function showIdle() {
       var deco = []; for (var i = 0; i < 12; i++) deco.push({ blank: true });
       var w = API.qs('#wheelWrap');
+      w.classList.remove('appear');
       w.style.transition = 'none'; w.style.transform = 'rotate(0deg)'; currentRotation = 0;
       w.innerHTML = buildWheel(deco); w.classList.add('idle-spin');
       API.qs('#status').textContent = 'พร้อมจับรางวัล'; closeReveal();
@@ -157,7 +158,7 @@
     }
 
     function spinToIndex(index, n, power) {
-      var w = API.qs('#wheelWrap'); w.classList.remove('idle-spin');
+      var w = API.qs('#wheelWrap'); w.classList.remove('idle-spin'); w.classList.remove('appear');
       var seg = 360 / n, center = index * seg + seg / 2;
       var base = currentRotation - (currentRotation % 360);
       var spins = 4 + Math.round(power / 100 * 8);
@@ -184,7 +185,7 @@
       var pool = await ensurePool(state);
       if (!pool.length) { for (var i = 0; i < (state.slots || 12); i++) pool.push({ blank: true }); }
       var n = pool.length;
-      var w = API.qs('#wheelWrap'); w.classList.remove('idle-spin');
+      var w = API.qs('#wheelWrap'); w.classList.remove('idle-spin'); w.classList.remove('appear');
       w.style.transition = 'none'; w.style.transform = 'rotate(' + (currentRotation % 360) + 'deg)'; currentRotation = currentRotation % 360;
       w.innerHTML = buildWheel(pool);
 
