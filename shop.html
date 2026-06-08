@@ -163,16 +163,24 @@
         let products = [];
         let settings = {};
         let profileData = {};
+        let isLIFF = false;
         
         // Prevent non-LIFF access
         async function initShop() {
             try {
-                await liffInit();
-                profileData = await getProfile();
-                
-                // Set customer name if from LINE
-                if (profileData?.displayName) {
-                    document.getElementById('customer-name').value = profileData.displayName;
+                // Try LIFF init (optional)
+                try {
+                    await liffInit();
+                    isLIFF = true;
+                    profileData = await getProfile();
+                    
+                    // Set customer name if from LINE
+                    if (profileData?.displayName) {
+                        document.getElementById('customer-name').value = profileData.displayName;
+                    }
+                } catch (liffErr) {
+                    console.warn('LIFF not available, using web mode:', liffErr.message);
+                    isLIFF = false;
                 }
                 
                 // Load data
@@ -181,12 +189,8 @@
                     loadSettings()
                 ]);
             } catch (err) {
-                if (err.message.includes('LIFF')) {
-                    toast('❌ ต้องเปิดจาก LINE เท่านั้น', 'error');
-                } else {
-                    console.error('Init error:', err);
-                    toast('❌ เกิดข้อผิดพลาด', 'error');
-                }
+                console.error('Init error:', err);
+                toast('❌ เกิดข้อผิดพลาด: ' + err.message, 'error');
             }
         }
         
