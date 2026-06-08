@@ -22,19 +22,21 @@
         .product-card:active { transform: scale(0.98); }
         .product-img { width: 100%; height: 120px; object-fit: cover; border-radius: 6px; margin-bottom: 8px; }
         .product-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
-        .product-price { color: var(--color-accent); font-weight: 700; font-size: 16px; }
+        .product-price { color: var(--color-accent); font-weight: 700; font-size: 15px; margin-bottom: 2px; }
         .product-stock { font-size: 12px; color: #666; }
         .stock-0 { color: #d32f2f; }
 
         /* Cart */
         .cart-item { background: white; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; gap: 10px; }
-        .cart-img { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; }
-        .cart-info { flex: 1; }
-        .cart-name { font-weight: 600; }
+        .cart-img { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+        .cart-img-placeholder { width: 60px; height: 60px; background: #f0f0f0; border-radius: 6px; flex-shrink: 0; }
+        .cart-info { flex: 1; min-width: 0; }
+        .cart-name { font-weight: 600; font-size: 14px; }
+        .cart-variant { font-size: 12px; color: #888; margin-bottom: 2px; }
         .cart-price { color: var(--color-accent); font-weight: 700; }
-        .qty-control { display: flex; gap: 6px; align-items: center; font-size: 12px; }
-        .qty-control button { width: 24px; height: 24px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; }
-        .qty-display { min-width: 30px; text-align: center; }
+        .qty-control { display: flex; gap: 6px; align-items: center; font-size: 12px; flex-shrink: 0; }
+        .qty-control button { width: 26px; height: 26px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; font-size: 16px; line-height: 1; }
+        .qty-display { min-width: 28px; text-align: center; font-weight: 600; }
         .cart-empty { text-align: center; padding: 40px 20px; color: #999; }
         .cart-total { background: white; padding: 16px; border-radius: 8px; margin: 16px 0; }
         .total-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
@@ -56,41 +58,40 @@
         .slip-amount-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; margin-top: 6px; }
 
         /* Buttons */
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; font-family: Sarabun; }
         .btn-primary { background: var(--color-primary); color: white; }
         .btn-primary:active { opacity: 0.9; }
         .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
         .btn-secondary { background: var(--color-accent); color: #333; }
-        .btn-danger { background: #d32f2f; color: white; }
 
         .form-group { margin-bottom: 16px; }
         .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; }
-        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; font-family: Sarabun; box-sizing: border-box; }
 
         .loading { text-align: center; padding: 20px; color: #666; }
         .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .success-msg { background: #d4edda; color: #155724; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
-
-        /* Options modal */
+        /* Variant modal */
         .opt-modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; align-items:flex-end; justify-content:center; }
         .opt-modal-bg.open { display:flex; }
-        .opt-modal { background:#fff; border-radius:18px 18px 0 0; padding:24px 20px 32px; width:100%; max-width:480px; }
+        .opt-modal { background:#fff; border-radius:18px 18px 0 0; padding:24px 20px 32px; width:100%; max-width:480px; max-height:80vh; overflow-y:auto; }
         .opt-modal h3 { margin:0 0 16px; font-family:Trirong; color:var(--color-primary); }
         .opt-section { margin-bottom:16px; }
-        .opt-section label { display:block; font-weight:600; font-size:14px; margin-bottom:8px; }
+        .opt-section label { display:block; font-weight:600; font-size:14px; margin-bottom:8px; color:#555; }
         .opt-pills { display:flex; flex-wrap:wrap; gap:8px; }
         .opt-pill { padding:8px 16px; border:1.5px solid #ddd; border-radius:999px; background:#fff; cursor:pointer; font-family:Sarabun; font-size:14px; transition:all .15s; }
         .opt-pill.selected { background:var(--color-primary); color:#fff; border-color:var(--color-primary); }
-        .product-opts { margin-top:4px; display:flex; flex-wrap:wrap; gap:4px; }
-        .opt-chip { font-size:11px; background:#e8f0fe; color:#1a3d7a; border-radius:4px; padding:2px 6px; font-weight:600; }
-        .selected-opts { font-size:12px; color:#666; margin-top:2px; }
+        .opt-pill.out-of-stock { opacity:.4; cursor:not-allowed; }
+        .variant-info-box { padding:12px 14px; background:#f0f4ff; border-radius:10px; margin:12px 0; display:none; }
+        .variant-info-price { font-weight:700; color:var(--color-primary); font-size:20px; }
+        .variant-info-stock { font-size:13px; color:#666; margin-top:2px; }
+        .variant-info-stock.no-stock { color:#d32f2f; font-weight:600; }
     </style>
 </head>
 <body>
     <div class="shop-container">
-        <h1 style="text-align: center; color: var(--color-primary); font-family: Trirong; margin: 20px 0;">🛍️ ร้านค้า</h1>
+        <h1 style="text-align:center;color:var(--color-primary);font-family:Trirong;margin:20px 0;">🛍️ ร้านค้า</h1>
 
         <div class="tab-nav">
             <button class="tab-btn active" data-tab="products">📦 สินค้า</button>
@@ -103,23 +104,34 @@
             <div class="loading" id="products-loading">
                 <div class="spinner"></div> กำลังโหลดสินค้า...
             </div>
-            <div class="product-grid" id="products-grid" style="display: none;"></div>
+            <div class="product-grid" id="products-grid" style="display:none"></div>
         </div>
 
-        <!-- Option Selector Modal -->
+        <!-- Variant Selector Modal -->
         <div class="opt-modal-bg" id="opt-modal-bg" onclick="closeOptModal(event)">
             <div class="opt-modal" id="opt-modal">
                 <h3 id="opt-modal-title">เลือกตัวเลือก</h3>
-                <div id="opt-modal-body"></div>
-                <button class="btn btn-primary" onclick="confirmOptModal()" style="margin-top:8px">✓ เพิ่มลงตะกร้า</button>
-                <button class="btn" onclick="document.getElementById('opt-modal-bg').classList.remove('open')" style="margin-top:8px;background:#f0f0f0;">ยกเลิก</button>
+                <div id="opt-color-section" class="opt-section">
+                    <label>สี</label>
+                    <div class="opt-pills" id="opt-colors"></div>
+                </div>
+                <div id="opt-size-section" class="opt-section">
+                    <label>ขนาด</label>
+                    <div class="opt-pills" id="opt-sizes"></div>
+                </div>
+                <div class="variant-info-box" id="opt-variant-info">
+                    <div class="variant-info-price" id="opt-variant-price"></div>
+                    <div class="variant-info-stock" id="opt-variant-stock"></div>
+                </div>
+                <button type="button" class="btn btn-primary" id="opt-confirm-btn" onclick="confirmOptModal()" style="margin-top:8px" disabled>✓ เพิ่มลงตะกร้า</button>
+                <button type="button" class="btn" onclick="document.getElementById('opt-modal-bg').classList.remove('open')" style="margin-top:8px;background:#f0f0f0;">ยกเลิก</button>
             </div>
         </div>
 
         <!-- Cart Tab -->
         <div id="cart" class="tab-content">
             <div id="cart-list"></div>
-            <div id="cart-total" class="cart-total" style="display: none;">
+            <div id="cart-total" class="cart-total" style="display:none">
                 <div class="total-row">
                     <span>สินค้า:</span>
                     <span id="subtotal">฿0</span>
@@ -134,7 +146,7 @@
         <!-- Payment Tab -->
         <div id="payment" class="tab-content">
             <div class="payment-section">
-                <h3 style="margin-top: 0; font-family: Trirong;">ข้อมูลผู้สั่ง</h3>
+                <h3 style="margin-top:0;font-family:Trirong;">ข้อมูลผู้สั่ง</h3>
                 <div class="form-group">
                     <label>ชื่อ-นามสกุล</label>
                     <input type="text" id="customer-name" placeholder="ชื่อเต็ม">
@@ -146,34 +158,31 @@
             </div>
 
             <div class="payment-section">
-                <h3 style="margin-top: 0; font-family: Trirong;">💳 วิธีชำระเงิน: PromptPay</h3>
+                <h3 style="margin-top:0;font-family:Trirong;">💳 วิธีชำระเงิน: PromptPay</h3>
                 <div class="qr-container">
                     <img id="promptpay-qr" class="qr-img" src="" alt="PromptPay QR">
                     <div class="qr-note" id="promptpay-note">รหัสทรัพย์สิน: โหลดเดี๋ยว...</div>
                 </div>
-
-                <h4 style="font-family: Trirong; margin-top: 20px;">📸 อัปโหลดสลิปการโอน</h4>
+                <h4 style="font-family:Trirong;margin-top:20px;">📸 อัปโหลดสลิปการโอน</h4>
                 <div class="slip-upload">
-                    <label class="slip-label" for="slip-file">
-                        📤 เลือกรูปสลิป
-                    </label>
+                    <label class="slip-label" for="slip-file">📤 เลือกรูปสลิป</label>
                     <input type="file" id="slip-file" class="slip-input" accept="image/*">
                 </div>
                 <div id="slip-preview" class="slip-preview"></div>
                 <div class="slip-amount">
-                    <label class="slip-amount-label">ยอดเงินที่โอน (฿)</label>
-                    <input type="number" id="slip-amount" placeholder="เช่น 1500" step="0.01">
+                    <div class="slip-amount-label">ยอดเงินที่โอน (฿)</div>
+                    <input type="number" class="slip-amount-input" id="slip-amount" placeholder="เช่น 1500" step="0.01">
                 </div>
             </div>
 
             <div class="payment-section">
                 <div class="total-row">
-                    <span style="font-weight: 600;">ยอดรวม:</span>
-                    <span style="font-weight: 700; font-size: 18px; color: var(--color-primary);" id="final-total">฿0</span>
+                    <span style="font-weight:600;">ยอดรวม:</span>
+                    <span style="font-weight:700;font-size:18px;color:var(--color-primary)" id="final-total">฿0</span>
                 </div>
             </div>
 
-            <button class="btn btn-primary" id="submit-order" style="margin-bottom: 16px;">
+            <button type="button" class="btn btn-primary" id="submit-order" style="margin-bottom:16px;">
                 ✓ ยืนยันการสั่งซื้อ
             </button>
         </div>
@@ -189,6 +198,12 @@
         let profileData = {};
         let isLIFF = false;
 
+        // modal state
+        let pendingProduct  = null;
+        let selectedColor   = null;
+        let selectedSize    = null;
+        let selectedVariant = null;
+
         async function initShop() {
             try {
                 try {
@@ -199,7 +214,6 @@
                         document.getElementById('customer-name').value = profileData.displayName;
                     }
                 } catch (liffErr) {
-                    console.warn('LIFF not available, using web mode:', liffErr.message);
                     isLIFF = false;
                 }
                 await Promise.all([loadProducts(), loadSettings()]);
@@ -216,7 +230,7 @@
                 document.getElementById('products-loading').style.display = 'none';
                 document.getElementById('products-grid').style.display = 'grid';
             } catch (err) {
-                API.toast('❌ โหลดสินค้าผิดพลาด', 'error');
+                document.getElementById('products-loading').innerHTML = '❌ โหลดสินค้าผิดพลาด';
             }
         }
 
@@ -225,94 +239,169 @@
                 const res = await API.get('getSettings');
                 settings = res.settings || {};
                 if (settings.promptpay_file_id) {
-                    const qrImg = document.getElementById('promptpay-qr');
-                    qrImg.src = API.driveImg(settings.promptpay_file_id, 1000);
+                    document.getElementById('promptpay-qr').src = API.driveImg(settings.promptpay_file_id, 1000);
                     document.getElementById('promptpay-note').textContent = '📲 สแกน QR เพื่อชำระเงิน';
-                } else {
-                    API.toast('⚠️ ยังไม่ได้ตั้ง QR code PromptPay', 'warning');
                 }
-            } catch (err) {
-                console.error('Load settings error:', err);
-            }
+            } catch (err) { /* optional */ }
         }
 
-        function parseOptions(raw) {
-            if (!raw) return [];
-            try { return JSON.parse(raw); } catch (e) { return []; }
-        }
-
+        // ---- render product cards ----
         function renderProducts() {
             const grid = document.getElementById('products-grid');
             grid.innerHTML = '';
             products.forEach(p => {
+                const imgs = [p.img_url1,p.img_url2,p.img_url3,p.img_url4,p.img_url5].filter(Boolean);
+                const imgSrc = imgs.length ? API.driveImg(imgs[0], 500) : '';
+                const isOutOfStock = (p.totalStock || 0) === 0;
+                const minP = p.minPrice || 0;
+                const maxP = p.maxPrice || 0;
+                const priceStr = minP === maxP
+                    ? API.fmtBaht(minP)
+                    : 'เริ่ม ' + API.fmtBaht(minP);
+
                 const card = document.createElement('div');
                 card.className = 'product-card';
-                const imgs = [p.img_url1, p.img_url2, p.img_url3, p.img_url4, p.img_url5].filter(i => i);
-                const imgSrc = imgs.length ? API.driveImg(imgs[0], 500) : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23ddd"/%3E%3C/svg%3E';
-                const isOutOfStock = p.stock === 0;
-                const opts = parseOptions(p.options);
-                const optHtml = opts.length
-                    ? `<div class="product-opts">${opts.map(g => `<span class="opt-chip">${g.name}</span>`).join('')}</div>`
-                    : '';
                 card.innerHTML = `
-                    <img class="product-img" src="${imgSrc}" alt="${p.name}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23ddd%22/%3E%3C/svg%3E'">
+                    ${imgSrc ? `<img class="product-img" src="${imgSrc}" alt="${p.name}" onerror="this.style.display='none'">` : ''}
                     <div class="product-name">${p.name}</div>
-                    <div class="product-price">${API.fmtBaht(p.price)}</div>
-                    ${optHtml}
+                    <div class="product-price">${priceStr}</div>
                     <div class="product-stock ${isOutOfStock ? 'stock-0' : ''}">
-                        ${isOutOfStock ? '❌ หมด' : '✓ ' + p.stock + ' ชิ้น'}
-                    </div>
-                `;
-                if (!isOutOfStock) {
-                    card.addEventListener('click', () => addToCart(p));
-                }
+                        ${isOutOfStock ? '❌ หมด' : '✓ มีสินค้า'}
+                    </div>`;
+                if (!isOutOfStock) card.addEventListener('click', () => addToCart(p));
                 grid.appendChild(card);
             });
         }
 
-        // ---- Cart key: productId + selected options ----
-        let pendingProduct = null;
-
+        // ---- variant selection ----
         function addToCart(product) {
-            const opts = parseOptions(product.options);
-            if (opts.length > 0) {
-                openOptModal(product, opts);
-            } else {
-                doAddToCart(product, {});
+            const variants = Array.isArray(product.variants) ? product.variants.filter(v => v.stock > 0) : [];
+            if (!variants.length && product.minPrice) {
+                // backward-compat: product without variants
+                doAddToCart(product, { sku: product.id, sellPrice: product.minPrice, stock: product.totalStock, color: '', size: '' });
+                return;
             }
+            if (variants.length === 1) {
+                doAddToCart(product, variants[0]);
+                return;
+            }
+            openVariantModal(product);
         }
 
-        function doAddToCart(product, selectedOptions) {
-            const optKey = Object.entries(selectedOptions).map(([k, v]) => k + ':' + v).join('|');
-            const cartKey = product.id + (optKey ? '_' + optKey : '');
-            if (!cart[cartKey]) {
-                cart[cartKey] = { ...product, qty: 0, selectedOptions, _cartKey: cartKey };
-            }
-            if (cart[cartKey].qty < product.stock) {
-                cart[cartKey].qty++;
-                API.setKey('shop-cart', JSON.stringify(cart));
-                renderCart();
-                const optLabel = optKey ? ' (' + Object.values(selectedOptions).join(', ') + ')' : '';
-                API.toast('✓ เพิ่ม ' + product.name + optLabel + ' แล้ว', 'success');
-            }
-        }
+        function openVariantModal(product) {
+            pendingProduct  = product;
+            selectedColor   = null;
+            selectedSize    = null;
+            selectedVariant = null;
 
-        function openOptModal(product, opts) {
-            pendingProduct = product;
+            const allVariants = Array.isArray(product.variants) ? product.variants : [];
+            const colors = [...new Set(allVariants.map(v => v.color).filter(Boolean))];
+            const sizes  = [...new Set(allVariants.map(v => v.size).filter(Boolean))];
+
             document.getElementById('opt-modal-title').textContent = product.name;
-            document.getElementById('opt-modal-body').innerHTML = opts.map(g => `
-                <div class="opt-section">
-                    <label>${g.name}</label>
-                    <div class="opt-pills" data-group="${g.name}">
-                        ${(g.values || []).map(v => `<button type="button" class="opt-pill" onclick="selectPill(this)">${v}</button>`).join('')}
-                    </div>
-                </div>`).join('');
+
+            const colorSec = document.getElementById('opt-color-section');
+            const sizeSec  = document.getElementById('opt-size-section');
+
+            if (colors.length > 0) {
+                colorSec.style.display = '';
+                document.getElementById('opt-colors').innerHTML = colors.map(c => {
+                    const hasStock = allVariants.some(v => v.color === c && v.stock > 0);
+                    return `<button type="button" class="opt-pill${hasStock?'':' out-of-stock'}" onclick="${hasStock?`selectColor('${c}')`:'void(0)'}">${c}</button>`;
+                }).join('');
+            } else {
+                colorSec.style.display = 'none';
+                selectedColor = '';
+            }
+
+            if (sizes.length > 0) {
+                sizeSec.style.display = '';
+                renderSizePills(null);
+            } else {
+                sizeSec.style.display = 'none';
+                selectedSize = '';
+            }
+
+            updateVariantInfo();
             document.getElementById('opt-modal-bg').classList.add('open');
         }
 
-        function selectPill(btn) {
-            btn.closest('.opt-pills').querySelectorAll('.opt-pill').forEach(p => p.classList.remove('selected'));
-            btn.classList.add('selected');
+        function selectColor(color) {
+            selectedColor = color;
+            document.querySelectorAll('#opt-colors .opt-pill').forEach(p => {
+                p.classList.toggle('selected', p.textContent.trim() === color);
+            });
+            selectedSize = null;
+            renderSizePills(color);
+            updateVariantInfo();
+        }
+
+        function renderSizePills(filterColor) {
+            const allVariants = pendingProduct ? (pendingProduct.variants || []) : [];
+            const filtered = filterColor !== null
+                ? allVariants.filter(v => v.color === filterColor)
+                : allVariants;
+            const sizes = [...new Set(filtered.map(v => v.size).filter(Boolean))];
+            document.getElementById('opt-sizes').innerHTML = sizes.map(s => {
+                const hasStock = filtered.some(v => v.size === s && v.stock > 0);
+                return `<button type="button" class="opt-pill${hasStock?'':' out-of-stock'}" onclick="${hasStock?`selectSize('${s}')`:'void(0)'}">${s}</button>`;
+            }).join('');
+        }
+
+        function selectSize(size) {
+            selectedSize = size;
+            document.querySelectorAll('#opt-sizes .opt-pill').forEach(p => {
+                p.classList.toggle('selected', p.textContent.trim() === size);
+            });
+            updateVariantInfo();
+        }
+
+        function updateVariantInfo() {
+            const allVariants = pendingProduct ? (pendingProduct.variants || []) : [];
+            const colors = [...new Set(allVariants.map(v => v.color).filter(Boolean))];
+            const sizes  = [...new Set(allVariants.map(v => v.size).filter(Boolean))];
+
+            let match = null;
+            if (selectedColor !== null && selectedSize !== null) {
+                match = allVariants.find(v => {
+                    const cOk = !colors.length || v.color === selectedColor;
+                    const sOk = !sizes.length  || v.size  === selectedSize;
+                    return cOk && sOk;
+                });
+            } else if (selectedColor !== null && !sizes.length) {
+                match = allVariants.find(v => v.color === selectedColor);
+            } else if (selectedSize !== null && !colors.length) {
+                match = allVariants.find(v => v.size === selectedSize);
+            }
+
+            selectedVariant = match || null;
+            const infoBox   = document.getElementById('opt-variant-info');
+            const confirmBtn = document.getElementById('opt-confirm-btn');
+
+            if (match) {
+                infoBox.style.display = '';
+                document.getElementById('opt-variant-price').textContent = API.fmtBaht(match.sellPrice);
+                const stockEl = document.getElementById('opt-variant-stock');
+                if (match.stock <= 0) {
+                    stockEl.textContent = '❌ หมดสต็อก';
+                    stockEl.className = 'variant-info-stock no-stock';
+                    confirmBtn.disabled = true;
+                } else {
+                    stockEl.textContent = 'สต็อก ' + match.stock + ' ชิ้น';
+                    stockEl.className = 'variant-info-stock';
+                    confirmBtn.disabled = false;
+                }
+            } else {
+                infoBox.style.display = 'none';
+                confirmBtn.disabled = true;
+            }
+        }
+
+        function confirmOptModal() {
+            if (!pendingProduct || !selectedVariant) return;
+            document.getElementById('opt-modal-bg').classList.remove('open');
+            doAddToCart(pendingProduct, selectedVariant);
+            pendingProduct = null;
         }
 
         function closeOptModal(e) {
@@ -321,22 +410,34 @@
             }
         }
 
-        function confirmOptModal() {
-            if (!pendingProduct) return;
-            const opts = parseOptions(pendingProduct.options);
-            const selected = {};
-            let allSelected = true;
-            opts.forEach(g => {
-                const pill = document.querySelector('[data-group="' + g.name + '"] .opt-pill.selected');
-                if (!pill) { allSelected = false; return; }
-                selected[g.name] = pill.textContent.trim();
-            });
-            if (!allSelected) { API.toast('กรุณาเลือกตัวเลือกให้ครบ', 'warning'); return; }
-            document.getElementById('opt-modal-bg').classList.remove('open');
-            doAddToCart(pendingProduct, selected);
-            pendingProduct = null;
+        function doAddToCart(product, variant) {
+            const cartKey = product.id + '_' + (variant.sku || (variant.color||'') + '_' + (variant.size||''));
+            if (!cart[cartKey]) {
+                cart[cartKey] = {
+                    id: product.id,
+                    name: product.name,
+                    img_url1: product.img_url1 || '',
+                    sku: variant.sku || '',
+                    color: variant.color || '',
+                    size: variant.size  || '',
+                    sellPrice: variant.sellPrice || 0,
+                    variantStock: variant.stock  || 0,
+                    qty: 0,
+                    _cartKey: cartKey
+                };
+            }
+            if (cart[cartKey].qty >= cart[cartKey].variantStock) {
+                API.toast('❌ สต็อกไม่พอ', 'error');
+                return;
+            }
+            cart[cartKey].qty++;
+            API.setKey('shop-cart', JSON.stringify(cart));
+            renderCart();
+            const label = [variant.color, variant.size].filter(Boolean).join(' ');
+            API.toast('✓ เพิ่ม ' + product.name + (label ? ' (' + label + ')' : '') + ' แล้ว', 'success');
         }
 
+        // ---- render cart ----
         function renderCart() {
             const cartList = document.getElementById('cart-list');
             const items = Object.values(cart).filter(i => i.qty > 0);
@@ -346,18 +447,16 @@
                 return;
             }
             cartList.innerHTML = items.map(item => {
-                const imgSrc = API.driveImg(([item.img_url1, item.img_url2, item.img_url3, item.img_url4, item.img_url5].filter(i => i))[0], 300) || '';
-                const optLabel = item.selectedOptions && Object.keys(item.selectedOptions).length
-                    ? '<div class="selected-opts">' + Object.entries(item.selectedOptions).map(([k, v]) => k + ': ' + v).join(', ') + '</div>'
-                    : '';
-                const key = item._cartKey || item.id;
+                const imgSrc = item.img_url1 ? API.driveImg(item.img_url1, 300) : '';
+                const varLabel = [item.color, item.size].filter(Boolean).join(' ');
+                const key = item._cartKey;
                 return `
                 <div class="cart-item">
-                    <img class="cart-img" src="${imgSrc}" alt="" onerror="this.style.display='none'">
+                    ${imgSrc ? `<img class="cart-img" src="${imgSrc}" alt="" onerror="this.style.display='none'">` : '<div class="cart-img-placeholder"></div>'}
                     <div class="cart-info">
                         <div class="cart-name">${item.name}</div>
-                        ${optLabel}
-                        <div class="cart-price">${API.fmtBaht(item.price)}</div>
+                        ${varLabel ? `<div class="cart-variant">${varLabel}</div>` : ''}
+                        <div class="cart-price">${API.fmtBaht(item.sellPrice)}</div>
                     </div>
                     <div class="qty-control">
                         <button type="button" onclick="changeQty('${key}', -1)">−</button>
@@ -366,9 +465,9 @@
                     </div>
                 </div>`;
             }).join('');
-            const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
-            document.getElementById('subtotal').textContent = API.fmtBaht(subtotal);
-            document.getElementById('total').textContent = API.fmtBaht(subtotal);
+            const subtotal = items.reduce((sum, i) => sum + (i.sellPrice || 0) * i.qty, 0);
+            document.getElementById('subtotal').textContent   = API.fmtBaht(subtotal);
+            document.getElementById('total').textContent      = API.fmtBaht(subtotal);
             document.getElementById('final-total').textContent = API.fmtBaht(subtotal);
             document.getElementById('cart-total').style.display = 'block';
         }
@@ -382,45 +481,44 @@
             }
         }
 
-        // Slip upload
+        // ---- slip upload ----
         document.getElementById('slip-file').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = async (ev) => {
-                const preview = document.getElementById('slip-preview');
-                preview.innerHTML = `<img class="slip-img" src="${ev.target.result}" alt="slip">`;
+                document.getElementById('slip-preview').innerHTML = `<img class="slip-img" src="${ev.target.result}" alt="slip">`;
                 try {
                     const result = await API.ocrReceiptAmount(ev.target.result.split(',')[1]);
-                    if (result.success) {
+                    if (result && result.success) {
                         document.getElementById('slip-amount').value = result.amount.toFixed(2);
-                        API.toast(`✓ อ่านยอดเงิน: ฿${result.amount.toFixed(2)}`, 'success');
+                        API.toast('✓ อ่านยอด: ฿' + result.amount.toFixed(2), 'success');
                     } else {
-                        API.toast('⚠️ อ่านสลิปไม่สำเร็จ กรุณากรอกด้วยตัวเอง', 'warning');
                         document.getElementById('slip-amount').focus();
                     }
                 } catch (err) {
-                    API.toast('⚠️ ไม่สามารถอ่าน OCR ได้ กรุณากรอกด้วยตัวเอง', 'warning');
                     document.getElementById('slip-amount').focus();
                 }
             };
             reader.readAsDataURL(file);
         });
 
-        // Submit order
+        // ---- submit order ----
         document.getElementById('submit-order').addEventListener('click', async () => {
             const items = Object.values(cart).filter(i => i.qty > 0);
-            if (items.length === 0) { API.toast('❌ เลือกสินค้าก่อน', 'error'); return; }
+            if (!items.length) { API.toast('❌ เลือกสินค้าก่อน', 'error'); return; }
 
-            const name = document.getElementById('customer-name').value.trim();
-            const phone = document.getElementById('customer-phone').value.trim();
+            const name   = document.getElementById('customer-name').value.trim();
+            const phone  = document.getElementById('customer-phone').value.trim();
             const amount = parseFloat(document.getElementById('slip-amount').value);
             const slipImg = document.getElementById('slip-preview').querySelector('img');
-            if (!name || !phone || !amount || !slipImg) { API.toast('❌ กรอกข้อมูลให้ครบ', 'error'); return; }
+            if (!name || !phone || !amount || !slipImg) {
+                API.toast('❌ กรอกข้อมูลให้ครบและแนบสลิป', 'error'); return;
+            }
 
             const btn = document.getElementById('submit-order');
             btn.disabled = true;
-            btn.innerHTML = '<div class="spinner"></div> กำลังส่ง...';
+            btn.innerHTML = '<div class="spinner" style="display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;vertical-align:middle;margin-right:6px"></div> กำลังส่ง...';
 
             try {
                 const uploadRes = await API.post('uploadSlip', {
@@ -428,21 +526,26 @@
                     filename: 'slip_' + Date.now() + '.jpg'
                 });
                 const slipUrl = uploadRes.url || '';
-                const itemsList = items.map(i => {
-                    const optStr = i.selectedOptions && Object.keys(i.selectedOptions).length
-                        ? ' (' + Object.entries(i.selectedOptions).map(([k, v]) => k + '=' + v).join('/') + ')'
-                        : '';
-                    return i.name + optStr + ' x' + i.qty;
-                }).join(', ');
-                const total = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+
+                // build items list for order
+                const itemsData = items.map(i => ({
+                    name:  i.name,
+                    sku:   i.sku,
+                    color: i.color,
+                    size:  i.size,
+                    price: i.sellPrice,
+                    qty:   i.qty
+                }));
+                const total = items.reduce((sum, i) => sum + (i.sellPrice||0) * i.qty, 0);
+
                 await API.post('createOrder', {
-                    line_user_id: profileData.userId || '',
+                    line_user_id:  profileData.userId || '',
                     customer_name: name,
-                    phone: phone,
-                    items: itemsList,
-                    total_amount: total,
-                    slip_url: slipUrl,
-                    slip_amount: amount
+                    phone:         phone,
+                    items:         JSON.stringify(itemsData),
+                    total_amount:  total,
+                    slip_url:      slipUrl,
+                    slip_amount:   amount
                 });
                 API.toast('✓ ส่งใบสั่งซื้อแล้ว! Staff จะยืนยันเดี๋ยว', 'success');
                 clearCart();
@@ -460,7 +563,7 @@
             renderCart();
         }
 
-        // Tab navigation
+        // ---- tab navigation ----
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));

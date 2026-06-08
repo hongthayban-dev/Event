@@ -15,7 +15,7 @@
  */
 
 // ---- ค่าคงที่ ----
-cconst SHEET_ID       = '1QCQM1Y65YG9Mgt1g9VlCSdYlOQ5ZAFLVTyunJgn62no';
+const SHEET_ID       = '1QCQM1Y65YG9Mgt1g9VlCSdYlOQ5ZAFLVTyunJgn62no';
 const SLIP_FOLDER_ID        = '15UDvwjf-3J4bBZeRihtodgNgL2sPGxMF'; // โฟลเดอร์เก็บสลิปชำระเงิน 
 const PRODUCT_IMG_FOLDER_ID = '1ovjadtqJPx9nkw4sCEQ9gRhmYsnu3Znv'; // โฟลเดอร์เก็บรูปสินค้า 
 const LINE_PUSH_URL  = 'https://api.line.me/v2/bot/message/push';
@@ -363,49 +363,90 @@ function checkin_(p) {
 // ============================================================
 //  PRODUCTS / ORDERS
 // ============================================================
-// map Thai column name → JS field name on read
+// normalize product row จาก sheet → JS object
 function normalizeProduct_(p) {
-  if (p['ตัวเลือก'] !== undefined) {
-    p.options = p['ตัวเลือก'] ? String(p['ตัวเลือก']) : '';
-    delete p['ตัวเลือก'];
+  // img_url N (มีเว้นวรรค) → img_urlN
+  for (var i = 1; i <= 5; i++) {
+    var spaced = 'img_url ' + i;
+    var compact = 'img_url' + i;
+    if (!p[compact] && p[spaced]) p[compact] = String(p[spaced]);
+  }
+  if (!p.img_url1 && p.img_url) p.img_url1 = String(p.img_url);
+
+  // parse variants JSON string → array
+  if (typeof p.variants === 'string') {
+    try { p.variants = JSON.parse(p.variants); } catch (e) { p.variants = []; }
+  }
+  if (!Array.isArray(p.variants)) p.variants = [];
+
+  // คำนวณ summary สำหรับ frontend
+  if (p.variants.length > 0) {
+    var prices = p.variants.map(function(v){ return Number(v.sellPrice) || 0; }).filter(Boolean);
+    p.minPrice   = prices.length ? Math.min.apply(null, prices) : 0;
+    p.maxPrice   = prices.length ? Math.max.apply(null, prices) : 0;
+    p.totalStock = p.variants.reduce(function(s,v){ return s + (Number(v.stock)||0); }, 0);
+  } else {
+    // backward-compat: สินค้าเก่า (ก่อน variants)
+    p.minPrice = p.maxPrice = Number(p.price) || 0;
+    p.totalStock = Number(p.stock) || 0;
   }
   return p;
 }
 
 function saveProduct_(p) {
   var prod = p.product || p;
-  // serialize options to string
-  var optVal = '';
-  if (prod.options !== undefined) {
-    optVal = typeof prod.options === 'string' ? prod.options : JSON.stringify(prod.options);
-  }
+
+  // auto-gen SKU ให้ variant ที่ยังไม่มี
+  var variants = Array.isArray(prod.variants) ? prod.variants : [];
+  var safeId = String(prod.id || '').replace(/\s/g,'') || ('P' + Date.now().toString(36).toUpperCase());
+  variants.forEach(function(v, i) {
+    if (!v.sku) {
+      v.sku = (safeId + '-' + (v.color||'').replace(/\s/g,'') + '-' + (v.size||'').replace(/\s/g,'') + '-' + i)
+              .toUpperCase().replace(/-+$/,'');
+    }
+  });
+  var variantsVal = JSON.stringify(variants);
+
   var rowNum = prod.id ? findRow_('products', 'id', prod.id) : null;
   if (!rowNum) {
+    // new product — auto-generate ID
     var rows = getRows_('products');
-    var maxId = rows.reduce(function (mx, r) { return Math.max(mx, Number(r.id) || 0); }, 0);
-    prod.id = prod.id || (maxId + 1);
-    var obj = {
-      id: prod.id, name: prod.name || '', price: prod.price || 0,
-      stock: prod.stock || 0, description: prod.description || '',
-      img_url1: prod.img_url1 || prod.img_url || '',
-      img_url2: prod.img_url2 || '', img_url3: prod.img_url3 || '',
-      img_url4: prod.img_url4 || '', img_url5: prod.img_url5 || '',
-      'ตัวเลือก': optVal
-    };
-    appendByHeaders_('products', obj);
+    if (!prod.id) {
+      var maxNum = rows.reduce(function(mx,r){
+        var n = parseInt(String(r.id||'').replace(/\D/g,''),10)||0; return Math.max(mx,n);
+      }, 0);
+      prod.id = 'P' + String(maxNum + 1).padStart(3,'0');
+    }
+    appendByHeaders_('products', {
+      id: prod.id,
+      name: prod.name || '',
+      category: prod.category || '',
+      description: prod.description || '',
+      'img_url 1': prod.img_url1 || prod.img_url || '',
+      'img_url 2': prod.img_url2 || '',
+      'img_url 3': prod.img_url3 || '',
+      'img_url 4': prod.img_url4 || '',
+      'img_url 5': prod.img_url5 || '',
+      variants: variantsVal
+    });
   } else {
     var sh = sheet_('products'); var h = getHeaders_('products');
-    var fields = ['name', 'price', 'stock', 'description',
-                  'img_url1', 'img_url2', 'img_url3', 'img_url4', 'img_url5'];
-    fields.forEach(function (f) {
-      var idx = h.indexOf(f);
-      if (idx >= 0 && prod[f] !== undefined) sh.getRange(rowNum, idx + 1).setValue(prod[f]);
+    var fieldMap = [
+      { col: 'name',        key: 'name' },
+      { col: 'category',    key: 'category' },
+      { col: 'description', key: 'description' },
+      { col: 'img_url 1',   key: 'img_url1' },
+      { col: 'img_url 2',   key: 'img_url2' },
+      { col: 'img_url 3',   key: 'img_url3' },
+      { col: 'img_url 4',   key: 'img_url4' },
+      { col: 'img_url 5',   key: 'img_url5' }
+    ];
+    fieldMap.forEach(function(f) {
+      var idx = h.indexOf(f.col);
+      if (idx >= 0 && prod[f.key] !== undefined) sh.getRange(rowNum, idx+1).setValue(prod[f.key]);
     });
-    // ตัวเลือก (Thai column name)
-    var optIdx = h.indexOf('ตัวเลือก');
-    if (optIdx >= 0 && prod.options !== undefined) {
-      sh.getRange(rowNum, optIdx + 1).setValue(optVal);
-    }
+    var vIdx = h.indexOf('variants');
+    if (vIdx >= 0) sh.getRange(rowNum, vIdx+1).setValue(variantsVal);
   }
   return { ok: true, id: prod.id };
 }
@@ -849,11 +890,13 @@ function testSaveProduct() {
   var r = saveProduct_({
     id: testId,
     name: 'สินค้าทดสอบ (จะถูกลบ)',
-    price: 99,
-    stock: 5,
+    category: 'เสื้อ',
     description: 'auto test',
     img_url1: '', img_url2: '', img_url3: '', img_url4: '', img_url5: '',
-    options: '[{"name":"ขนาด","values":["S","M","L"]}]'
+    variants: [
+      { color: 'ดำ', size: 'S', costPrice: 250, sellPrice: 300, stock: 5 },
+      { color: 'ดำ', size: 'M', costPrice: 250, sellPrice: 300, stock: 8 }
+    ]
   });
   Logger.log('saveProduct result: ' + JSON.stringify(r));
 

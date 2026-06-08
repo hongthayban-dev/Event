@@ -178,7 +178,7 @@
                     
                     <div class="order-items">
                         <div class="items-label">🛒 สินค้า:</div>
-                        <div class="items-text">${o.items}</div>
+                        <div class="items-text">${fmtItems(o.items)}</div>
                     </div>
                     
                     ${o.slip_url ? `
@@ -222,7 +222,7 @@
                 </div>
                 <div style="margin-bottom: 16px;">
                     <div class="detail-label">🛒 สินค้า</div>
-                    <div class="detail-value">${order.items}</div>
+                    <div class="detail-value">${fmtItems(order.items)}</div>
                 </div>
                 <div style="margin-bottom: 16px;">
                     <div class="detail-label">💰 ยอดรวม</div>
@@ -283,13 +283,28 @@
             }
         }
         
+        // รองรับทั้ง JSON array ใหม่ และ string เก่า
+        function fmtItems(raw) {
+            if (!raw) return '—';
+            try {
+                const arr = JSON.parse(raw);
+                if (!Array.isArray(arr)) return String(raw);
+                return arr.map(function(i) {
+                    const label = [i.color, i.size].filter(Boolean).join(' ');
+                    return i.name + (label ? ' ' + label : '') + ' x' + i.qty + ' (' + fmtBaht(i.price) + ')';
+                }).join('<br>');
+            } catch (e) {
+                return String(raw);
+            }
+        }
+
         function logout() {
             if (confirm('ต้องการออกจากระบบ?')) {
                 clearSession();
                 location.href = '../admin/index.html';
             }
         }
-        
+
         init();
     </script>
 </body>
