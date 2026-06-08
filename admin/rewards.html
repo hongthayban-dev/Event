@@ -173,8 +173,7 @@
 
     async function ensurePool(state) {
       if (poolToken === state.prepToken && poolCache.length) return poolCache;
-      var r = await API.get('getWheelPool');
-      poolCache = (r && r.pool) ? r.pool : [];
+      poolCache = (state && state.pool) ? state.pool : [];
       poolToken = state.prepToken;
       return poolCache;
     }

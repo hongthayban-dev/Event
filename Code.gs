@@ -105,10 +105,14 @@ function route_(action, p) {
 
     // ---------- wheel ----------
     case 'getWheelState':  return { ok: true, state: getWheelState_() }; // จอ poll ได้ ไม่ต้อง key
+    case 'getWheelPool':   var _ws = getWheelState_(); return { ok: true, pool: _ws.pool || [], prepToken: _ws.prepToken || 0 };
+    case 'prepare':        requireKey_(p); return prepare_(p);
+    case 'spinPhysics':    requireKey_(p); return spinPhysics_(p);
     case 'requestSpin':    requireKey_(p); return requestSpin_(p);
     case 'resetWheel':     requireKey_(p); return resetWheel_(p);
 
     // ---------- admin manage ----------
+    case 'getAdminSettings': requireKey_(p); return { ok: true, settings: getSettingsMap_() };
     case 'verifyOrder':    requireKey_(p); return verifyOrder_(p);
     case 'updateSettings': requireKey_(p); return updateSettings_(p);
     case 'saveProduct':    requireKey_(p); return saveProduct_(p);
@@ -486,6 +490,89 @@ function getWheelState_() {
 function setWheelState_(obj) {
   props_().setProperty('WHEEL_STATE', JSON.stringify(obj));
   return obj;
+}
+
+// เตรียมวงล้อ: โหลดรายชื่อขึ้นจอ แต่ยังไม่ตัดสินผู้ชนะ
+function prepare_(p) {
+  var count = parseInt(p.count || 1, 10);
+  var filters = typeof p.filters === 'string' ? JSON.parse(p.filters) : (p.filters || {});
+  var pool = getEligible_(filters);
+  if (pool.length === 0) return { ok: false, error: 'no eligible participants' };
+
+  var MAXSEG = 16;
+  var display = shuffle_(pool.slice()).slice(0, MAXSEG).map(function (r) {
+    return { id: r.reg_id, name: r.nickname || r.first_name || '—' };
+  });
+  shuffle_(display);
+
+  var prepToken = Date.now();
+  var state = {
+    status: 'ready',
+    round: (getWheelState_().round || 0),
+    ts: prepToken,
+    prepToken: prepToken,
+    count: count,
+    filters: filters,
+    reward_name: p.reward_name || '',
+    reward_value: p.reward_value || '',
+    mode: p.mode || 'single',
+    slots: display.length,
+    pool: display
+  };
+  setWheelState_(state);
+  return { ok: true, people: pool.length, prepToken: prepToken };
+}
+
+// รับ power จาก remote -> สุ่มผู้ชนะจากรายชื่อที่เตรียมไว้ -> ตั้ง state 'spinning' พร้อม landingIndex
+function spinPhysics_(p) {
+  var state = getWheelState_();
+  if (state.status !== 'ready') return { ok: false, error: 'wheel not prepared' };
+
+  var power = parseFloat(p.power || 60);
+  var filters = state.filters || {};
+  var count = state.count || 1;
+
+  var pool = getEligible_(filters);
+  if (pool.length === 0) return { ok: false, error: 'no eligible participants' };
+
+  var winners = [];
+  var work = pool.slice();
+  for (var i = 0; i < count && work.length > 0; i++) {
+    var idx = Math.floor(Math.random() * work.length);
+    winners.push(work.splice(idx, 1)[0]);
+  }
+
+  var round = (state.round || 0) + 1;
+  recordWinners_(round, winners, state.reward_name, state.reward_value);
+
+  var displayPool = state.pool || [];
+  var winnerIdx = displayPool.findIndex(function (d) { return d.id === winners[0].reg_id; });
+  var landingIndex = winnerIdx >= 0 ? winnerIdx : Math.floor(Math.random() * (displayPool.length || 12));
+
+  var newState = {
+    status: 'spinning',
+    round: round,
+    ts: Date.now(),
+    prepToken: state.prepToken,
+    count: count,
+    filters: filters,
+    reward_name: state.reward_name,
+    reward_value: state.reward_value,
+    mode: state.mode || 'single',
+    power: power,
+    landingIndex: landingIndex,
+    slots: displayPool.length,
+    pool: displayPool,
+    winners: winners.map(function (w) {
+      return {
+        reg_id: w.reg_id, line_user_id: w.line_user_id,
+        first_name: w.first_name, last_name: w.last_name, nickname: w.nickname
+      };
+    })
+  };
+  setWheelState_(newState);
+  notifyWinners_(winners, state.reward_name || state.reward_value || 'ของรางวัล');
+  return { ok: true, state: newState };
 }
 
 // รีโมทสั่งหมุน: server สุ่มผู้ชนะ -> บันทึก -> ตั้ง state ให้จอ poll -> ยิง LINE

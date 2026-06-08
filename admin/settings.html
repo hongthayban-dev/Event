@@ -6,7 +6,6 @@
     <title>⚙️ ตั้งค่า</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=Trirong:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../theme.css">
-    <script src="../api.js"></script>
     <style>
         body { background: #f5f5f5; padding: 10px; }
         .admin-container { max-width: 800px; margin: 0 auto; }
@@ -216,18 +215,18 @@
         let qrFileId = '';
         
         async function init() {
-            authToken = getKey('admin-token');
+            authToken = getKey('admin-token') || getKey('access-code');
             if (!authToken) {
                 location.href = '../admin/index.html';
                 return;
             }
-            
             await loadSettings();
         }
-        
+
         async function loadSettings() {
             try {
-                settings = await API.postAuth('/getSettings', {}, authToken);
+                const res = await API.postAuth('getAdminSettings', {}, authToken);
+                settings = res.settings || {};
                 renderSettings();
                 document.getElementById('settings-loading').style.display = 'none';
                 document.getElementById('settings-form').style.display = 'block';
@@ -290,22 +289,27 @@
         document.getElementById('color-primary').addEventListener('change', updateColorDisplay);
         document.getElementById('color-accent').addEventListener('change', updateColorDisplay);
         
-        // QR File Upload Handler
+        // QR File Upload Handler — อัปโหลดไป Google Drive จริง
         document.getElementById('qr-file').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            
             toast('📤 กำลังอัปโหลด QR code...', 'info');
-            
-            // ในกรณีจริง ต้องอัปโหลดไปยัง Google Drive และได้ file ID
-            // ตอนนี้จะใช้ temporary preview
             const reader = new FileReader();
-            reader.onload = (ev) => {
-                document.getElementById('qr-preview').innerHTML = `
-                    <img class="qr-img" src="${ev.target.result}" alt="qr-preview">
-                    <div style="margin-top: 8px; font-size: 12px; color: #666;">📤 รอบันทึกตั้งค่า</div>
-                `;
-                toast('✓ เลือก QR code แล้ว', 'success');
+            reader.onload = async (ev) => {
+                try {
+                    const res = await API.postAuth('uploadSlip', {
+                        dataUrl: ev.target.result,
+                        filename: 'promptpay_qr_' + Date.now() + '.png'
+                    }, authToken);
+                    qrFileId = res.id;
+                    document.getElementById('qr-preview').innerHTML = `
+                        <img class="qr-img" src="${driveImg(qrFileId, 500)}" alt="qr-preview">
+                        <div style="margin-top:8px;font-size:12px;color:#666;">File ID: ${qrFileId}</div>
+                    `;
+                    toast('✓ อัปโหลด QR code แล้ว', 'success');
+                } catch (err) {
+                    toast('❌ อัปโหลดผิดพลาด: ' + err.message, 'error');
+                }
             };
             reader.readAsDataURL(file);
         });
@@ -341,7 +345,7 @@
             btn.innerHTML = '<div class="spinner"></div> บันทึก...';
             
             try {
-                await API.postAuth('/updateSettings', updatedSettings, authToken);
+                await API.postAuth('updateSettings', updatedSettings, authToken);
                 toast('✓ บันทึกตั้งค่าแล้ว', 'success');
                 settings = updatedSettings;
             } catch (err) {

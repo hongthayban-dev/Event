@@ -196,7 +196,8 @@
         
         async function loadProducts() {
             try {
-                products = await API.get('/getProducts');
+                const res = await API.get('getProducts');
+                products = res.products || [];
                 renderProducts();
                 document.getElementById('products-loading').style.display = 'none';
                 document.getElementById('products-grid').style.display = 'grid';
@@ -204,12 +205,12 @@
                 toast('❌ โหลดสินค้าผิดพลาด', 'error');
             }
         }
-        
+
         async function loadSettings() {
             try {
-                settings = await API.get('/getSettings');
-                
-                // Set PromptPay QR
+                const res = await API.get('getSettings');
+                settings = res.settings || {};
+
                 if (settings.promptpay_file_id) {
                     const qrImg = document.getElementById('promptpay-qr');
                     qrImg.src = driveImg(settings.promptpay_file_id, 1000);
@@ -359,13 +360,17 @@
             try {
                 // Upload slip
                 const slipBase64 = slipImg.src.split(',')[1];
-                const slipUrl = await uploadSlip(slipBase64);
-                
+                const uploadRes = await API.post('uploadSlip', {
+                    dataUrl: slipImg.src,
+                    filename: 'slip_' + Date.now() + '.jpg'
+                });
+                const slipUrl = uploadRes.url || '';
+
                 // Create order
                 const itemsList = items.map(i => `${i.name} x${i.qty}`).join(', ');
                 const total = items.reduce((sum, i) => sum + i.price * i.qty, 0);
-                
-                const order = await API.post('/createOrder', {
+
+                const order = await API.post('createOrder', {
                     line_user_id: profileData.userId,
                     customer_name: name,
                     phone: phone,

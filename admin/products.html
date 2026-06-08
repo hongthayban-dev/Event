@@ -6,7 +6,6 @@
     <title>📦 จัดการสินค้า</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=Trirong:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../theme.css">
-    <script src="../api.js"></script>
     <style>
         body { background: #f5f5f5; padding: 10px; }
         .admin-container { max-width: 900px; margin: 0 auto; }
@@ -148,18 +147,18 @@
         let authToken = '';
         
         async function init() {
-            authToken = getKey('admin-token');
+            authToken = getKey('admin-token') || getKey('access-code');
             if (!authToken) {
                 location.href = '../admin/index.html';
                 return;
             }
-            
             await loadProducts();
         }
         
         async function loadProducts() {
             try {
-                products = await API.postAuth('/getProducts', {}, authToken);
+                const res = await API.postAuth('getProducts', {}, authToken);
+                products = res.products || [];
                 renderProducts();
                 document.getElementById('list-loading').style.display = 'none';
                 document.getElementById('products-list').style.display = 'grid';
@@ -200,7 +199,7 @@
             try {
                 const product = products.find(p => p.id === productId);
                 const updated = { ...product, stock: newStock };
-                await API.postAuth('/saveProduct', updated, authToken);
+                await API.postAuth('saveProduct', updated, authToken);
                 toast('✓ บันทึกสต็อกแล้ว', 'success');
             } catch (err) {
                 toast('❌ บันทึกผิดพลาด: ' + err.message, 'error');
@@ -232,7 +231,7 @@
             };
             
             try {
-                await API.postAuth('/saveProduct', product, authToken);
+                await API.postAuth('saveProduct', product, authToken);
                 toast('✓ เพิ่มสินค้าแล้ว', 'success');
                 
                 // Clear form
@@ -254,7 +253,7 @@
             if (!confirm('⚠️ ต้องการลบสินค้านี้?')) return;
             
             try {
-                await API.postAuth('/deleteProduct', { id: productId }, authToken);
+                await API.postAuth('deleteProduct', { id: productId }, authToken);
                 toast('✓ ลบสินค้าแล้ว', 'success');
                 await loadProducts();
             } catch (err) {

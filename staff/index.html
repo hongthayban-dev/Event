@@ -82,15 +82,15 @@
       if (!u || !p) return API.toast('กรอกชื่อผู้ใช้และรหัสผ่าน');
 
       var btn = API.qs('#loginBtn'); btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ...';
-      API.setKey(code); // เก็บรหัสเข้าระบบไว้บนเครื่อง
+      API.setKey('access-code', code); // เก็บรหัสเข้าระบบไว้บนเครื่อง
 
       try {
         var res = await API.post('staffLogin', { username: u, password: p });
         if (!res.ok) { fail(btn, 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'); return; }
 
         // ตรวจรหัสเข้าระบบ (เรียก action ที่ต้องมี key)
-        var chk = await API.getAuth('getStaff');
-        if (!chk.ok && /unauth/i.test(chk.error || '')) { API.clearKey(); fail(btn, 'รหัสเข้าระบบงานไม่ถูกต้อง'); return; }
+        var chk = await API.getAuth('getStaff', {}, code);
+        if (!chk.ok && /unauth/i.test(chk.error || '')) { API.clearKey('access-code'); fail(btn, 'รหัสเข้าระบบงานไม่ถูกต้อง'); return; }
 
         var sess = { username: res.username, display_name: res.display_name, role: res.role };
         API.setSession(sess);
@@ -105,7 +105,6 @@
 
     function logout() {
       API.clearSession();
-      // ไม่ล้าง key เผื่อใช้ต่อ; ถ้าต้องการล้างด้วยให้เรียก API.clearKey()
       location.reload();
     }
   </script>

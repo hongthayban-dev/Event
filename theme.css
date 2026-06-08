@@ -20,6 +20,12 @@
   --font-body: 'Sarabun', sans-serif;
   --radius-sm: 6px;
   --accent-600: #d4a525;
+
+  /* Aliases สำหรับ backward compat */
+  --navy: #0d2b5e;
+  --navy-light: #1a3d7a;
+  --gold: #f0c040;
+  --text-color: #333;
 }
 
 /* ========== GLOBAL ==========  */

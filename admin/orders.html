@@ -6,7 +6,6 @@
     <title>🛒 รายการสั่งซื้อ</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=Trirong:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../theme.css">
-    <script src="../api.js"></script>
     <style>
         body { background: #f5f5f5; padding: 10px; }
         .admin-container { max-width: 1000px; margin: 0 auto; }
@@ -124,7 +123,8 @@
         
         async function loadOrders() {
             try {
-                orders = await API.postAuth('/getOrders', {}, authToken);
+                const res = await API.postAuth('getOrders', {}, authToken);
+                orders = res.orders || [];
                 renderOrders();
                 document.getElementById('orders-loading').style.display = 'none';
             } catch (err) {
@@ -192,8 +192,8 @@
                     <div class="order-actions">
                         <button class="btn btn-view" onclick="viewDetails('${o.order_id}')">👁️ ดูรายละเอียด</button>
                         ${o.status === 'pending' ? `
-                            <button class="btn btn-verify" onclick="verifyOrder('${o.order_id}')">✓ ยืนยันและส่ง</button>
-                            <button class="btn btn-reject" onclick="rejectOrder('${o.order_id}')">✗ ปฏิเสธ</button>
+                            <button class="btn btn-verify" onclick="verifyOrder(this,'${o.order_id}')">✓ ยืนยันและส่ง</button>
+                            <button class="btn btn-reject" onclick="rejectOrder(this,'${o.order_id}')">✗ ปฏิเสธ</button>
                         ` : ''}
                     </div>
                 </div>
@@ -252,15 +252,12 @@
             document.getElementById('detail-modal').classList.remove('active');
         }
         
-        async function verifyOrder(orderId) {
+        async function verifyOrder(btn, orderId) {
             if (!confirm('ยืนยันใบสั่งซื้อและส่ง LINE ให้ลูกค้า?')) return;
-            
-            const btn = event.target;
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner"></div> กำลังส่ง...';
-            
             try {
-                await API.postAuth('/verifyOrder', { order_id: orderId }, authToken);
+                await API.postAuth('verifyOrder', { order_id: orderId, status: 'verified' }, authToken);
                 toast('✓ ส่งใบสั่งซื้อแล้ว', 'success');
                 await loadOrders();
             } catch (err) {
@@ -270,17 +267,19 @@
                 btn.innerHTML = '✓ ยืนยันและส่ง';
             }
         }
-        
-        async function rejectOrder(orderId) {
+
+        async function rejectOrder(btn, orderId) {
             const reason = prompt('🚫 เหตุผลที่ปฏิเสธ:');
             if (!reason) return;
-            
+            btn.disabled = true;
             try {
-                await API.postAuth('/rejectOrder', { order_id: orderId, reason }, authToken);
+                await API.postAuth('verifyOrder', { order_id: orderId, status: 'rejected', reason }, authToken);
                 toast('✓ ปฏิเสธใบสั่งแล้ว', 'success');
                 await loadOrders();
             } catch (err) {
                 toast('❌ ผิดพลาด: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
             }
         }
         

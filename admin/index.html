@@ -14,10 +14,10 @@
 
     body {
       font-family: 'Sarabun', sans-serif;
-      background: linear-gradient(135deg, var(--navy-grad), var(--navy-light));
+      background: linear-gradient(135deg, #0d2b5e, #1a3d7a);
       min-height: 100vh;
       padding: 20px;
-      color: var(--text-color);
+      color: #333;
     }
 
     .container {
@@ -57,18 +57,18 @@
       transition: all 0.3s ease;
       text-decoration: none;
       color: inherit;
-      border-left: 5px solid var(--navy);
+      border-left: 5px solid #0d2b5e;
       cursor: pointer;
     }
 
     .dashboard-card:hover {
       transform: translateY(-5px);
       box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-      border-left-color: var(--gold);
+      border-left-color: #f0c040;
     }
 
     .dashboard-card h3 {
-      color: var(--navy);
+      color: #0d2b5e;
       margin-bottom: 10px;
       font-size: 1.4em;
     }
@@ -88,7 +88,7 @@
 
     .btn-primary {
       display: inline-block;
-      background: linear-gradient(135deg, var(--navy), var(--navy-light));
+      background: linear-gradient(135deg, #0d2b5e, #1a3d7a);
       color: white;
       padding: 10px 20px;
       border-radius: 6px;
@@ -102,8 +102,8 @@
     }
 
     .btn-primary:hover {
-      background: linear-gradient(135deg, var(--gold), #e6c200);
-      color: var(--navy);
+      background: linear-gradient(135deg, #f0c040, #e6c200);
+      color: #0d2b5e;
       transform: scale(1.02);
     }
 
@@ -116,7 +116,7 @@
     }
 
     .quick-info h3 {
-      color: var(--navy);
+      color: #0d2b5e;
       margin-bottom: 15px;
       font-size: 1.2em;
     }
@@ -137,7 +137,7 @@
 
     .info-item strong {
       display: block;
-      color: var(--gold);
+      color: #f0c040;
       font-size: 1.5em;
       margin-bottom: 5px;
     }
@@ -270,21 +270,29 @@
     // Set timestamp
     document.getElementById('timestamp').textContent = new Date().toLocaleString('th-TH');
 
-    // Load quick stats when page loads
     async function loadQuickStats() {
+      const token = getKey('admin-token') || getKey('access-code');
+      if (!token) return;
       try {
-        // ต่างจาก API - อ่านข้อมูลจาก Google Sheet โดยตรง
-        // ตัวอย่างค่า (update ตามข้อมูลจริง)
-        document.getElementById('totalReg').textContent = '-';
-        document.getElementById('checkedIn').textContent = '-';
-        document.getElementById('totalOrders').textContent = '-';
-        document.getElementById('totalRevenue').textContent = '฿-';
+        const [regRes, ordRes] = await Promise.all([
+          API.postAuth('getRegistrations', {}, token),
+          API.postAuth('getOrders', {}, token)
+        ]);
+        const regs = regRes.registrations || [];
+        const orders = ordRes.orders || [];
+        const checkedIn = regs.filter(r => String(r.checked_in).toUpperCase() === 'TRUE').length;
+        const revenue = orders
+          .filter(o => o.status === 'verified')
+          .reduce((sum, o) => sum + (parseFloat(o.total_amount) || 0), 0);
+        document.getElementById('totalReg').textContent = regs.length;
+        document.getElementById('checkedIn').textContent = checkedIn;
+        document.getElementById('totalOrders').textContent = orders.length;
+        document.getElementById('totalRevenue').textContent = fmtBaht(revenue);
       } catch (err) {
-        console.log('Stats not loaded (normal if offline):', err.message);
+        console.log('Stats not loaded:', err.message);
       }
     }
 
-    // Load on page load
     window.addEventListener('load', loadQuickStats);
   </script>
 </body>
