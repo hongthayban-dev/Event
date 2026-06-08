@@ -44,6 +44,7 @@ async function getProfile() {
 // ========== API CALLS ==========
 const API = {
   async get(action, params = {}) {
+    action = action.replace(/^\//, ''); // Remove leading /
     const url = new URL(CONFIG.API_URL);
     url.searchParams.append('action', action);
     Object.keys(params).forEach(key => {
@@ -57,6 +58,7 @@ const API = {
   },
   
   async post(action, data = {}) {
+    action = action.replace(/^\//, ''); // Remove leading /
     const payload = new URLSearchParams();
     payload.append('action', action);
     Object.keys(data).forEach(key => {
@@ -74,6 +76,7 @@ const API = {
   },
   
   async getAuth(action, params = {}, token) {
+    action = action.replace(/^\//, ''); // Remove leading /
     const url = new URL(CONFIG.API_URL);
     url.searchParams.append('action', action);
     url.searchParams.append('admin_key', token);
@@ -88,6 +91,7 @@ const API = {
   },
   
   async postAuth(action, data = {}, token) {
+    action = action.replace(/^\//, ''); // Remove leading /
     const payload = new URLSearchParams();
     payload.append('action', action);
     payload.append('admin_key', token);
