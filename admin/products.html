@@ -65,6 +65,8 @@
         .variants-table input[type=number] { width: 70px; }
         .v-del { background: #ffebee; color: #c62828; border: none; border-radius: 4px; padding: 5px 9px; cursor: pointer; font-size: 14px; }
         .v-del:hover { background: #ef9a9a; }
+        .v-dup { background: #e8f5e9; color: #2e7d32; border: none; border-radius: 4px; padding: 5px 9px; cursor: pointer; font-size: 14px; margin-right: 4px; }
+        .v-dup:hover { background: #a5d6a7; }
         .btn-add-variant { padding: 8px 14px; background: #e8f0fe; color: var(--color-primary); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; font-family: Sarabun; }
         .btn-add-variant:hover { background: #c5cae9; }
 
@@ -249,9 +251,8 @@
         }
 
         // ---- variant table helpers ----
-        function addVariantRow(v) {
+        function addVariantRow(v, afterTr) {
             v = v || {};
-            const tbody = document.getElementById('variants-body');
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><input type="text" class="v-color" placeholder="เช่น ดำ" value="${v.color||''}"></td>
@@ -259,8 +260,31 @@
                 <td><input type="number" class="v-cost"  placeholder="0" value="${v.costPrice||''}" min="0"></td>
                 <td><input type="number" class="v-sell"  placeholder="0" value="${v.sellPrice||''}" min="0"></td>
                 <td><input type="number" class="v-stock" placeholder="0" value="${v.stock||''}" min="0"></td>
-                <td><button type="button" class="v-del" onclick="this.closest('tr').remove()">✕</button></td>`;
-            tbody.appendChild(tr);
+                <td style="white-space:nowrap">
+                    <button type="button" class="v-dup" onclick="dupVariantRow(this)" title="คัดลอกแถวนี้">⎘</button>
+                    <button type="button" class="v-del" onclick="this.closest('tr').remove()">✕</button>
+                </td>`;
+            if (afterTr) {
+                afterTr.after(tr);
+            } else {
+                document.getElementById('variants-body').appendChild(tr);
+            }
+            return tr;
+        }
+
+        function dupVariantRow(btn) {
+            const tr = btn.closest('tr');
+            const v = {
+                color:     tr.querySelector('.v-color').value,
+                size:      tr.querySelector('.v-size').value,
+                costPrice: tr.querySelector('.v-cost').value,
+                sellPrice: tr.querySelector('.v-sell').value,
+                stock:     tr.querySelector('.v-stock').value
+            };
+            const newTr = addVariantRow(v, tr);
+            // focus ช่อง size ในแถวใหม่ เพื่อพิมพ์ต่อได้เลย
+            newTr.querySelector('.v-size').focus();
+            newTr.querySelector('.v-size').select();
         }
 
         function getVariantsData() {
