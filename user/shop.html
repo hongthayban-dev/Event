@@ -73,18 +73,34 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* Variant modal */
-        .opt-modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; align-items:flex-end; justify-content:center; }
+        .opt-modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; align-items:flex-end; justify-content:center; }
         .opt-modal-bg.open { display:flex; }
-        .opt-modal { background:#fff; border-radius:18px 18px 0 0; padding:24px 20px 32px; width:100%; max-width:480px; max-height:80vh; overflow-y:auto; }
-        .opt-modal h3 { margin:0 0 16px; font-family:Trirong; color:var(--color-primary); }
-        .opt-section { margin-bottom:16px; }
+        .opt-modal { background:#fff; border-radius:18px 18px 0 0; padding:0; width:100%; max-width:480px; max-height:88vh; overflow-y:auto; display:flex; flex-direction:column; }
+
+        /* ── Image Slider ── */
+        .modal-slider { position:relative; width:100%; overflow:hidden; border-radius:18px 18px 0 0; background:#111; flex-shrink:0; -webkit-user-select:none; user-select:none; }
+        .modal-slider-track { display:flex; transition:transform .32s cubic-bezier(.4,0,.2,1); will-change:transform; }
+        .modal-slider-slide { flex:0 0 100%; }
+        .modal-slider-slide img { width:100%; height:260px; object-fit:cover; display:block; }
+        .modal-slider-dots { position:absolute; bottom:8px; left:0; right:0; display:flex; justify-content:center; gap:5px; pointer-events:none; }
+        .modal-dot { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.5); transition:all .2s; }
+        .modal-dot.active { background:#fff; width:18px; border-radius:4px; }
+        .modal-slider-arrow { position:absolute; top:50%; transform:translateY(-50%); background:rgba(255,255,255,.75); border:none; border-radius:50%; width:32px; height:32px; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+        .modal-slider-arrow.prev { left:10px; }
+        .modal-slider-arrow.next { right:10px; }
+        .modal-slider-count { position:absolute; top:10px; right:12px; background:rgba(0,0,0,.4); color:#fff; font-size:11px; padding:3px 8px; border-radius:999px; }
+
+        /* ── Modal body ── */
+        .modal-body { padding:18px 20px 32px; }
+        .opt-modal h3 { margin:0 0 14px; font-family:Trirong; color:var(--color-primary); font-size:18px; }
+        .opt-section { margin-bottom:14px; }
         .opt-section label { display:block; font-weight:600; font-size:14px; margin-bottom:8px; color:#555; }
         .opt-pills { display:flex; flex-wrap:wrap; gap:8px; }
         .opt-pill { padding:8px 16px; border:1.5px solid #ddd; border-radius:999px; background:#fff; cursor:pointer; font-family:Sarabun; font-size:14px; transition:all .15s; }
         .opt-pill.selected { background:var(--color-primary); color:#fff; border-color:var(--color-primary); }
-        .opt-pill.out-of-stock { opacity:.4; cursor:not-allowed; }
+        .opt-pill.out-of-stock { opacity:.35; cursor:not-allowed; text-decoration:line-through; }
         .variant-info-box { padding:12px 14px; background:#f0f4ff; border-radius:10px; margin:12px 0; display:none; }
-        .variant-info-price { font-weight:700; color:var(--color-primary); font-size:20px; }
+        .variant-info-price { font-weight:700; color:var(--color-primary); font-size:22px; }
         .variant-info-stock { font-size:13px; color:#666; margin-top:2px; }
         .variant-info-stock.no-stock { color:#d32f2f; font-weight:600; }
     </style>
@@ -110,21 +126,38 @@
         <!-- Variant Selector Modal -->
         <div class="opt-modal-bg" id="opt-modal-bg" onclick="closeOptModal(event)">
             <div class="opt-modal" id="opt-modal">
-                <h3 id="opt-modal-title">เลือกตัวเลือก</h3>
-                <div id="opt-color-section" class="opt-section">
-                    <label>สี</label>
-                    <div class="opt-pills" id="opt-colors"></div>
+
+                <!-- Image Slider -->
+                <div class="modal-slider" id="modal-slider"
+                     ontouchstart="sliderTouchStart(event)"
+                     ontouchmove="sliderTouchMove(event)"
+                     ontouchend="sliderTouchEnd(event)">
+                    <div class="modal-slider-track" id="modal-slider-track"></div>
+                    <div class="modal-slider-dots" id="modal-slider-dots"></div>
+                    <button type="button" class="modal-slider-arrow prev" id="slider-prev" onclick="goSlide(sliderIndex-1)">‹</button>
+                    <button type="button" class="modal-slider-arrow next" id="slider-next" onclick="goSlide(sliderIndex+1)">›</button>
+                    <div class="modal-slider-count" id="slider-count"></div>
                 </div>
-                <div id="opt-size-section" class="opt-section">
-                    <label>ขนาด</label>
-                    <div class="opt-pills" id="opt-sizes"></div>
+
+                <!-- Content -->
+                <div class="modal-body">
+                    <h3 id="opt-modal-title">เลือกตัวเลือก</h3>
+                    <div id="opt-color-section" class="opt-section">
+                        <label>สี</label>
+                        <div class="opt-pills" id="opt-colors"></div>
+                    </div>
+                    <div id="opt-size-section" class="opt-section">
+                        <label>ขนาด</label>
+                        <div class="opt-pills" id="opt-sizes"></div>
+                    </div>
+                    <div class="variant-info-box" id="opt-variant-info">
+                        <div class="variant-info-price" id="opt-variant-price"></div>
+                        <div class="variant-info-stock" id="opt-variant-stock"></div>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="opt-confirm-btn" onclick="confirmOptModal()" style="margin-top:8px" disabled>✓ เพิ่มลงตะกร้า</button>
+                    <button type="button" class="btn" onclick="document.getElementById('opt-modal-bg').classList.remove('open')" style="margin-top:8px;background:#f0f0f0;">ยกเลิก</button>
                 </div>
-                <div class="variant-info-box" id="opt-variant-info">
-                    <div class="variant-info-price" id="opt-variant-price"></div>
-                    <div class="variant-info-stock" id="opt-variant-stock"></div>
-                </div>
-                <button type="button" class="btn btn-primary" id="opt-confirm-btn" onclick="confirmOptModal()" style="margin-top:8px" disabled>✓ เพิ่มลงตะกร้า</button>
-                <button type="button" class="btn" onclick="document.getElementById('opt-modal-bg').classList.remove('open')" style="margin-top:8px;background:#f0f0f0;">ยกเลิก</button>
+
             </div>
         </div>
 
@@ -203,6 +236,76 @@
         let selectedColor   = null;
         let selectedSize    = null;
         let selectedVariant = null;
+
+        // ════════════════════════════════
+        //  Image Slider (modal)
+        // ════════════════════════════════
+        let sliderImages = [];
+        let sliderIndex  = 0;
+        let touchX0 = 0, touchDX = 0, dragging = false;
+
+        function initSlider(imgs) {
+            sliderImages = imgs.filter(Boolean);
+            sliderIndex  = 0;
+            const wrap = document.getElementById('modal-slider');
+            if (!sliderImages.length) { wrap.style.display = 'none'; return; }
+            wrap.style.display = '';
+            _renderSlider();
+        }
+
+        function _renderSlider() {
+            const total = sliderImages.length;
+            document.getElementById('modal-slider-track').innerHTML =
+                sliderImages.map(id =>
+                    `<div class="modal-slider-slide"><img src="${API.driveImg(id,900)}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`
+                ).join('');
+            document.getElementById('modal-slider-dots').innerHTML =
+                total > 1 ? sliderImages.map((_,i) =>
+                    `<div class="modal-dot${i===sliderIndex?' active':''}"></div>`
+                ).join('') : '';
+            document.getElementById('slider-count').textContent  = total > 1 ? (sliderIndex+1)+'/'+total : '';
+            document.getElementById('slider-prev').style.display = total > 1 ? '' : 'none';
+            document.getElementById('slider-next').style.display = total > 1 ? '' : 'none';
+            _applySlide(false);
+        }
+
+        function _applySlide(animate) {
+            const track = document.getElementById('modal-slider-track');
+            track.style.transition = animate ? 'transform .32s cubic-bezier(.4,0,.2,1)' : 'none';
+            track.style.transform  = `translateX(-${sliderIndex*100}%)`;
+            document.querySelectorAll('#modal-slider-dots .modal-dot').forEach((d,i) =>
+                d.classList.toggle('active', i === sliderIndex));
+            document.getElementById('slider-count').textContent =
+                sliderImages.length > 1 ? (sliderIndex+1)+'/'+sliderImages.length : '';
+        }
+
+        function goSlide(i) {
+            if (!sliderImages.length) return;
+            sliderIndex = Math.max(0, Math.min(i, sliderImages.length - 1));
+            _applySlide(true);
+        }
+
+        // Touch swipe
+        function sliderTouchStart(e) {
+            touchX0 = e.touches[0].clientX;
+            touchDX = 0; dragging = true;
+            document.getElementById('modal-slider-track').style.transition = 'none';
+        }
+        function sliderTouchMove(e) {
+            if (!dragging) return;
+            touchDX = e.touches[0].clientX - touchX0;
+            const pct = touchDX / document.getElementById('modal-slider').offsetWidth * 100;
+            document.getElementById('modal-slider-track').style.transform =
+                `translateX(calc(-${sliderIndex*100}% + ${pct}%))`;
+        }
+        function sliderTouchEnd() {
+            dragging = false;
+            if (Math.abs(touchDX) > 50) {
+                goSlide(touchDX < 0 ? sliderIndex + 1 : sliderIndex - 1);
+            } else {
+                _applySlide(true);
+            }
+        }
 
         async function initShop() {
             try {
@@ -293,6 +396,10 @@
             selectedColor   = null;
             selectedSize    = null;
             selectedVariant = null;
+
+            // init image slider
+            initSlider([product.img_url1, product.img_url2, product.img_url3,
+                        product.img_url4, product.img_url5]);
 
             const allVariants = Array.isArray(product.variants) ? product.variants : [];
             const colors = [...new Set(allVariants.map(v => v.color).filter(Boolean))];
