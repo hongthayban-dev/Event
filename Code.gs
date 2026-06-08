@@ -131,7 +131,10 @@ function route_(action, p) {
 // ============================================================
 function getHeaders_(name) {
   var sh = sheet_(name);
-  return sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+  if (!sh) return [];
+  var last = sh.getLastColumn();
+  if (last === 0) return [];
+  return sh.getRange(1, 1, 1, last).getValues()[0].map(String);
 }
 
 function getRows_(name) {
@@ -154,6 +157,7 @@ function getRows_(name) {
 
 function appendByHeaders_(name, obj) {
   var sh = sheet_(name);
+  if (!sh) throw new Error('Sheet not found: ' + name);
   var headers = getHeaders_(name);
   var row = headers.map(function (h) { return obj.hasOwnProperty(h) ? obj[h] : ''; });
   sh.appendRow(row);
@@ -161,6 +165,7 @@ function appendByHeaders_(name, obj) {
 
 function findRow_(name, col, val) {
   var sh = sheet_(name);
+  if (!sh) return null;
   var values = sh.getDataRange().getValues();
   var headers = values[0].map(String);
   var idx = headers.indexOf(col);
