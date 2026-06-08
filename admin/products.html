@@ -21,18 +21,22 @@
         .tab-content.active { display: block; }
         
         /* Products List */
-        .products-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
-        .product-card { background: white; padding: 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .product-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px; }
-        .product-name { font-weight: 700; font-size: 16px; color: var(--color-primary); }
-        .product-actions { display: flex; gap: 6px; }
-        .product-actions button { padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .products-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+        .product-card { background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; }
+        .product-card-img { width: 100%; height: 150px; object-fit: cover; background: #f5f5f5; display: block; }
+        .product-no-img { width: 100%; height: 150px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 40px; color: #ccc; }
+        .product-body { padding: 12px; flex: 1; display: flex; flex-direction: column; }
+        .product-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px; gap: 8px; }
+        .product-name { font-weight: 700; font-size: 15px; color: var(--color-primary); flex: 1; }
+        .product-actions { display: flex; gap: 4px; flex-shrink: 0; }
+        .product-actions button { padding: 5px 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
         .btn-edit { background: var(--color-accent); color: #333; }
         .btn-delete { background: #d32f2f; color: white; }
-        .product-info { font-size: 14px; margin-bottom: 8px; }
-        .product-stock { padding: 8px; background: #f0f0f0; border-radius: 4px; margin-top: 8px; }
-        .stock-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
-        .stock-save { width: 100%; padding: 8px; margin-top: 8px; background: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .product-info { font-size: 13px; margin-bottom: 6px; color: #444; }
+        .product-price-tag { font-size: 16px; font-weight: 700; color: var(--color-primary); margin-bottom: 6px; }
+        .product-stock { padding: 8px; background: #f5f5f5; border-radius: 6px; margin-top: auto; }
+        .stock-input { width: 100%; padding: 7px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box; }
+        .stock-save { width: 100%; padding: 7px; margin-top: 6px; background: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
         
         /* Add Product Form */
         .form-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
@@ -166,6 +170,7 @@
         </div>
     </div>
     
+    <script src="../config.js"></script>
     <script src="../api.js"></script>
     <script>
         let products = [];
@@ -200,27 +205,38 @@
 
         function renderProducts() {
             const list = document.getElementById('products-list');
+            if (!products.length) {
+                list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#999">ยังไม่มีสินค้า — กด "เพิ่มสินค้าใหม่"</div>';
+                return;
+            }
             list.innerHTML = products.map(p => {
+                const firstImg = [p.img_url1, p.img_url2, p.img_url3, p.img_url4, p.img_url5].filter(Boolean)[0];
+                const imgHtml = firstImg
+                    ? `<img class="product-card-img" src="${API.driveImg(firstImg, 400)}" alt="${p.name}" onerror="this.src='';this.className='product-no-img';this.textContent='📦'">`
+                    : `<div class="product-no-img">📦</div>`;
                 const opts = parseOptions(p.options);
-                const optHtml = opts.length ? opts.map(g =>
-                    `<div style="margin-top:6px;font-size:12px"><strong>${g.name}:</strong> ${(g.values||[]).map(v => `<span class="opt-badge">${v}</span>`).join('')}</div>`
-                ).join('') : '';
+                const optHtml = opts.length ? `<div style="margin-bottom:6px">${opts.map(g =>
+                    `<span style="font-size:11px;margin-right:4px"><strong>${g.name}:</strong> ${(g.values||[]).map(v => `<span class="opt-badge">${v}</span>`).join('')}</span>`
+                ).join('')}</div>` : '';
                 return `
                 <div class="product-card">
-                    <div class="product-header">
-                        <div class="product-name">${p.name}</div>
-                        <div class="product-actions">
-                            <button class="btn-edit" onclick="editProduct('${p.id}')">✏️ แก้ไข</button>
-                            <button class="btn-delete" onclick="deleteProduct('${p.id}')">🗑️ ลบ</button>
+                    ${imgHtml}
+                    <div class="product-body">
+                        <div class="product-header">
+                            <div class="product-name">${p.name}</div>
+                            <div class="product-actions">
+                                <button class="btn-edit" onclick="editProduct('${p.id}')">✏️</button>
+                                <button class="btn-delete" onclick="deleteProduct('${p.id}')">🗑️</button>
+                            </div>
                         </div>
-                    </div>
-                    <div class="product-info">💰 ราคา: <strong>${API.fmtBaht(p.price)}</strong></div>
-                    <div class="product-info">📋 ${p.description || '-'}</div>
-                    ${optHtml}
-                    <div class="product-stock">
-                        <div style="font-size: 12px; margin-bottom: 6px;">สต็อก: <strong>${p.stock}</strong> ชิ้น</div>
-                        <input type="number" class="stock-input" id="stock-${p.id}" value="${p.stock}" min="0">
-                        <button class="stock-save" onclick="updateStock('${p.id}')">บันทึกสต็อก</button>
+                        <div class="product-price-tag">${API.fmtBaht(p.price)}</div>
+                        ${p.description ? `<div class="product-info">${p.description}</div>` : ''}
+                        ${optHtml}
+                        <div class="product-stock">
+                            <div style="font-size:12px;margin-bottom:5px;color:#666">สต็อก: <strong>${p.stock}</strong> ชิ้น</div>
+                            <input type="number" class="stock-input" id="stock-${p.id}" value="${p.stock}" min="0">
+                            <button class="stock-save" onclick="updateStock('${p.id}')">บันทึกสต็อก</button>
+                        </div>
                     </div>
                 </div>`;
             }).join('');
@@ -386,20 +402,20 @@
         
         async function deleteProduct(productId) {
             if (!confirm('⚠️ ต้องการลบสินค้านี้?')) return;
-            
             try {
                 await API.postAuth('deleteProduct', { id: productId }, authToken);
-                toast('✓ ลบสินค้าแล้ว', 'success');
+                API.toast('✓ ลบสินค้าแล้ว', 'success');
                 await loadProducts();
             } catch (err) {
-                toast('❌ ลบผิดพลาด: ' + err.message, 'error');
+                API.toast('❌ ลบผิดพลาด: ' + err.message, 'error');
             }
         }
-        
+
         function logout() {
             if (confirm('ต้องการออกจากระบบ?')) {
-                clearSession();
-                location.href = '../admin/index.html';
+                API.clearSession();
+                API.clearKey('access-code');
+                location.replace('../login.html');
             }
         }
         

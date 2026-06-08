@@ -16,8 +16,8 @@
 
 // ---- ค่าคงที่ ----
 const SHEET_ID       = '1QCQM1Y65YG9Mgt1g9VlCSdYlOQ5ZAFLVTyunJgn62no';
-const SLIP_FOLDER_ID        = '15UDvwjf-3J4bBZeRihtodgNgL2sPGxMF'; // โฟลเดอร์เก็บสลิปชำระเงิน
-const PRODUCT_IMG_FOLDER_ID = '1ovjadtqJPx9nkw4sCEQ9gRhmYsnu3Znv'; // โฟลเดอร์เก็บรูปสินค้า
+const SLIP_FOLDER_ID        = '1ovjadtqJPx9nkw4sCEQ9gRhmYsnu3Znv'; // โฟลเดอร์เก็บสลิปชำระเงิน 
+const PRODUCT_IMG_FOLDER_ID = '15UDvwjf-3J4bBZeRihtodgNgL2sPGxMF'; // โฟลเดอร์เก็บรูปสินค้า 
 const LINE_PUSH_URL  = 'https://api.line.me/v2/bot/message/push';
 
 // ---- ตัวช่วยพื้นฐาน ----
@@ -462,7 +462,7 @@ function uploadToFolder_(p, folderId) {
   var folder = DriveApp.getFolderById(folderId);
   var blob = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], p.filename || ('file_' + Date.now()));
   var file = folder.createFile(blob);
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  try { file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
   return { ok: true, id: file.getId(), url: 'https://drive.google.com/uc?export=view&id=' + file.getId() };
 }
 
