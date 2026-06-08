@@ -142,7 +142,22 @@
         .btn-full { width: 100%; }
         .loading { text-align: center; padding: 40px; color: #888; }
         .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #ddd; border-top-color: var(--color-primary); border-radius: 50%; animation: spin .8s linear infinite; }
+        .spinner-sm { display: inline-block; width: 12px; height: 12px; border: 2px solid rgba(255,255,255,.4); border-top-color: var(--color-primary); border-radius: 50%; animation: spin .8s linear infinite; vertical-align: middle; margin-right: 4px; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Refresh Bar ── */
+        .refresh-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: white; border-radius: 8px; padding: 8px 14px; margin-bottom: 12px; font-size: 12px; color: #888; box-shadow: 0 1px 4px rgba(0,0,0,.06); flex-wrap: wrap; }
+        .refresh-info { display: flex; align-items: center; gap: 8px; }
+        .refresh-dot { width: 8px; height: 8px; border-radius: 50%; background: #43a047; display: inline-block; flex-shrink: 0; }
+        .refresh-dot.syncing { background: #fb8c00; animation: pulse .8s ease-in-out infinite; }
+        .refresh-dot.error   { background: #e53935; }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.3; } }
+        .refresh-countdown { font-weight: 600; color: var(--color-primary); min-width: 24px; text-align: right; }
+        .refresh-actions { display: flex; align-items: center; gap: 6px; }
+        .refresh-btn { background: #e8f0fe; color: var(--color-primary); border: none; border-radius: 5px; padding: 5px 12px; font-size: 12px; cursor: pointer; font-family: Sarabun; font-weight: 600; }
+        .refresh-btn:hover { background: #c5cae9; }
+        .change-badge { background: #e8f5e9; color: #2e7d32; border-radius: 5px; padding: 3px 8px; font-size: 11px; font-weight: 700; display: none; }
+        .change-badge.show { display: inline-block; }
     </style>
 </head>
 <body>
@@ -167,6 +182,19 @@
         <div class="loading" id="list-loading"><div class="spinner"></div> กำลังโหลด...</div>
 
         <div id="inv-main" style="display:none">
+
+            <!-- Refresh Bar -->
+            <div class="refresh-bar">
+                <div class="refresh-info">
+                    <span class="refresh-dot" id="refresh-dot"></span>
+                    <span id="refresh-label">กำลังโหลด...</span>
+                    <span class="change-badge" id="change-badge">📥 มีการเปลี่ยนแปลง</span>
+                </div>
+                <div class="refresh-actions">
+                    <span style="color:#aaa;font-size:11px">รีเฟรชใน <span class="refresh-countdown" id="refresh-countdown">—</span> วิ</span>
+                    <button type="button" class="refresh-btn" onclick="manualRefresh()">🔄 รีเฟรช</button>
+                </div>
+            </div>
 
             <!-- Stats Bar -->
             <div class="stats-bar" id="stats-bar"></div>
@@ -284,7 +312,90 @@
 let products = [];
 let authToken = '';
 let editingId = null;
-const LOW_STOCK = 10; // threshold
+const LOW_STOCK = 10;
+
+// ════════════════════════════════
+//  Auto-Refresh (30 วิ)
+// ════════════════════════════════
+const REFRESH_SEC = 30;
+let _refreshTimer   = null;
+let _countdown      = REFRESH_SEC;
+let _lastHash       = '';
+let _isRefreshing   = false;
+
+function _hashProducts(p) {
+    return p.map(x => x.id + ':' + (x.totalStock || 0) + ':' + (x.variants ? x.variants.length : 0)).join('|');
+}
+
+function _setDot(state) {
+    const dot = document.getElementById('refresh-dot');
+    if (!dot) return;
+    dot.className = 'refresh-dot' + (state === 'sync' ? ' syncing' : state === 'error' ? ' error' : '');
+}
+
+function _setLabel(txt) {
+    const el = document.getElementById('refresh-label');
+    if (el) el.textContent = txt;
+}
+
+function _updateCountdown() {
+    const el = document.getElementById('refresh-countdown');
+    if (el) el.textContent = _countdown;
+}
+
+function startAutoRefresh() {
+    if (_refreshTimer) clearInterval(_refreshTimer);
+    _countdown = REFRESH_SEC;
+    _updateCountdown();
+    _refreshTimer = setInterval(async () => {
+        _countdown--;
+        _updateCountdown();
+        if (_countdown <= 0) {
+            _countdown = REFRESH_SEC;
+            await _silentRefresh();
+        }
+    }, 1000);
+}
+
+async function _silentRefresh() {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+    _setDot('sync');
+    _setLabel('กำลังตรวจสอบ...');
+    try {
+        const res = await API.postAuth('getProducts', {}, authToken);
+        const fresh = res.products || [];
+        const hash  = _hashProducts(fresh);
+        const changed = hash !== _lastHash;
+        _lastHash = hash;
+
+        if (changed && _lastHash !== '') {
+            // มีการเปลี่ยนแปลง → อัปเดต UI
+            products = fresh;
+            buildCategoryFilter();
+            renderStats();
+            filterRender();
+            const badge = document.getElementById('change-badge');
+            if (badge) { badge.classList.add('show'); setTimeout(() => badge.classList.remove('show'), 5000); }
+            API.toast('📥 ข้อมูลสต็อกอัปเดตแล้ว', 'info');
+        }
+
+        const now = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        _setLabel('อัปเดตล่าสุด ' + now);
+        _setDot('ok');
+    } catch (err) {
+        _setLabel('❌ รีเฟรชไม่สำเร็จ');
+        _setDot('error');
+    } finally {
+        _isRefreshing = false;
+    }
+}
+
+async function manualRefresh() {
+    _countdown = REFRESH_SEC;
+    _updateCountdown();
+    await _silentRefresh();
+}
 
 // ════════════════════════════════
 //  Init / Load
@@ -293,17 +404,22 @@ async function init() {
     authToken = API.getKey('admin-token') || API.getKey('access-code');
     if (!authToken) { location.replace('../login.html'); return; }
     await loadProducts();
+    startAutoRefresh();
 }
 
 async function loadProducts() {
     try {
         const res = await API.postAuth('getProducts', {}, authToken);
         products = res.products || [];
+        _lastHash = _hashProducts(products);
         document.getElementById('list-loading').style.display = 'none';
         document.getElementById('inv-main').style.display = 'block';
         buildCategoryFilter();
         renderStats();
         filterRender();
+        const now = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        _setLabel('อัปเดตล่าสุด ' + now);
+        _setDot('ok');
     } catch (err) {
         document.getElementById('list-loading').innerHTML = '❌ โหลดผิดพลาด: ' + err.message;
     }
