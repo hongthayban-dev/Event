@@ -107,14 +107,15 @@ const API = {
 };
 
 // ========== OCR ==========
-// OCR ควรทำฝั่ง server (Apps Script) เพื่อไม่เปิดเผย API key บน client
-// ฟังก์ชันนี้ทำหน้าที่ fallback — ให้ user กรอกยอดเองเสมอ
+// เรียก ocrSlip action ฝั่ง Apps Script (ซึ่งเรียก Typhoon Vision API)
+// ตั้ง Script Property TYPHOON_API_KEY เพื่อเปิดใช้งาน
 async function ocrReceiptAmount(imageBase64) {
-  return {
-    success: false,
-    error: 'OCR not configured',
-    hint: 'กรุณากรอกยอดเงินด้วยตัวเอง'
-  };
+  try {
+    const res = await API.post('ocrSlip', { imageBase64 });
+    return { success: !!(res.success && res.amount > 0), amount: res.amount || 0 };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
 }
 
 // ========== DRIVE IMAGE ==========
@@ -155,6 +156,10 @@ function applyTheme(settings) {
   root.style.setProperty('--wheel-color-b', settings.wheel_color_b || '#4ecdc4');
   root.style.setProperty('--wheel-text-a', settings.wheel_text_a || '#ffffff');
   root.style.setProperty('--wheel-text-b', settings.wheel_text_b || '#ffffff');
+  if (settings.bg_color) {
+    root.style.setProperty('--bg', settings.bg_color);
+    document.body.style.background = settings.bg_color;
+  }
 }
 
 // ========== STORAGE ==========

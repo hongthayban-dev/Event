@@ -99,7 +99,8 @@ function route_(action, p) {
     // ---------- public writes ----------
     case 'register':     return register_(p);
     case 'createOrder':  return createOrder_(p);
-    case 'uploadSlip':      return uploadSlip_(p);
+    case 'uploadSlip':   return uploadSlip_(p);
+    case 'ocrSlip':      return ocrSlip_(p);
     case 'uploadProductImg': return uploadProductImg_(p);
     case 'staffLogin':   return staffLogin_(p);
     case 'verifyPin':    return verifyPin_(p);
@@ -453,13 +454,16 @@ function saveProduct_(p) {
 
 function createOrder_(p) {
   var order_id = 'O' + Date.now().toString(36).toUpperCase();
+  var itemsStr = (typeof p.items === 'string') ? p.items : JSON.stringify(p.items || []);
   appendByHeaders_('orders', {
     order_id: order_id,
     line_user_id: p.line_user_id || '',
     customer_name: p.customer_name || '',
     phone: p.phone || '',
-    items: (typeof p.items === 'string') ? p.items : JSON.stringify(p.items || []),
+    address: p.address || '',
+    items: itemsStr,
     total_amount: p.total_amount || 0,
+    slip_amount: p.slip_amount || '',
     promptpay_ref: p.promptpay_ref || '',
     slip_url: p.slip_url || '',
     status: 'pending',
@@ -467,6 +471,24 @@ function createOrder_(p) {
     verified_at: '',
     verified_by: ''
   });
+
+  // ส่งสรุปคำสั่งซื้อไปใน LINE chat
+  if (p.line_user_id) {
+    var items = [];
+    try { items = JSON.parse(itemsStr); } catch(e) {}
+    var itemsText = items.map(function(i) {
+      var v = [i.color, i.size].filter(Boolean).join('/');
+      return '• ' + i.name + (v ? ' (' + v + ')' : '') + ' ×' + i.qty + ' = ฿' + (Number(i.price) * Number(i.qty)).toLocaleString('th-TH');
+    }).join('\n');
+    var total = Number(p.total_amount) || 0;
+    var msg = '🛍️ ได้รับคำสั่งซื้อแล้ว!\n\n' +
+              '📋 เลขที่: ' + order_id + '\n\n' +
+              itemsText + '\n\n' +
+              '💰 รวม: ฿' + total.toLocaleString('th-TH') + '\n\n' +
+              '⏳ Staff กำลังตรวจสอบสลิป';
+    sendLineText_(p.line_user_id, msg);
+  }
+
   return { ok: true, order_id: order_id };
 }
 
@@ -480,12 +502,63 @@ function verifyOrder_(p) {
   sh.getRange(rowNum, h.indexOf('verified_by') + 1).setValue(p.verified_by || '');
   var o = rowObj_('orders', rowNum);
   if (o.line_user_id) {
-    var msg = (status === 'rejected')
-      ? '❌ คำสั่งซื้อ ' + o.order_id + ' ไม่ผ่านการตรวจสอบ กรุณาติดต่อเจ้าหน้าที่'
-      : '✅ ยืนยันคำสั่งซื้อ ' + o.order_id + ' เรียบร้อยแล้ว ขอบคุณครับ';
+    var items = [];
+    try { items = JSON.parse(o.items || '[]'); } catch(e) {}
+    var itemsText = items.map(function(i) {
+      var v = [i.color, i.size].filter(Boolean).join('/');
+      return '• ' + i.name + (v ? ' (' + v + ')' : '') + ' ×' + i.qty;
+    }).join('\n');
+    var msg;
+    if (status === 'rejected') {
+      msg = '❌ คำสั่งซื้อ ' + o.order_id + '\nไม่ผ่านการตรวจสอบ กรุณาติดต่อเจ้าหน้าที่';
+    } else {
+      msg = '✅ ยืนยันคำสั่งซื้อ\nกำลังจัดส่งสินค้า\n\n' +
+            itemsText +
+            '\n\n📦 ขอบคุณที่ไว้วางใจ!';
+    }
     sendLineText_(o.line_user_id, msg);
   }
   return { ok: true };
+}
+
+// OCR สลิป PromptPay โดยใช้ Typhoon Vision API
+// ตั้ง Script Property: TYPHOON_API_KEY = <your key from opentyphoon.ai>
+function ocrSlip_(p) {
+  var apiKey = props_().getProperty('TYPHOON_API_KEY');
+  if (!apiKey) return { ok: true, success: false, error: 'TYPHOON_API_KEY not set — กรุณากรอกยอดด้วยตัวเอง' };
+  var imageBase64 = p.imageBase64 || '';
+  if (!imageBase64) return { ok: true, success: false, error: 'missing imageBase64' };
+
+  try {
+    var payload = {
+      model: 'typhoon-v2-vision-instruct',
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + imageBase64 } },
+          { type: 'text', text: 'นี่คือสลิปโอนเงิน PromptPay กรุณาระบุยอดเงินที่โอนเป็นตัวเลขเท่านั้น ไม่มีคำอธิบาย ไม่มีสกุลเงิน เช่น 1500.00' }
+        ]
+      }],
+      max_tokens: 30,
+      temperature: 0
+    };
+    var res = UrlFetchApp.fetch('https://api.opentyphoon.ai/v1/chat/completions', {
+      method: 'post',
+      contentType: 'application/json',
+      headers: { 'Authorization': 'Bearer ' + apiKey },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+    var result = JSON.parse(res.getContentText());
+    if (result.choices && result.choices[0]) {
+      var text = result.choices[0].message.content.trim();
+      var amount = parseFloat(text.replace(/[^0-9.]/g, ''));
+      if (!isNaN(amount) && amount > 0) return { ok: true, success: true, amount: amount };
+    }
+    return { ok: true, success: false, error: 'อ่านยอดไม่ได้' };
+  } catch(e) {
+    return { ok: true, success: false, error: e.message };
+  }
 }
 
 // อัปโหลดสลิปชำระเงิน → SLIP_FOLDER_ID

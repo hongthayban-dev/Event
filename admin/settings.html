@@ -99,6 +99,14 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
+                        <label>สีพื้นหลัง</label>
+                        <input type="color" id="bg-color" class="color-input">
+                        <div class="color-display" id="bg-color-display"></div>
+                    </div>
+                    <div class="form-group"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
                         <label>สีวงล้อ A</label>
                         <input type="color" id="wheel-color-a" class="color-input">
                     </div>
@@ -243,6 +251,7 @@
             
             document.getElementById('color-primary').value = settings.color_primary || '#0d2b5e';
             document.getElementById('color-accent').value = settings.color_accent || '#f0c040';
+            document.getElementById('bg-color').value = settings.bg_color || '#f0f2f7';
             document.getElementById('wheel-color-a').value = settings.wheel_color_a || '#ff6b6b';
             document.getElementById('wheel-color-b').value = settings.wheel_color_b || '#4ecdc4';
             document.getElementById('wheel-text-a').value = settings.wheel_text_a || '#ffffff';
@@ -278,16 +287,21 @@
         function updateColorDisplay() {
             const primary = document.getElementById('color-primary').value;
             const accent = document.getElementById('color-accent').value;
-            
+            const bg = document.getElementById('bg-color').value;
+
             document.getElementById('color-primary-display').style.backgroundColor = primary;
             document.getElementById('color-primary-display').textContent = primary;
-            
+
             document.getElementById('color-accent-display').style.backgroundColor = accent;
             document.getElementById('color-accent-display').textContent = accent;
+
+            document.getElementById('bg-color-display').style.backgroundColor = bg;
+            document.getElementById('bg-color-display').textContent = bg;
         }
-        
+
         document.getElementById('color-primary').addEventListener('change', updateColorDisplay);
         document.getElementById('color-accent').addEventListener('change', updateColorDisplay);
+        document.getElementById('bg-color').addEventListener('change', updateColorDisplay);
         
         // QR File Upload Handler — อัปโหลดไป Google Drive จริง
         document.getElementById('qr-file').addEventListener('change', async (e) => {
@@ -322,6 +336,7 @@
                 logo_url: document.getElementById('logo-url').value,
                 color_primary: document.getElementById('color-primary').value,
                 color_accent: document.getElementById('color-accent').value,
+                bg_color: document.getElementById('bg-color').value,
                 wheel_color_a: document.getElementById('wheel-color-a').value,
                 wheel_color_b: document.getElementById('wheel-color-b').value,
                 wheel_text_a: document.getElementById('wheel-text-a').value,

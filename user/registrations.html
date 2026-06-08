@@ -6,41 +6,184 @@
   <title>ลงทะเบียนเข้างาน</title>
   <link rel="stylesheet" href="../theme.css" />
   <style>
-    /* ===== ID card (บัตรลงทะเบียน) ===== */
+    /* ===== Luxury Lanyard ID Card ===== */
     .modal {
-      position: fixed; inset: 0; background: rgba(10, 24, 52, .65);
-      display: none; align-items: center; justify-content: center; padding: 18px; z-index: 1000;
-      backdrop-filter: blur(2px);
+      position: fixed; inset: 0;
+      background: rgba(5, 15, 40, .88);
+      display: none; align-items: center; justify-content: center;
+      padding: 16px; z-index: 1000;
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
     }
     .modal.open { display: flex; }
-    .idcard {
-      width: 100%; max-width: 340px; background: #fff; border-radius: 22px; overflow: hidden;
-      box-shadow: 0 24px 60px rgba(0,0,0,.4); border: 2px solid transparent;
-      border-image: var(--gold-grad) 1; animation: pop .35s cubic-bezier(.2,.8,.3,1.2);
-    }
-    @keyframes pop { from { transform: scale(.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    .idcard .head {
-      background: var(--navy-grad); color: #fff; text-align: center; padding: 18px 16px 16px;
+
+    /* ---- Lanyard ---- */
+    .card-wrap { display: flex; flex-direction: column; align-items: center; }
+
+    .lanyard-hole {
+      width: 48px; height: 48px;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
       position: relative;
     }
-    .idcard .head::after {
-      content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--gold-grad);
+    .lanyard-hole::before {
+      content: '';
+      position: absolute; top: 4px; left: 50%; transform: translateX(-50%);
+      width: 18px; height: 18px;
+      border: 2.5px solid #d4af37;
+      border-radius: 50%;
+      background: rgba(212,175,55,.12);
+      box-shadow: 0 0 8px rgba(212,175,55,.3);
     }
-    .idcard .head img { width: 46px; height: 46px; object-fit: contain; margin-bottom: 6px; filter: drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
-    .idcard .head .ev { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; line-height: 1.25; }
-    .idcard .head .tag { font-size: .72rem; color: var(--accent); letter-spacing: 1px; margin-top: 2px; }
-    .idcard .qr { display: flex; justify-content: center; padding: 22px 0 10px; }
-    .idcard .qr canvas, .idcard .qr img { border-radius: 8px; }
-    .idcard .name { text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 1.35rem; color: var(--ink); padding: 0 16px; }
-    .idcard .nick { text-align: center; color: var(--ink-soft); margin-top: 2px; }
-    .idcard .gen { text-align: center; margin: 10px 0 4px; }
-    .idcard .gen span {
-      display: inline-block; background: var(--gold-grad); color: #3a2c00; font-weight: 700;
-      padding: 4px 16px; border-radius: 999px; font-size: .9rem;
+    .lanyard-hole::after {
+      content: '';
+      display: block; width: 3px; height: 22px;
+      background: linear-gradient(to bottom, #d4af37, rgba(212,175,55,0));
     }
-    .idcard .rid { text-align: center; font-size: .72rem; color: #9aa6bd; padding: 8px 0 4px; font-family: monospace; letter-spacing: .5px; }
-    .idcard .foot { background: var(--bg); text-align: center; font-size: .75rem; color: var(--ink-soft); padding: 10px; border-top: 1px solid var(--line); }
-    .modal-actions { display: flex; gap: 10px; width: 100%; max-width: 340px; margin-top: 14px; }
+
+    /* ---- Card ---- */
+    .idcard {
+      width: 100%; max-width: 300px;
+      border-radius: 20px; overflow: hidden;
+      box-shadow:
+        0 32px 80px rgba(0,0,0,.7),
+        0 0 0 1px rgba(212,175,55,.45),
+        inset 0 1px 0 rgba(255,255,255,.12);
+      animation: cardPop .42s cubic-bezier(.18,.89,.32,1.28);
+    }
+    @keyframes cardPop {
+      from { transform: scale(.78) translateY(30px); opacity: 0; }
+      to   { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    /* Header */
+    .ic-head {
+      background: linear-gradient(155deg, #071840 0%, #132f6e 45%, #0d2b5e 100%);
+      padding: 18px 18px 16px;
+      position: relative; overflow: hidden;
+    }
+    .ic-head::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse at 15% 60%, rgba(240,192,64,.07) 0%, transparent 55%),
+        radial-gradient(ellipse at 85% 20%, rgba(255,255,255,.05) 0%, transparent 45%);
+      pointer-events: none;
+    }
+    /* Gold shimmer top */
+    .ic-top-shimmer {
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent 0%, #d4af37 20%, #fff8d4 50%, #d4af37 80%, transparent 100%);
+    }
+    /* Corner accents */
+    .ic-head::after {
+      content: '';
+      position: absolute; top: 12px; right: 12px;
+      width: 20px; height: 20px;
+      border-top: 1.5px solid rgba(212,175,55,.55);
+      border-right: 1.5px solid rgba(212,175,55,.55);
+      border-radius: 0 5px 0 0;
+    }
+
+    .ic-logo-row {
+      display: flex; align-items: center; gap: 10px;
+      position: relative; z-index: 1;
+    }
+    .ic-logo-row img {
+      width: 38px; height: 38px; object-fit: contain;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,.45)) brightness(1.05);
+      border-radius: 6px; flex-shrink: 0;
+    }
+    .ic-event-name {
+      font-family: var(--font-display); font-weight: 700;
+      font-size: .95rem; color: #ffffff; line-height: 1.3;
+      text-shadow: 0 1px 4px rgba(0,0,0,.35);
+    }
+    .ic-event-tag {
+      font-size: .58rem; color: #f0c040; letter-spacing: 2.5px;
+      text-transform: uppercase; margin-top: 3px; font-weight: 500;
+    }
+
+    /* QR section */
+    .ic-qr-section {
+      background: linear-gradient(180deg, #0d2b5e 0%, #0a2056 100%);
+      padding: 16px; display: flex; justify-content: center;
+    }
+    .ic-qr-frame {
+      background: #ffffff; border-radius: 12px; padding: 10px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.5), 0 0 0 1px rgba(212,175,55,.45);
+    }
+    .ic-qr-frame canvas, .ic-qr-frame img { display: block; border-radius: 4px; }
+
+    /* Name */
+    .ic-name-section { background: #fff; padding: 14px 18px 6px; text-align: center; }
+    .ic-fullname {
+      font-family: var(--font-display); font-weight: 700;
+      font-size: 1.22rem; color: #0d2b5e; line-height: 1.2;
+    }
+    .ic-nickname { color: #7b8aab; font-size: .84rem; margin-top: 3px; }
+
+    /* Gen badge */
+    .ic-gen-section { background: #fff; display: flex; justify-content: center; padding: 8px 0 4px; }
+    .ic-gen-badge {
+      background: linear-gradient(135deg, #f0c040, #e89800);
+      color: #3a2500; font-weight: 700; font-size: .78rem;
+      padding: 4px 16px; border-radius: 999px;
+      box-shadow: 0 2px 8px rgba(240,192,64,.4);
+      letter-spacing: .3px;
+    }
+
+    /* Reg ID */
+    .ic-rid {
+      background: #fff; text-align: center;
+      font-size: .6rem; color: #aab4cc;
+      font-family: monospace; letter-spacing: 2px;
+      padding: 6px 0;
+    }
+
+    /* Gold separator */
+    .ic-sep {
+      height: 1px; margin: 0;
+      background: linear-gradient(90deg, transparent, rgba(212,175,55,.5) 30%, rgba(212,175,55,.5) 70%, transparent);
+    }
+
+    /* Footer */
+    .ic-footer {
+      background: linear-gradient(135deg, #071840 0%, #0d2b5e 100%);
+      padding: 10px 18px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .ic-footer-text { font-size: .64rem; color: rgba(255,255,255,.65); letter-spacing: .5px; }
+    .ic-badge {
+      border: 1px solid rgba(212,175,55,.5); color: #f0c040;
+      font-size: .58rem; font-weight: 700; letter-spacing: 1.5px;
+      padding: 3px 8px; border-radius: 4px;
+      background: rgba(240,192,64,.08);
+    }
+
+    /* Actions */
+    .modal-actions { display: flex; gap: 10px; width: 100%; max-width: 300px; margin-top: 14px; }
+
+    /* Save success overlay */
+    .save-overlay {
+      position: fixed; inset: 0;
+      background: rgba(5, 20, 60, .92);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 2000;
+      animation: fadeInOverlay .25s ease;
+    }
+    @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
+    .save-overlay-box {
+      text-align: center; color: #fff;
+      animation: cardPop .4s cubic-bezier(.18,.89,.32,1.28);
+    }
+    .save-overlay-icon { font-size: 4.5rem; margin-bottom: 14px; }
+    .save-overlay-title {
+      font-size: 1.6rem; font-weight: 700;
+      font-family: var(--font-display); margin: 0 0 8px;
+    }
+    .save-overlay-sub { font-size: .85rem; color: rgba(255,255,255,.65); }
+
+    /* Misc */
     .hint { font-size: .8rem; color: var(--ink-soft); margin-top: -6px; margin-bottom: 12px; }
   </style>
 </head>
@@ -55,17 +198,16 @@
   </div>
 
   <div class="container">
-    <!-- loading -->
     <div id="loading" class="loading"><div class="spinner"></div>กำลังโหลด...</div>
 
-    <!-- already registered -->
+    <!-- ลงทะเบียนแล้ว -->
     <div id="done-wrap" class="card gold-top center" style="display:none">
       <h2>คุณลงทะเบียนแล้ว ✅</h2>
       <p class="muted">แสดงบัตร QR ของคุณที่จุดลงทะเบียนเพื่อเข้างาน</p>
       <button class="btn btn-gold mt" onclick="openCard()">แสดงบัตร QR</button>
     </div>
 
-    <!-- form -->
+    <!-- ฟอร์ม -->
     <div id="form-wrap" class="card gold-top" style="display:none">
       <h2>ลงทะเบียนเข้างาน</h2>
       <p class="hint">กรอกข้อมูลเพื่อรับบัตรเข้างาน (* จำเป็น)</p>
@@ -137,24 +279,60 @@
     </div>
   </div>
 
-  <!-- card modal -->
+  <!-- ===== ID Card Modal ===== -->
   <div class="modal" id="card-modal">
-    <div>
+    <div class="card-wrap">
+
+      <!-- Lanyard hook -->
+      <div class="lanyard-hole"></div>
+
+      <!-- Card -->
       <div class="idcard" id="idcard">
-        <div class="head">
-          <img id="card-logo" alt="" />
-          <div class="ev" id="card-event">งาน</div>
-          <div class="tag">บัตรลงทะเบียนเข้างาน</div>
+
+        <!-- Header -->
+        <div class="ic-head">
+          <div class="ic-top-shimmer"></div>
+          <div class="ic-logo-row">
+            <img id="card-logo" alt="" />
+            <div>
+              <div class="ic-event-name" id="card-event">งาน</div>
+              <div class="ic-event-tag">Invitation Card</div>
+            </div>
+          </div>
         </div>
-        <div class="qr" id="qrbox"></div>
-        <div class="name" id="card-name">—</div>
-        <div class="nick" id="card-nick"></div>
-        <div class="gen" id="card-gen-wrap" style="display:none"><span id="card-gen"></span></div>
-        <div class="rid" id="card-rid"></div>
-        <div class="foot">แสดงบัตรนี้ที่จุดลงทะเบียน</div>
-      </div>
+
+        <!-- QR Code -->
+        <div class="ic-qr-section">
+          <div class="ic-qr-frame">
+            <div id="qrbox"></div>
+          </div>
+        </div>
+
+        <!-- Name -->
+        <div class="ic-name-section">
+          <div class="ic-fullname" id="card-name">—</div>
+          <div class="ic-nickname" id="card-nick"></div>
+        </div>
+
+        <!-- Generation -->
+        <div class="ic-gen-section" id="card-gen-wrap" style="display:none">
+          <span class="ic-gen-badge" id="card-gen"></span>
+        </div>
+
+        <!-- Reg ID -->
+        <div class="ic-rid" id="card-rid"></div>
+
+        <!-- Separator + Footer -->
+        <div class="ic-sep"></div>
+        <div class="ic-footer">
+          <div class="ic-footer-text">แสดงบัตรนี้ที่จุดลงทะเบียน</div>
+          <div class="ic-badge">ENTRY</div>
+        </div>
+
+      </div><!-- /idcard -->
+
       <div class="modal-actions">
-        <button class="btn btn-gold" onclick="saveCard()">บันทึกรูปบัตร</button>
+        <button class="btn btn-gold" onclick="saveCard()">⬇ บันทึกรูป</button>
         <button class="btn btn-ghost" style="background:#fff" onclick="closeCard()">ปิด</button>
       </div>
     </div>
@@ -184,7 +362,6 @@
         return;
       }
 
-      // เช็คว่าลงทะเบียนแล้วหรือยัง
       var r = await API.get('getRegistration', { line_user_id: profile.userId });
       API.qs('#loading').style.display = 'none';
 
@@ -192,11 +369,9 @@
         current = r.registration;
         API.qs('#done-wrap').style.display = 'block';
       } else {
-        // เปิดฟิลด์เสริมตาม settings
         API.qsa('.opt').forEach(function (el) {
           if (API.fieldOn(settings, el.getAttribute('data-opt'))) el.style.display = 'block';
         });
-        // prefill ชื่อเล่นจากชื่อ LINE
         if (profile && profile.displayName) API.qs('#nickname').value = profile.displayName;
         API.qs('#form-wrap').style.display = 'block';
       }
@@ -221,7 +396,6 @@
         address: val('address')
       };
 
-      // validate
       if (!data.first_name || !data.last_name || !data.nickname) return API.toast('กรอกชื่อ–นามสกุล–ชื่อเล่นให้ครบ');
       if (!data.gender) return API.toast('เลือกเพศ');
       if (!data.age || Number(data.age) < 1) return API.toast('กรอกอายุ');
@@ -249,23 +423,31 @@
     function openCard() {
       if (!current) return;
       API.qs('#card-event').textContent = settings.event_name || 'งาน';
-      if (settings.logo_url) API.qs('#card-logo').src = API.driveImg(settings.logo_url);
+      var logoEl = API.qs('#card-logo');
+      if (settings.logo_url) {
+        logoEl.src = API.driveImg(settings.logo_url);
+        logoEl.style.display = '';
+      } else {
+        logoEl.style.display = 'none';
+      }
       API.qs('#card-name').textContent = ((current.first_name || '') + ' ' + (current.last_name || '')).trim();
-      API.qs('#card-nick').textContent = current.nickname ? ('(' + current.nickname + ')') : '';
+      API.qs('#card-nick').textContent = current.nickname ? '(' + current.nickname + ')' : '';
+
       if (current.generation) {
-        API.qs('#card-gen-wrap').style.display = 'block';
+        API.qs('#card-gen-wrap').style.display = 'flex';
         API.qs('#card-gen').textContent = 'รุ่น ' + current.generation;
       } else {
         API.qs('#card-gen-wrap').style.display = 'none';
       }
-      API.qs('#card-rid').textContent = current.reg_id;
+      API.qs('#card-rid').textContent = 'ID: ' + current.reg_id;
 
-      // วาด QR (เข้ารหัส reg_id)
-      var box = API.qs('#qrbox'); box.innerHTML = '';
+      // QR code — ใช้สีดำเพื่อให้สแกนได้ชัดเจน (ตรงกับที่ส่งใน LINE)
+      var box = API.qs('#qrbox');
+      box.innerHTML = '';
       new QRCode(box, {
-        text: String(current.reg_id),
-        width: 200, height: 200,
-        colorDark: '#0d2b5e', colorLight: '#ffffff',
+        text: String(current.reg_id).trim(),
+        width: 180, height: 180,
+        colorDark: '#000000', colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.M
       });
 
@@ -276,13 +458,33 @@
 
     function saveCard() {
       var card = API.qs('#idcard');
-      html2canvas(card, { scale: 3, backgroundColor: '#ffffff', useCORS: true }).then(function (canvas) {
+      html2canvas(card, { scale: 3, backgroundColor: null, useCORS: true }).then(function (canvas) {
         var a = document.createElement('a');
         a.href = canvas.toDataURL('image/png');
         a.download = 'บัตรลงทะเบียน_' + (current.reg_id || '') + '.png';
         a.click();
-        API.toast('บันทึกรูปแล้ว');
-      }).catch(function () { API.toast('บันทึกไม่สำเร็จ ลองแคปหน้าจอแทน'); });
+        showSaveSuccess();
+      }).catch(function () { API.toast('บันทึกไม่สำเร็จ ลองแคปหน้าจอแทน', 'error'); });
+    }
+
+    function showSaveSuccess() {
+      var overlay = document.createElement('div');
+      overlay.className = 'save-overlay';
+      overlay.innerHTML =
+        '<div class="save-overlay-box">' +
+        '<div class="save-overlay-icon">✅</div>' +
+        '<div class="save-overlay-title">บันทึกสำเร็จ</div>' +
+        '<div class="save-overlay-sub">บัตรถูกบันทึกลงอุปกรณ์แล้ว</div>' +
+        '</div>';
+      document.body.appendChild(overlay);
+      setTimeout(function () {
+        overlay.style.transition = 'opacity .35s ease';
+        overlay.style.opacity = '0';
+        setTimeout(function () {
+          overlay.remove();
+          closeCard();
+        }, 380);
+      }, 1500);
     }
   </script>
 </body>
