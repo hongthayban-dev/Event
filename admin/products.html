@@ -300,7 +300,8 @@
                 try {
                     const res = await API.postAuth('uploadSlip', {
                         dataUrl,
-                        filename: 'product_' + Date.now() + '_' + num + '.jpg'
+                        filename: 'product_' + Date.now() + '_' + num + '.jpg',
+                        type: 'product'
                     }, authToken);
                     document.getElementById('img' + num).value = res.id || res.fileId || '';
                     lbl.textContent = '✓ อัปโหลดแล้ว — คลิกเพื่อเปลี่ยน';

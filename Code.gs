@@ -16,13 +16,21 @@
 
 // ---- ค่าคงที่ ----
 const SHEET_ID       = '1QCQM1Y65YG9Mgt1g9VlCSdYlOQ5ZAFLVTyunJgn62no';
-const SLIP_FOLDER_ID = '1uuF70gDDiPQ8qnpYasKwjCojR7nuGW6R'; // โฟลเดอร์เก็บสลิป
+const SLIP_FOLDER_ID        = '15UDvwjf-3J4bBZeRihtodgNgL2sPGxMF'; // โฟลเดอร์เก็บสลิปชำระเงิน
+const PRODUCT_IMG_FOLDER_ID = '1ovjadtqJPx9nkw4sCEQ9gRhmYsnu3Znv'; // โฟลเดอร์เก็บรูปสินค้า
 const LINE_PUSH_URL  = 'https://api.line.me/v2/bot/message/push';
 
 // ---- ตัวช่วยพื้นฐาน ----
 function props_()  { return PropertiesService.getScriptProperties(); }
 function token_()  { return props_().getProperty('LINE_TOKEN'); }
 function ss_()     { return SpreadsheetApp.openById(SHEET_ID); }
+
+// รันครั้งเดียวจาก Script Editor เพื่อ authorize DriveApp + Sheets
+function authorizeAll() {
+  SpreadsheetApp.openById(SHEET_ID);
+  DriveApp.getRootFolder();
+  Logger.log('✅ Authorization granted for Drive + Sheets');
+}
 function sheet_(n) { return ss_().getSheetByName(n); }
 
 function json_(obj) {
@@ -437,12 +445,14 @@ function verifyOrder_(p) {
   return { ok: true };
 }
 
-// บันทึกสลิปลง Drive แล้วคืน URL
+// บันทึกไฟล์ลง Drive แล้วคืน id + url
+// p.type = 'product' → PRODUCT_IMG_FOLDER_ID, อื่น ๆ → SLIP_FOLDER_ID
 function uploadSlip_(p) {
   var m = String(p.dataUrl || '').match(/^data:(.+);base64,(.*)$/);
   if (!m) return { ok: false, error: 'bad dataUrl' };
-  var folder = DriveApp.getFolderById(SLIP_FOLDER_ID);
-  var blob = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], p.filename || ('slip_' + Date.now()));
+  var folderId = (p.type === 'product') ? PRODUCT_IMG_FOLDER_ID : SLIP_FOLDER_ID;
+  var folder = DriveApp.getFolderById(folderId);
+  var blob = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], p.filename || ('file_' + Date.now()));
   var file = folder.createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   return { ok: true, id: file.getId(), url: 'https://drive.google.com/uc?export=view&id=' + file.getId() };
@@ -764,4 +774,113 @@ function testLineToMe() {
   var reg = { reg_id: 'TEST123', first_name: 'จักรกริช', last_name: 'เลิศวิทยารัตน์', nickname: 'ยุ่น', generation: '44' };
   var f = pushLine_(uid, [ buildRegFlex_(reg) ]);
   Logger.log('3) ผลส่ง Flex card: ' + JSON.stringify(f));
+}
+
+// ---- ตรวจสอบ Script Properties (ADMIN_KEY / LINE_TOKEN) ----
+function testConfig() {
+  var key = props_().getProperty('ADMIN_KEY');
+  Logger.log(key
+    ? '✅ ADMIN_KEY ตั้งไว้แล้ว (ยาว ' + key.length + ' ตัว)'
+    : '⚠️  ADMIN_KEY ยังไม่ได้ตั้ง → dev mode (ทุก request ผ่าน)');
+
+  var tk = token_();
+  Logger.log(tk
+    ? '✅ LINE_TOKEN ตั้งไว้แล้ว (ยาว ' + tk.length + ' ตัว)'
+    : '⚠️  LINE_TOKEN ยังไม่ได้ตั้ง → ส่ง LINE ไม่ได้');
+
+  Logger.log('SHEET_ID: ' + SHEET_ID);
+  Logger.log('SLIP_FOLDER_ID: ' + SLIP_FOLDER_ID);
+}
+
+// ---- ตรวจสอบว่า Sheet tabs ครบและ header ถูกต้อง ----
+function testSheets() {
+  var required = ['registrations','orders','products','rewards','winners','staff','settings'];
+  required.forEach(function (name) {
+    var sh = sheet_(name);
+    if (!sh) {
+      Logger.log('❌ ไม่พบ sheet: "' + name + '" — ตรวจสอบชื่อ tab ใน Google Sheet');
+    } else {
+      var h = getHeaders_(name);
+      Logger.log('✅ ' + name + ' (' + h.length + ' cols): ' + h.join(' | '));
+    }
+  });
+}
+
+// ---- ตรวจสอบ DriveApp + SLIP_FOLDER_ID ----
+function testDriveUpload() {
+  try {
+    var folder = DriveApp.getFolderById(SLIP_FOLDER_ID);
+    Logger.log('✅ Folder พบ: "' + folder.getName() + '"');
+    var blob = Utilities.newBlob('drive-test', 'text/plain', 'test_' + Date.now() + '.txt');
+    var file = folder.createFile(blob);
+    file.setTrashed(true);
+    Logger.log('✅ อัปโหลดทดสอบสำเร็จ — DriveApp ใช้งานได้');
+  } catch (e) {
+    Logger.log('❌ DriveApp error: ' + e.message);
+    Logger.log('   → ตรวจสอบว่า SLIP_FOLDER_ID ถูกต้องและ script มีสิทธิ์เข้าถึง folder');
+  }
+}
+
+// ---- ตรวจสอบ getProducts + options ----
+function testGetProducts() {
+  var products = getRows_('products').map(normalizeProduct_);
+  Logger.log('จำนวนสินค้า: ' + products.length);
+  products.forEach(function (p) {
+    Logger.log('  [' + p.id + '] ' + p.name + ' ราคา:' + p.price + ' ตัวเลือก:' + (p.options || '-'));
+  });
+}
+
+// ---- ทดสอบ saveProduct (เพิ่ม → ตรวจสอบ → ลบ) ----
+function testSaveProduct() {
+  var testId = 'TEST_' + Date.now();
+  var r = saveProduct_({
+    id: testId,
+    name: 'สินค้าทดสอบ (จะถูกลบ)',
+    price: 99,
+    stock: 5,
+    description: 'auto test',
+    img_url1: '', img_url2: '', img_url3: '', img_url4: '', img_url5: '',
+    options: '[{"name":"ขนาด","values":["S","M","L"]}]'
+  });
+  Logger.log('saveProduct result: ' + JSON.stringify(r));
+
+  var row = findRow_('products', 'id', testId);
+  Logger.log(row ? '✅ บันทึกสำเร็จ — อยู่ที่แถว ' + row : '❌ ไม่พบแถวหลังบันทึก');
+
+  if (row) {
+    sheet_('products').deleteRow(row);
+    Logger.log('✅ ลบ test record เรียบร้อย');
+  }
+}
+
+// ---- ตรวจสอบ getOrders / getRegistrations ----
+function testGetOrders() {
+  var orders = getRows_('orders');
+  Logger.log('จำนวน orders: ' + orders.length);
+  if (orders.length > 0) Logger.log('order ล่าสุด: ' + JSON.stringify(orders[orders.length - 1]));
+}
+
+function testGetRegistrations() {
+  var regs = getRows_('registrations');
+  Logger.log('จำนวน registrations: ' + regs.length);
+  if (regs.length > 0) Logger.log('registration ล่าสุด: ' + JSON.stringify(regs[regs.length - 1]));
+}
+
+// ---- รันทุก test พร้อมกัน ----
+function testAll() {
+  Logger.log('========== testConfig ==========');
+  testConfig();
+  Logger.log('========== testSheets ==========');
+  testSheets();
+  Logger.log('========== testDriveUpload ==========');
+  testDriveUpload();
+  Logger.log('========== testGetProducts ==========');
+  testGetProducts();
+  Logger.log('========== testSaveProduct ==========');
+  testSaveProduct();
+  Logger.log('========== testGetOrders ==========');
+  testGetOrders();
+  Logger.log('========== testGetRegistrations ==========');
+  testGetRegistrations();
+  Logger.log('========== DONE ==========');
 }
