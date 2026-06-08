@@ -1,168 +1,364 @@
-// ============================================================
-//  api.js — ตัวเรียก backend, LIFF, และระบบธีม
-//  ต้องโหลดหลัง config.js และหลัง LIFF SDK
-// ============================================================
-(function () {
-  var CFG = window.CONFIG || {};
-  var _settings = null;       // cache ของ settings
-  var _profile = null;        // cache ของโปรไฟล์ LIFF
+// ========== CONFIGURATION ==========
+const CONFIG = {
+  LIFF_ID: '2010308553-ubIy665f',
+  API_URL: 'https://script.google.com/macros/s/AKfycbzllK0_OtqWXJYc28VbLfcw8ygVwfX6xrA36sRq4bE522rhiM3pWbYlnUaftlZ1attl/exec',
+  TYPHOON_API_KEY: 'sk-Kz0eO9PdNDU8398ZoZr100x4d7LIUCfeqnUnDh0EhTCbqY6E',
+  DRIVE_FOLDER_ID: '1uuF70gDDiPQ8qnpYasKwjCojR7nuGW6R'
+};
 
-  // ---------- เรียก API ----------
-  // GET: ใช้ query string
-  async function apiGet(action, params) {
-    params = params || {};
-    var url = CFG.API_URL + '?action=' + encodeURIComponent(action);
-    Object.keys(params).forEach(function (k) {
-      var v = params[k];
-      if (v === undefined || v === null) return;
-      if (typeof v === 'object') v = JSON.stringify(v);
-      url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(v);
+// ========== LIFF ==========
+async function liffInit() {
+  return new Promise((resolve, reject) => {
+    if (!window.liff) {
+      reject(new Error('LIFF SDK not loaded'));
+      return;
+    }
+    
+    liff.init({
+      liffId: CONFIG.LIFF_ID
+    }).then(() => {
+      if (!liff.isLoggedIn()) {
+        reject(new Error('LIFF: Not logged in'));
+      } else {
+        resolve();
+      }
+    }).catch(err => {
+      reject(new Error('LIFF: ' + err.message));
     });
-    var res = await fetch(url, { method: 'GET' });
-    return res.json();
-  }
+  });
+}
 
-  // POST: ส่ง JSON เป็น text/plain เพื่อเลี่ยง CORS preflight ของ Apps Script
-  async function apiPost(action, payload) {
-    payload = payload || {};
-    payload.action = action;
-    var res = await fetch(CFG.API_URL, {
+async function getProfile() {
+  return new Promise((resolve, reject) => {
+    if (!liff.isLoggedIn()) {
+      reject(new Error('LIFF: Not logged in'));
+      return;
+    }
+    
+    liff.getProfile()
+      .then(profile => resolve(profile))
+      .catch(err => reject(err));
+  });
+}
+
+// ========== API CALLS ==========
+const API = {
+  async get(action, params = {}) {
+    const url = new URL(CONFIG.API_URL);
+    url.searchParams.append('action', action);
+    Object.keys(params).forEach(key => {
+      url.searchParams.append(key, JSON.stringify(params[key]));
+    });
+    
+    const resp = await fetch(url, { method: 'GET' });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error);
+    return json.data;
+  },
+  
+  async post(action, data = {}) {
+    const payload = new URLSearchParams();
+    payload.append('action', action);
+    Object.keys(data).forEach(key => {
+      payload.append(key, typeof data[key] === 'string' ? data[key] : JSON.stringify(data[key]));
+    });
+    
+    const resp = await fetch(CONFIG.API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
+      body: payload,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     });
-    return res.json();
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error);
+    return json.data;
+  },
+  
+  async getAuth(action, params = {}, token) {
+    const url = new URL(CONFIG.API_URL);
+    url.searchParams.append('action', action);
+    url.searchParams.append('admin_key', token);
+    Object.keys(params).forEach(key => {
+      url.searchParams.append(key, JSON.stringify(params[key]));
+    });
+    
+    const resp = await fetch(url, { method: 'GET' });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error);
+    return json.data;
+  },
+  
+  async postAuth(action, data = {}, token) {
+    const payload = new URLSearchParams();
+    payload.append('action', action);
+    payload.append('admin_key', token);
+    Object.keys(data).forEach(key => {
+      payload.append(key, typeof data[key] === 'string' ? data[key] : JSON.stringify(data[key]));
+    });
+    
+    const resp = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: payload,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error);
+    return json.data;
   }
+};
 
-  // POST สำหรับ staff/admin — แนบ key อัตโนมัติ
-  // key สำหรับ staff/admin: ใช้จาก config ก่อน ถ้าไม่มีดึงจาก localStorage (พิมพ์ครั้งเดียวบนเครื่อง)
-  function getKey() {
-    if (CFG.ADMIN_KEY) return CFG.ADMIN_KEY;
-    try { return localStorage.getItem('event_admin_key') || ''; } catch (e) { return ''; }
-  }
-  function setKey(k) { try { localStorage.setItem('event_admin_key', k || ''); } catch (e) {} }
-  function clearKey() { try { localStorage.removeItem('event_admin_key'); } catch (e) {} }
-
-  // session ของ staff/admin (เก็บ username/display_name/role)
-  function setSession(o) { try { localStorage.setItem('staff_session', JSON.stringify(o || {})); } catch (e) {} }
-  function getSession() { try { var s = localStorage.getItem('staff_session'); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
-  function clearSession() { try { localStorage.removeItem('staff_session'); } catch (e) {} }
-
-  async function apiPostAuth(action, payload) {
-    payload = payload || {};
-    payload.key = getKey();
-    return apiPost(action, payload);
-  }
-  async function apiGetAuth(action, params) {
-    params = params || {};
-    params.key = getKey();
-    return apiGet(action, params);
-  }
-
-  // ---------- LIFF ----------
-  // requireLogin=true จะบังคับ login ถ้ายังไม่ได้ login
-  async function liffInit(requireLogin) {
-    if (typeof liff === 'undefined') throw new Error('LIFF SDK ยังไม่ถูกโหลด');
-    await liff.init({ liffId: CFG.LIFF_ID });
-    if (requireLogin !== false && !liff.isLoggedIn()) {
-      liff.login();
-      return new Promise(function () {}); // ค้างไว้ระหว่าง redirect
+// ========== OCR (TYPHOON) ==========
+async function ocrReceiptAmount(imageBase64) {
+  try {
+    // Method 1: Typhoon OCR API
+    const response = await fetch('https://api.typhoon.ai/v1/ocr', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${CONFIG.TYPHOON_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        image: imageBase64,
+        language: 'th'
+      })
+    });
+    
+    const data = await response.json();
+    
+    // Extract amount from OCR text
+    if (data.text) {
+      const amounts = data.text.match(/\d+(?:\.\d{2})?/g) || [];
+      // Find largest amount (likely the total)
+      const amount = Math.max(...amounts.map(parseFloat));
+      return {
+        success: true,
+        amount: amount,
+        text: data.text
+      };
     }
-    return liff;
+    
+    return { success: false, error: 'No text found' };
+  } catch (err) {
+    console.error('OCR error:', err);
+    return {
+      success: false,
+      error: err.message,
+      hint: 'กรุณากรอกยอดเงินด้วยตัวเอง'
+    };
   }
+}
 
-  async function getProfile() {
-    if (_profile) return _profile;
-    if (typeof liff !== 'undefined' && liff.isLoggedIn()) {
-      _profile = await liff.getProfile(); // {userId, displayName, pictureUrl, statusMessage}
+// Alternative: Browser-side OCR with Tesseract.js
+async function ocrWithTesseract(imageUrl) {
+  try {
+    // Load Tesseract if not loaded
+    if (!window.Tesseract) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js';
+      await new Promise((resolve, reject) => {
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
     }
-    return _profile;
+    
+    const { createWorker } = Tesseract;
+    const worker = await createWorker('tha');
+    const { data: { text } } = await worker.recognize(imageUrl);
+    await worker.terminate();
+    
+    // Extract numbers
+    const amounts = text.match(/\d+(?:\.\d{2})?/g) || [];
+    const amount = Math.max(...amounts.map(parseFloat));
+    
+    return {
+      success: true,
+      amount: amount,
+      text: text
+    };
+  } catch (err) {
+    return {
+      success: false,
+      error: err.message
+    };
   }
+}
 
-  // ---------- SETTINGS + THEME ----------
-  async function loadSettings(force) {
-    if (_settings && !force) return _settings;
-    var r = await apiGet('getSettings');
-    _settings = (r && r.settings) ? r.settings : {};
-    return _settings;
+// ========== PROMPTPAY QR ==========
+async function generatePromptPayQR(phoneOrId, amount) {
+  // PromptPay QR format
+  // Can use: https://promptpay.io/api/generateQR endpoint
+  // Or pre-generate and upload to Drive
+  
+  // For now, return service URL
+  return `https://api.promptpay.io/qr/generate?phoneNumber=${encodeURIComponent(phoneOrId)}&amount=${amount}`;
+}
+
+async function uploadSlip(slipBase64) {
+  try {
+    // Upload to Google Drive
+    const blob = base64ToBlob(slipBase64, 'image/jpeg');
+    const folder = DriveApp.getFolderById(CONFIG.DRIVE_FOLDER_ID);
+    const file = folder.createFile(blob).setName('slip_' + Date.now() + '.jpg');
+    
+    // Return Drive image URL
+    return driveImg(file.getId(), 500);
+  } catch (err) {
+    console.error('Upload error:', err);
+    throw new Error('อัปโหลดสลิปผิดพลาด');
   }
+}
 
-  // เอา settings มาทาสีลง CSS variables + ใส่ชื่องาน/โลโก้
-  function applyTheme(s) {
-    s = s || _settings || {};
-    var root = document.documentElement;
-    if (s.color_primary) root.style.setProperty('--primary', s.color_primary);
-    if (s.color_accent)  root.style.setProperty('--accent', s.color_accent);
-    if (s.wheel_color_a) root.style.setProperty('--wheel-a', s.wheel_color_a);
-    if (s.wheel_color_b) root.style.setProperty('--wheel-b', s.wheel_color_b);
-    if (s.wheel_text_a)  root.style.setProperty('--wheel-text-a', s.wheel_text_a);
-    if (s.wheel_text_b)  root.style.setProperty('--wheel-text-b', s.wheel_text_b);
+function base64ToBlob(base64, mimeType) {
+  const bstr = atob(base64);
+  const n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  for (let i = 0; i < n; i++) {
+    u8arr[i] = bstr.charCodeAt(i);
+  }
+  return new Blob([u8arr], { type: mimeType });
+}
 
-    if (s.event_name) document.title = s.event_name;
-    document.querySelectorAll('[data-event-name]').forEach(function (el) {
-      el.textContent = s.event_name || '';
+// ========== DRIVE IMAGE ==========
+function driveImg(fileId, size = 500) {
+  return `https://lh3.googleusercontent.com/d/${fileId}=w${size}`;
+}
+
+// ========== THEME ==========
+async function bootTheme() {
+  try {
+    const settings = await API.get('/getSettings');
+    applyTheme(settings);
+  } catch (err) {
+    console.error('Boot theme error:', err);
+  }
+}
+
+function applyTheme(settings) {
+  const root = document.documentElement;
+  root.style.setProperty('--color-primary', settings.color_primary || '#0d2b5e');
+  root.style.setProperty('--color-accent', settings.color_accent || '#f0c040');
+  root.style.setProperty('--wheel-color-a', settings.wheel_color_a || '#ff6b6b');
+  root.style.setProperty('--wheel-color-b', settings.wheel_color_b || '#4ecdc4');
+  root.style.setProperty('--wheel-text-a', settings.wheel_text_a || '#ffffff');
+  root.style.setProperty('--wheel-text-b', settings.wheel_text_b || '#ffffff');
+}
+
+// ========== STORAGE ==========
+function setKey(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (err) {
+    console.warn('localStorage full:', err);
+  }
+}
+
+function getKey(key) {
+  try {
+    return localStorage.getItem(key) || '';
+  } catch (err) {
+    return '';
+  }
+}
+
+function setSession(key, value) {
+  sessionStorage.setItem(key, value);
+}
+
+function getSession(key) {
+  return sessionStorage.getItem(key) || '';
+}
+
+function clearSession() {
+  sessionStorage.clear();
+  localStorage.removeItem('admin-token');
+}
+
+// ========== FORMATTING ==========
+function fmtBaht(amount) {
+  const num = parseFloat(amount) || 0;
+  return '฿' + num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtDate(date) {
+  return new Date(date).toLocaleString('th-TH');
+}
+
+// ========== DOM HELPERS ==========
+function qs(selector) {
+  return document.querySelector(selector);
+}
+
+function qsa(selector) {
+  return document.querySelectorAll(selector);
+}
+
+function toast(message, type = 'info') {
+  // Remove old toasts
+  const old = document.getElementById('toast');
+  if (old) old.remove();
+  
+  const toast = document.createElement('div');
+  toast.id = 'toast';
+  toast.style.cssText = `
+    position: fixed; top: 10px; right: 10px; z-index: 9999;
+    background: ${type === 'success' ? '#4caf50' : type === 'error' ? '#d32f2f' : '#2196f3'};
+    color: white; padding: 16px 20px; border-radius: 6px;
+    font-weight: 600; max-width: 300px; word-break: break-word;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    animation: slideIn 0.3s ease;
+  `;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// ========== FIELD TOGGLE HELPERS ==========
+function fieldOn(key, settings) {
+  return settings[`field_${key}`] !== false;
+}
+
+// ========== QR CODE GENERATION (optional) ==========
+async function loadQRLibrary() {
+  if (!window.QRCode) {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+    await new Promise((resolve, reject) => {
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
     });
-    document.querySelectorAll('[data-event-date]').forEach(function (el) {
-      el.textContent = s.event_date || '';
-    });
-    document.querySelectorAll('[data-event-location]').forEach(function (el) {
-      el.textContent = s.event_location || '';
-    });
-    document.querySelectorAll('[data-logo]').forEach(function (el) {
-      if (s.logo_url) el.src = driveImg(s.logo_url);
-    });
   }
+}
 
-  // โหลด settings แล้วทาธีมในขั้นตอนเดียว
-  async function bootTheme() {
-    var s = await loadSettings();
-    applyTheme(s);
-    return s;
-  }
+function generateQRCode(text, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  
+  container.innerHTML = '';
+  new QRCode(container, {
+    text: text,
+    width: 200,
+    height: 200,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
+}
 
-  // ---------- UTILS ----------
-  // แปลงลิงก์ Google Drive ให้เป็น URL รูปที่แสดงได้
-  function driveImg(url) {
-    if (!url) return '';
-    var m = String(url).match(/\/d\/([^/]+)/) || String(url).match(/[?&]id=([^&]+)/);
-    if (m) return 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w1000';
-    return url;
-  }
+// ========== UTILITY ==========
+function isMobile() {
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+}
 
-  function fmtBaht(n) {
-    return Number(n || 0).toLocaleString('th-TH', { minimumFractionDigits: 0 }) + ' ฿';
-  }
-
-  function fieldOn(s, name) {
-    var v = (s || _settings || {})['field_' + name];
-    return String(v).toUpperCase() === 'TRUE';
-  }
-
-  function qs(sel, el) { return (el || document).querySelector(sel); }
-  function qsa(sel, el) { return Array.prototype.slice.call((el || document).querySelectorAll(sel)); }
-
-  function toast(msg, ms) {
-    var t = document.createElement('div');
-    t.className = 'toast';
-    t.textContent = msg;
-    document.body.appendChild(t);
-    requestAnimationFrame(function () { t.classList.add('show'); });
-    setTimeout(function () {
-      t.classList.remove('show');
-      setTimeout(function () { t.remove(); }, 300);
-    }, ms || 2200);
-  }
-
-  // ---------- export ----------
-  window.API = {
-    get: apiGet, post: apiPost,
-    getAuth: apiGetAuth, postAuth: apiPostAuth,
-    getKey: getKey, setKey: setKey, clearKey: clearKey,
-    setSession: setSession, getSession: getSession, clearSession: clearSession,
-    liffInit: liffInit, getProfile: getProfile,
-    loadSettings: loadSettings, applyTheme: applyTheme, bootTheme: bootTheme,
-    driveImg: driveImg, fmtBaht: fmtBaht, fieldOn: fieldOn,
-    qs: qs, qsa: qsa, toast: toast,
-    settings: function () { return _settings; }
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
   };
-})();
+}
