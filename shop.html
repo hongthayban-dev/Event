@@ -300,7 +300,7 @@
             }
         }
         
-        // Slip upload + OCR
+        // Slip upload + OCR Typhoon
         document.getElementById('slip-file').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -310,8 +310,22 @@
                 const preview = document.getElementById('slip-preview');
                 preview.innerHTML = `<img class="slip-img" src="${ev.target.result}" alt="slip">`;
                 
-                // TODO: OCR logic (ส่งไป backend หรือใช้ browser-side OCR)
-                toast('✓ อัปโหลดสลิปแล้ว', 'success');
+                // OCR Typhoon
+                const base64 = ev.target.result.split(',')[1];
+                try {
+                    const result = await ocrReceiptAmount(base64);
+                    if (result.success) {
+                        document.getElementById('slip-amount').value = result.amount.toFixed(2);
+                        toast(`✓ อ่านยอดเงิน: ฿${result.amount.toFixed(2)}`, 'success');
+                    } else {
+                        toast('⚠️ อ่านสลิปไม่สำเร็จ กรุณากรอกด้วยตัวเอง', 'warning');
+                        document.getElementById('slip-amount').focus();
+                    }
+                } catch (err) {
+                    console.error('OCR error:', err);
+                    toast('⚠️ ไม่สามารถอ่าน OCR ได้ กรุณากรอกด้วยตัวเอง', 'warning');
+                    document.getElementById('slip-amount').focus();
+                }
             };
             reader.readAsDataURL(file);
         });
