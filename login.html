@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>เข้าสู่ระบบ</title>
+  <link rel="stylesheet" href="theme.css" />
+</head>
+<body class="app-bg">
+  <div class="app-bar">
+    <img class="logo" data-logo alt="" />
+    <div>
+      <div class="title" data-event-name>ระบบจัดการงาน</div>
+      <div class="subtitle">STAFF / ADMIN LOGIN</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card gold-top">
+      <h2 style="margin-top:0">เข้าสู่ระบบ</h2>
+      <div class="field">
+        <label>ชื่อผู้ใช้</label>
+        <input class="input" id="username" autocapitalize="off" autocomplete="username" />
+      </div>
+      <div class="field">
+        <label>รหัสผ่าน</label>
+        <input class="input" id="password" type="password" autocomplete="current-password" />
+      </div>
+      <div class="field">
+        <label>รหัสเข้าระบบงาน <span class="muted">(ถ้าผู้ดูแลตั้งไว้)</span></label>
+        <input class="input" id="accesscode" placeholder="เว้นว่างได้ถ้ายังไม่ตั้ง" />
+      </div>
+      <button class="btn btn-primary mt" id="loginBtn" onclick="doLogin()">เข้าสู่ระบบ</button>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script>
+    (async function () {
+      await API.bootTheme().catch(function () {});
+      // ถ้า login อยู่แล้วให้ redirect ทันที
+      var s = API.getSession();
+      if (s && s.username) {
+        location.replace(s.role === 'admin' ? 'admin/index.html' : 'staff/index.html');
+      }
+    })();
+
+    async function doLogin() {
+      var u = API.qs('#username').value.trim();
+      var p = API.qs('#password').value;
+      var code = API.qs('#accesscode').value.trim();
+      if (!u || !p) return API.toast('กรอกชื่อผู้ใช้และรหัสผ่าน', 'warning');
+
+      var btn = API.qs('#loginBtn');
+      btn.disabled = true;
+      btn.textContent = 'กำลังเข้าสู่ระบบ...';
+
+      API.setKey('access-code', code);
+
+      try {
+        var res = await API.post('staffLogin', { username: u, password: p });
+        if (!res.ok) { fail(btn, 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'); return; }
+
+        // ตรวจรหัสเข้าระบบ (ถ้ามี)
+        if (code) {
+          var chk = await API.getAuth('getStaff', {}, code);
+          if (!chk.ok && /unauth/i.test(chk.error || '')) {
+            API.clearKey('access-code');
+            fail(btn, 'รหัสเข้าระบบงานไม่ถูกต้อง');
+            return;
+          }
+        }
+
+        var sess = { username: res.username, display_name: res.display_name, role: res.role };
+        API.setSession(sess);
+        location.replace(res.role === 'admin' ? 'admin/index.html' : 'staff/index.html');
+      } catch (e) {
+        fail(btn, e.message);
+      }
+    }
+
+    function fail(btn, msg) {
+      API.toast(msg, 'error');
+      btn.disabled = false;
+      btn.textContent = 'เข้าสู่ระบบ';
+    }
+
+    // กด Enter เพื่อ login
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') doLogin();
+    });
+  </script>
+</body>
+</html>

@@ -42,11 +42,11 @@
         .form-group textarea { resize: vertical; min-height: 80px; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         
-        .img-upload { margin-bottom: 16px; }
-        .img-upload label { display: block; padding: 12px; background: #f0f0f0; border-radius: 6px; cursor: pointer; text-align: center; font-weight: 600; }
-        .img-upload input { display: none; }
-        .img-preview { margin-top: 8px; display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; }
-        .img-preview img { width: 100%; height: 80px; object-fit: cover; border-radius: 4px; border: 2px solid #ddd; }
+        .img-upload { margin-bottom: 12px; }
+        .img-upload label { display: block; padding: 12px; background: #f0f0f0; border-radius: 6px; cursor: pointer; text-align: center; font-weight: 600; transition: background .15s; }
+        .img-upload label:hover { background: #e0e0e0; }
+        .img-upload input[type=file] { display: none; }
+        .img-thumb { width: 100%; max-height: 120px; object-fit: cover; border-radius: 4px; margin-top: 6px; border: 2px solid var(--color-accent); display: block; }
         
         .btn { padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
         .btn-primary { background: var(--color-primary); color: white; }
@@ -59,13 +59,25 @@
         
         .error-msg { background: #ffebee; color: #c62828; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
         .success-msg { background: #e8f5e9; color: #2e7d32; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
+
+        /* Options editor */
+        .opt-group { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+        .opt-group input { flex: 1; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-family: Sarabun; font-size: 14px; }
+        .opt-group input:first-child { max-width: 120px; font-weight: 600; }
+        .opt-del { padding: 6px 10px; background: #ffebee; color: #c62828; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; flex-shrink: 0; }
+        .opt-add { padding: 8px 14px; background: #f0f0f0; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; }
+        .opt-add:hover { background: #e0e0e0; }
+        .opt-badge { display: inline-block; background: #e8f0fe; color: #1a3d7a; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; margin: 2px; }
     </style>
 </head>
 <body>
     <div class="admin-container">
         <div class="header">
-            <h1>📦 จัดการสินค้า</h1>
-            <button class="logout-btn" onclick="logout()">🚪 ออกจากระบบ</button>
+            <div style="display:flex;align-items:center;gap:10px">
+                <button type="button" onclick="location.href='index.html'" style="padding:8px 14px;background:#e0e0e0;border:none;border-radius:6px;cursor:pointer;font-weight:600">← กลับ</button>
+                <h1>📦 จัดการสินค้า</h1>
+            </div>
+            <button type="button" class="logout-btn" onclick="logout()">🚪 ออกจากระบบ</button>
         </div>
         
         <div class="tab-nav">
@@ -109,32 +121,45 @@
                 </div>
                 
                 <div>
-                    <label style="font-weight: 600; margin-bottom: 10px; display: block;">รูปสินค้า (สามารถเลือก 5 รูป)</label>
+                    <label style="font-weight: 600; margin-bottom: 10px; display: block;">รูปสินค้า (สูงสุด 5 รูป)</label>
                     <div id="image-inputs">
-                        <div class="img-upload">
-                            <label for="img1">📤 รูป 1</label>
-                            <input type="text" id="img1" placeholder="Google Drive file ID">
+                        <div class="img-upload" id="upload-wrap-1">
+                            <label for="file-img1" id="lbl-img1">📤 รูป 1 — คลิกเพื่ออัปโหลด</label>
+                            <input type="file" id="file-img1" accept="image/*" onchange="handleImageUpload(1,this)">
+                            <input type="hidden" id="img1">
                         </div>
-                        <div class="img-upload">
-                            <label for="img2">📤 รูป 2</label>
-                            <input type="text" id="img2" placeholder="Google Drive file ID">
+                        <div class="img-upload" id="upload-wrap-2">
+                            <label for="file-img2" id="lbl-img2">📤 รูป 2 — คลิกเพื่ออัปโหลด</label>
+                            <input type="file" id="file-img2" accept="image/*" onchange="handleImageUpload(2,this)">
+                            <input type="hidden" id="img2">
                         </div>
-                        <div class="img-upload">
-                            <label for="img3">📤 รูป 3</label>
-                            <input type="text" id="img3" placeholder="Google Drive file ID">
+                        <div class="img-upload" id="upload-wrap-3">
+                            <label for="file-img3" id="lbl-img3">📤 รูป 3 — คลิกเพื่ออัปโหลด</label>
+                            <input type="file" id="file-img3" accept="image/*" onchange="handleImageUpload(3,this)">
+                            <input type="hidden" id="img3">
                         </div>
-                        <div class="img-upload">
-                            <label for="img4">📤 รูป 4</label>
-                            <input type="text" id="img4" placeholder="Google Drive file ID">
+                        <div class="img-upload" id="upload-wrap-4">
+                            <label for="file-img4" id="lbl-img4">📤 รูป 4 — คลิกเพื่ออัปโหลด</label>
+                            <input type="file" id="file-img4" accept="image/*" onchange="handleImageUpload(4,this)">
+                            <input type="hidden" id="img4">
                         </div>
-                        <div class="img-upload">
-                            <label for="img5">📤 รูป 5</label>
-                            <input type="text" id="img5" placeholder="Google Drive file ID">
+                        <div class="img-upload" id="upload-wrap-5">
+                            <label for="file-img5" id="lbl-img5">📤 รูป 5 — คลิกเพื่ออัปโหลด</label>
+                            <input type="file" id="file-img5" accept="image/*" onchange="handleImageUpload(5,this)">
+                            <input type="hidden" id="img5">
                         </div>
                     </div>
                 </div>
-                
-                <button class="btn btn-primary btn-full" onclick="addProduct()" style="margin-top: 20px;">
+
+                <!-- Options Editor -->
+                <div style="margin-top: 20px;">
+                    <label style="font-weight: 600; margin-bottom: 8px; display: block;">ตัวเลือกสินค้า <span style="font-weight:400;color:#666;font-size:13px">(เช่น Size, สี)</span></label>
+                    <div id="opt-groups"></div>
+                    <button type="button" class="opt-add" onclick="addOptGroup()">+ เพิ่มตัวเลือก</button>
+                    <p style="font-size:12px;color:#888;margin:6px 0 0">ชื่อตัวเลือก เช่น "ขนาด" — ค่าตัวเลือก เช่น "S, M, L, XL" (คั่นด้วยจุลภาค)</p>
+                </div>
+
+                <button id="save-btn" type="button" class="btn btn-primary btn-full" onclick="addProduct()" style="margin-top: 20px;">
                     ✓ บันทึกสินค้า
                 </button>
             </div>
@@ -145,11 +170,12 @@
     <script>
         let products = [];
         let authToken = '';
+        let editingId = null;
         
         async function init() {
-            authToken = getKey('admin-token') || getKey('access-code');
+            authToken = API.getKey('admin-token') || API.getKey('access-code');
             if (!authToken) {
-                location.href = '../admin/index.html';
+                location.replace('../login.html');
                 return;
             }
             await loadProducts();
@@ -167,9 +193,19 @@
             }
         }
         
+        function parseOptions(raw) {
+            if (!raw) return [];
+            try { return JSON.parse(raw); } catch (e) { return []; }
+        }
+
         function renderProducts() {
             const list = document.getElementById('products-list');
-            list.innerHTML = products.map(p => `
+            list.innerHTML = products.map(p => {
+                const opts = parseOptions(p.options);
+                const optHtml = opts.length ? opts.map(g =>
+                    `<div style="margin-top:6px;font-size:12px"><strong>${g.name}:</strong> ${(g.values||[]).map(v => `<span class="opt-badge">${v}</span>`).join('')}</div>`
+                ).join('') : '';
+                return `
                 <div class="product-card">
                     <div class="product-header">
                         <div class="product-name">${p.name}</div>
@@ -178,15 +214,47 @@
                             <button class="btn-delete" onclick="deleteProduct('${p.id}')">🗑️ ลบ</button>
                         </div>
                     </div>
-                    <div class="product-info">💰 ราคา: <strong>${fmtBaht(p.price)}</strong></div>
+                    <div class="product-info">💰 ราคา: <strong>${API.fmtBaht(p.price)}</strong></div>
                     <div class="product-info">📋 ${p.description || '-'}</div>
+                    ${optHtml}
                     <div class="product-stock">
                         <div style="font-size: 12px; margin-bottom: 6px;">สต็อก: <strong>${p.stock}</strong> ชิ้น</div>
                         <input type="number" class="stock-input" id="stock-${p.id}" value="${p.stock}" min="0">
                         <button class="stock-save" onclick="updateStock('${p.id}')">บันทึกสต็อก</button>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
+        }
+
+        // ---- Options editor ----
+        function addOptGroup(name, values) {
+            const wrap = document.getElementById('opt-groups');
+            const div = document.createElement('div');
+            div.className = 'opt-group';
+            div.innerHTML = `
+                <input type="text" placeholder="ชื่อ เช่น ขนาด" value="${name || ''}" class="opt-name">
+                <input type="text" placeholder="ค่า เช่น S, M, L, XL" value="${values || ''}" class="opt-vals">
+                <button type="button" class="opt-del" onclick="this.parentElement.remove()">✕</button>`;
+            wrap.appendChild(div);
+        }
+
+        function getOptionsJSON() {
+            const groups = [];
+            document.querySelectorAll('#opt-groups .opt-group').forEach(function (row) {
+                const name = row.querySelector('.opt-name').value.trim();
+                const raw  = row.querySelector('.opt-vals').value.trim();
+                if (!name && !raw) return;
+                const values = raw.split(',').map(v => v.trim()).filter(Boolean);
+                if (name || values.length) groups.push({ name: name || '—', values });
+            });
+            return groups.length ? JSON.stringify(groups) : '';
+        }
+
+        function populateOptGroups(optionsStr) {
+            document.getElementById('opt-groups').innerHTML = '';
+            parseOptions(optionsStr).forEach(function (g) {
+                addOptGroup(g.name, (g.values || []).join(', '));
+            });
         }
         
         async function updateStock(productId) {
@@ -206,46 +274,113 @@
             }
         }
         
+        function resetImgInputs() {
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById('img' + i).value = '';
+                document.getElementById('lbl-img' + i).textContent = '📤 รูป ' + i + ' — คลิกเพื่ออัปโหลด';
+                document.getElementById('file-img' + i).value = '';
+                const wrap = document.getElementById('upload-wrap-' + i);
+                const thumb = wrap.querySelector('.img-thumb');
+                if (thumb) thumb.remove();
+            }
+        }
+
+        async function handleImageUpload(num, input) {
+            if (!input.files || !input.files[0]) return;
+            const lbl = document.getElementById('lbl-img' + num);
+            const wrap = document.getElementById('upload-wrap-' + num);
+            const reader = new FileReader();
+            reader.onload = async function (e) {
+                const dataUrl = e.target.result;
+                // Show local preview immediately
+                let thumb = wrap.querySelector('.img-thumb');
+                if (!thumb) { thumb = document.createElement('img'); thumb.className = 'img-thumb'; wrap.appendChild(thumb); }
+                thumb.src = dataUrl;
+                lbl.textContent = '⏳ กำลังอัปโหลด...';
+                try {
+                    const res = await API.postAuth('uploadSlip', {
+                        dataUrl,
+                        filename: 'product_' + Date.now() + '_' + num + '.jpg'
+                    }, authToken);
+                    document.getElementById('img' + num).value = res.id || res.fileId || '';
+                    lbl.textContent = '✓ อัปโหลดแล้ว — คลิกเพื่อเปลี่ยน';
+                } catch (err) {
+                    lbl.textContent = '❌ อัปโหลดผิดพลาด — คลิกลองใหม่';
+                    API.toast('อัปโหลดรูป ' + num + ' ผิดพลาด: ' + err.message, 'error');
+                }
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+
+        function editProduct(productId) {
+            const p = products.find(function (x) { return x.id === productId; });
+            if (!p) return;
+            editingId = productId;
+            // Switch to edit tab
+            document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+            document.querySelectorAll('.tab-content').forEach(function (c) { c.classList.remove('active'); });
+            document.querySelector('[data-tab="add"]').classList.add('active');
+            document.getElementById('add').classList.add('active');
+            // Fill form fields
+            document.getElementById('product-name').value = p.name || '';
+            document.getElementById('product-price').value = p.price || '';
+            document.getElementById('product-stock').value = p.stock || '';
+            document.getElementById('product-desc').value = p.description || '';
+            // Restore images
+            resetImgInputs();
+            for (let i = 1; i <= 5; i++) {
+                const fileId = p['img_url' + i] || '';
+                if (!fileId) continue;
+                document.getElementById('img' + i).value = fileId;
+                document.getElementById('lbl-img' + i).textContent = '✓ มีรูปอยู่แล้ว — คลิกเพื่อเปลี่ยน';
+                const wrap = document.getElementById('upload-wrap-' + i);
+                const thumb = document.createElement('img');
+                thumb.className = 'img-thumb';
+                thumb.src = API.driveImg(fileId, 200);
+                thumb.onerror = function () { this.style.display = 'none'; };
+                wrap.appendChild(thumb);
+            }
+            // Restore options
+            populateOptGroups(p.options || '');
+            document.getElementById('save-btn').textContent = '✓ บันทึกการแก้ไข';
+            document.getElementById('add').scrollIntoView({ behavior: 'smooth' });
+        }
+
         async function addProduct() {
             const name = document.getElementById('product-name').value.trim();
             const price = parseFloat(document.getElementById('product-price').value);
             const stock = parseInt(document.getElementById('product-stock').value);
             const desc = document.getElementById('product-desc').value.trim();
-            
             if (!name || isNaN(price) || isNaN(stock)) {
-                toast('❌ กรอกข้อมูลให้ครบ', 'error');
+                API.toast('❌ กรอกข้อมูลให้ครบ', 'error');
                 return;
             }
-            
             const product = {
-                id: 'prod_' + Date.now(),
-                name,
-                price,
-                stock,
+                id: editingId || 'prod_' + Date.now(),
+                name, price, stock,
                 description: desc,
-                img_url1: document.getElementById('img1').value.trim() || '',
-                img_url2: document.getElementById('img2').value.trim() || '',
-                img_url3: document.getElementById('img3').value.trim() || '',
-                img_url4: document.getElementById('img4').value.trim() || '',
-                img_url5: document.getElementById('img5').value.trim() || ''
+                img_url1: document.getElementById('img1').value || '',
+                img_url2: document.getElementById('img2').value || '',
+                img_url3: document.getElementById('img3').value || '',
+                img_url4: document.getElementById('img4').value || '',
+                img_url5: document.getElementById('img5').value || '',
+                options: getOptionsJSON()
             };
-            
             try {
                 await API.postAuth('saveProduct', product, authToken);
-                toast('✓ เพิ่มสินค้าแล้ว', 'success');
-                
-                // Clear form
+                API.toast(editingId ? '✓ แก้ไขสินค้าแล้ว' : '✓ เพิ่มสินค้าแล้ว', 'success');
+                // Reset form
+                editingId = null;
+                document.getElementById('save-btn').textContent = '✓ บันทึกสินค้า';
                 document.getElementById('product-name').value = '';
                 document.getElementById('product-price').value = '';
                 document.getElementById('product-stock').value = '';
                 document.getElementById('product-desc').value = '';
-                for (let i = 1; i <= 5; i++) {
-                    document.getElementById('img' + i).value = '';
-                }
-                
+                resetImgInputs();
+                document.getElementById('opt-groups').innerHTML = '';
                 await loadProducts();
             } catch (err) {
-                toast('❌ บันทึกผิดพลาด: ' + err.message, 'error');
+                API.toast('❌ บันทึกผิดพลาด: ' + err.message, 'error');
             }
         }
         

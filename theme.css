@@ -41,6 +41,184 @@ html, body {
   color: #333;
 }
 
+/* ========== APP LAYOUT ========== */
+.app-bg {
+  background: #f0f2f7;
+  min-height: 100vh;
+}
+
+.app-bar {
+  background: var(--navy-grad);
+  color: #fff;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+}
+
+.app-bar .logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.app-bar .title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.app-bar .subtitle {
+  font-size: .72rem;
+  opacity: .7;
+  letter-spacing: 1px;
+}
+
+.navback {
+  background: rgba(255,255,255,.18);
+  border: none;
+  color: #fff;
+  font-size: 1.6rem;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
+  padding: 0;
+}
+
+.navback:active {
+  background: rgba(255,255,255,.32);
+}
+
+.container {
+  padding: 16px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+/* ========== CARDS ========== */
+.card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px 18px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.08);
+  margin-bottom: 16px;
+}
+
+.card.center { text-align: center; }
+
+.gold-top {
+  border-top: 4px solid var(--color-accent);
+}
+
+/* ========== BUTTONS ========== */
+.btn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: opacity .15s, transform .1s;
+  text-decoration: none;
+}
+
+.btn + .btn { margin-top: 10px; }
+
+.btn:active { opacity: .85; transform: scale(.98); }
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+.btn-primary { background: var(--navy-grad); color: #fff; }
+.btn-gold    { background: var(--gold-grad); color: #3a2c00; }
+.btn-ghost   { background: #f0f2f7; color: var(--ink); border: 1.5px solid var(--line); }
+.btn-sm      { padding: 9px 14px; font-size: .88rem; border-radius: 8px; }
+
+.mt { margin-top: 14px; }
+
+/* ========== FORMS ========== */
+.field {
+  margin-bottom: 14px;
+}
+
+.field label {
+  display: block;
+  font-weight: 600;
+  font-size: .88rem;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+
+.input,
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--ink);
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.input:focus,
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(13,43,94,.1);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ========== TYPOGRAPHY HELPERS ========== */
+.muted   { color: var(--ink-soft); font-size: .88rem; }
+.center  { text-align: center; }
+.req     { color: #d32f2f; }
+
+/* ========== DIVIDERS ========== */
+.gold-divider {
+  border: none;
+  border-top: 2px solid var(--color-accent);
+  margin: 14px 0;
+  opacity: .5;
+}
+
+/* ========== LOADING ========== */
+.loading {
+  text-align: center;
+  padding: 32px 20px;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Trirong', serif;
   color: var(--color-primary);

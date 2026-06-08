@@ -102,9 +102,9 @@
         let currentFilter = 'all';
         
         async function init() {
-            authToken = getKey('admin-token');
+            authToken = API.getKey('admin-token') || API.getKey('access-code');
             if (!authToken) {
-                location.href = '../admin/index.html';
+                location.replace('../login.html');
                 return;
             }
             

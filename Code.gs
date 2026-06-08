@@ -83,7 +83,7 @@ function route_(action, p) {
     // ---------- public reads ----------
     case 'ping':            return { ok: true, time: new Date().toISOString() };
     case 'getSettings':     return { ok: true, settings: getPublicSettings_() };
-    case 'getProducts':     return { ok: true, products: getRows_('products') };
+    case 'getProducts':     return { ok: true, products: getRows_('products').map(normalizeProduct_) };
     case 'getRewards':      return { ok: true, rewards: getRows_('rewards') };
     case 'getRegistration': return getRegistration_(p);
 
@@ -348,22 +348,49 @@ function checkin_(p) {
 // ============================================================
 //  PRODUCTS / ORDERS
 // ============================================================
+// map Thai column name → JS field name on read
+function normalizeProduct_(p) {
+  if (p['ตัวเลือก'] !== undefined) {
+    p.options = p['ตัวเลือก'] ? String(p['ตัวเลือก']) : '';
+    delete p['ตัวเลือก'];
+  }
+  return p;
+}
+
 function saveProduct_(p) {
   var prod = p.product || p;
+  // serialize options to string
+  var optVal = '';
+  if (prod.options !== undefined) {
+    optVal = typeof prod.options === 'string' ? prod.options : JSON.stringify(prod.options);
+  }
   var rowNum = prod.id ? findRow_('products', 'id', prod.id) : null;
   if (!rowNum) {
     var rows = getRows_('products');
     var maxId = rows.reduce(function (mx, r) { return Math.max(mx, Number(r.id) || 0); }, 0);
     prod.id = prod.id || (maxId + 1);
-    appendByHeaders_('products', {
+    var obj = {
       id: prod.id, name: prod.name || '', price: prod.price || 0,
-      img_url: prod.img_url || '', stock: prod.stock || 0, description: prod.description || ''
-    });
+      stock: prod.stock || 0, description: prod.description || '',
+      img_url1: prod.img_url1 || prod.img_url || '',
+      img_url2: prod.img_url2 || '', img_url3: prod.img_url3 || '',
+      img_url4: prod.img_url4 || '', img_url5: prod.img_url5 || '',
+      'ตัวเลือก': optVal
+    };
+    appendByHeaders_('products', obj);
   } else {
     var sh = sheet_('products'); var h = getHeaders_('products');
-    ['name', 'price', 'img_url', 'stock', 'description'].forEach(function (f) {
-      if (prod[f] !== undefined) sh.getRange(rowNum, h.indexOf(f) + 1).setValue(prod[f]);
+    var fields = ['name', 'price', 'stock', 'description',
+                  'img_url1', 'img_url2', 'img_url3', 'img_url4', 'img_url5'];
+    fields.forEach(function (f) {
+      var idx = h.indexOf(f);
+      if (idx >= 0 && prod[f] !== undefined) sh.getRange(rowNum, idx + 1).setValue(prod[f]);
     });
+    // ตัวเลือก (Thai column name)
+    var optIdx = h.indexOf('ตัวเลือก');
+    if (optIdx >= 0 && prod.options !== undefined) {
+      sh.getRange(rowNum, optIdx + 1).setValue(optVal);
+    }
   }
   return { ok: true, id: prod.id };
 }

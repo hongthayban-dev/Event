@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛍️ ร้านค้า</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=Trirong:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../theme.css">
+    <style>
+        body { background: #f5f5f5; padding: 10px; }
+        .shop-container { max-width: 500px; margin: 0 auto; }
+        .tab-nav { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-nav button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; transition: all 0.3s; }
+        .tab-nav button { background: #e0e0e0; color: #333; }
+        .tab-nav button.active { background: var(--color-primary); color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Products */
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+        .product-card { background: white; border-radius: 8px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s; }
+        .product-card:active { transform: scale(0.98); }
+        .product-img { width: 100%; height: 120px; object-fit: cover; border-radius: 6px; margin-bottom: 8px; }
+        .product-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+        .product-price { color: var(--color-accent); font-weight: 700; font-size: 16px; }
+        .product-stock { font-size: 12px; color: #666; }
+        .stock-0 { color: #d32f2f; }
+
+        /* Cart */
+        .cart-item { background: white; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; gap: 10px; }
+        .cart-img { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; }
+        .cart-info { flex: 1; }
+        .cart-name { font-weight: 600; }
+        .cart-price { color: var(--color-accent); font-weight: 700; }
+        .qty-control { display: flex; gap: 6px; align-items: center; font-size: 12px; }
+        .qty-control button { width: 24px; height: 24px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; }
+        .qty-display { min-width: 30px; text-align: center; }
+        .cart-empty { text-align: center; padding: 40px 20px; color: #999; }
+        .cart-total { background: white; padding: 16px; border-radius: 8px; margin: 16px 0; }
+        .total-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+        .total-amount { display: flex; justify-content: space-between; font-weight: 700; font-size: 18px; color: var(--color-primary); }
+
+        /* Payment */
+        .payment-section { background: white; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
+        .qr-container { text-align: center; margin: 16px 0; }
+        .qr-img { max-width: 100%; height: auto; border-radius: 8px; border: 2px solid var(--color-accent); }
+        .qr-note { font-size: 13px; color: #666; margin-top: 8px; }
+        .slip-upload { margin: 16px 0; }
+        .slip-label { display: block; padding: 12px; background: #f0f0f0; border-radius: 6px; cursor: pointer; text-align: center; font-weight: 600; color: var(--color-primary); transition: all 0.2s; }
+        .slip-label:hover { background: #e8e8e8; }
+        .slip-input { display: none; }
+        .slip-preview { margin: 12px 0; }
+        .slip-img { max-width: 100%; height: auto; border-radius: 8px; }
+        .slip-amount { margin: 12px 0; padding: 12px; background: #f9f9f9; border-left: 3px solid var(--color-accent); border-radius: 4px; }
+        .slip-amount-label { font-size: 12px; color: #666; }
+        .slip-amount-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; margin-top: 6px; }
+
+        /* Buttons */
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { background: var(--color-primary); color: white; }
+        .btn-primary:active { opacity: 0.9; }
+        .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-secondary { background: var(--color-accent); color: #333; }
+        .btn-danger { background: #d32f2f; color: white; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+
+        .loading { text-align: center; padding: 20px; color: #666; }
+        .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .success-msg { background: #d4edda; color: #155724; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
+
+        /* Options modal */
+        .opt-modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; align-items:flex-end; justify-content:center; }
+        .opt-modal-bg.open { display:flex; }
+        .opt-modal { background:#fff; border-radius:18px 18px 0 0; padding:24px 20px 32px; width:100%; max-width:480px; }
+        .opt-modal h3 { margin:0 0 16px; font-family:Trirong; color:var(--color-primary); }
+        .opt-section { margin-bottom:16px; }
+        .opt-section label { display:block; font-weight:600; font-size:14px; margin-bottom:8px; }
+        .opt-pills { display:flex; flex-wrap:wrap; gap:8px; }
+        .opt-pill { padding:8px 16px; border:1.5px solid #ddd; border-radius:999px; background:#fff; cursor:pointer; font-family:Sarabun; font-size:14px; transition:all .15s; }
+        .opt-pill.selected { background:var(--color-primary); color:#fff; border-color:var(--color-primary); }
+        .product-opts { margin-top:4px; display:flex; flex-wrap:wrap; gap:4px; }
+        .opt-chip { font-size:11px; background:#e8f0fe; color:#1a3d7a; border-radius:4px; padding:2px 6px; font-weight:600; }
+        .selected-opts { font-size:12px; color:#666; margin-top:2px; }
+    </style>
+</head>
+<body>
+    <div class="shop-container">
+        <h1 style="text-align: center; color: var(--color-primary); font-family: Trirong; margin: 20px 0;">🛍️ ร้านค้า</h1>
+
+        <div class="tab-nav">
+            <button class="tab-btn active" data-tab="products">📦 สินค้า</button>
+            <button class="tab-btn" data-tab="cart">🛒 ตะกร้า</button>
+            <button class="tab-btn" data-tab="payment">💳 ชำระเงิน</button>
+        </div>
+
+        <!-- Products Tab -->
+        <div id="products" class="tab-content active">
+            <div class="loading" id="products-loading">
+                <div class="spinner"></div> กำลังโหลดสินค้า...
+            </div>
+            <div class="product-grid" id="products-grid" style="display: none;"></div>
+        </div>
+
+        <!-- Option Selector Modal -->
+        <div class="opt-modal-bg" id="opt-modal-bg" onclick="closeOptModal(event)">
+            <div class="opt-modal" id="opt-modal">
+                <h3 id="opt-modal-title">เลือกตัวเลือก</h3>
+                <div id="opt-modal-body"></div>
+                <button class="btn btn-primary" onclick="confirmOptModal()" style="margin-top:8px">✓ เพิ่มลงตะกร้า</button>
+                <button class="btn" onclick="document.getElementById('opt-modal-bg').classList.remove('open')" style="margin-top:8px;background:#f0f0f0;">ยกเลิก</button>
+            </div>
+        </div>
+
+        <!-- Cart Tab -->
+        <div id="cart" class="tab-content">
+            <div id="cart-list"></div>
+            <div id="cart-total" class="cart-total" style="display: none;">
+                <div class="total-row">
+                    <span>สินค้า:</span>
+                    <span id="subtotal">฿0</span>
+                </div>
+                <div class="total-amount">
+                    <span>รวม:</span>
+                    <span id="total">฿0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Tab -->
+        <div id="payment" class="tab-content">
+            <div class="payment-section">
+                <h3 style="margin-top: 0; font-family: Trirong;">ข้อมูลผู้สั่ง</h3>
+                <div class="form-group">
+                    <label>ชื่อ-นามสกุล</label>
+                    <input type="text" id="customer-name" placeholder="ชื่อเต็ม">
+                </div>
+                <div class="form-group">
+                    <label>เบอร์โทรศัพท์</label>
+                    <input type="tel" id="customer-phone" placeholder="08xxxxxxxx">
+                </div>
+            </div>
+
+            <div class="payment-section">
+                <h3 style="margin-top: 0; font-family: Trirong;">💳 วิธีชำระเงิน: PromptPay</h3>
+                <div class="qr-container">
+                    <img id="promptpay-qr" class="qr-img" src="" alt="PromptPay QR">
+                    <div class="qr-note" id="promptpay-note">รหัสทรัพย์สิน: โหลดเดี๋ยว...</div>
+                </div>
+
+                <h4 style="font-family: Trirong; margin-top: 20px;">📸 อัปโหลดสลิปการโอน</h4>
+                <div class="slip-upload">
+                    <label class="slip-label" for="slip-file">
+                        📤 เลือกรูปสลิป
+                    </label>
+                    <input type="file" id="slip-file" class="slip-input" accept="image/*">
+                </div>
+                <div id="slip-preview" class="slip-preview"></div>
+                <div class="slip-amount">
+                    <label class="slip-amount-label">ยอดเงินที่โอน (฿)</label>
+                    <input type="number" id="slip-amount" placeholder="เช่น 1500" step="0.01">
+                </div>
+            </div>
+
+            <div class="payment-section">
+                <div class="total-row">
+                    <span style="font-weight: 600;">ยอดรวม:</span>
+                    <span style="font-weight: 700; font-size: 18px; color: var(--color-primary);" id="final-total">฿0</span>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" id="submit-order" style="margin-bottom: 16px;">
+                ✓ ยืนยันการสั่งซื้อ
+            </button>
+        </div>
+    </div>
+
+    <script src="https://liff.line.me/sdk/web/liff.js"></script>
+    <script src="../config.js"></script>
+    <script src="../api.js"></script>
+    <script>
+        let cart = {};
+        let products = [];
+        let settings = {};
+        let profileData = {};
+        let isLIFF = false;
+
+        async function initShop() {
+            try {
+                try {
+                    await API.liffInit(true);
+                    isLIFF = true;
+                    profileData = await API.getProfile();
+                    if (profileData && profileData.displayName) {
+                        document.getElementById('customer-name').value = profileData.displayName;
+                    }
+                } catch (liffErr) {
+                    console.warn('LIFF not available, using web mode:', liffErr.message);
+                    isLIFF = false;
+                }
+                await Promise.all([loadProducts(), loadSettings()]);
+            } catch (err) {
+                API.toast('❌ เกิดข้อผิดพลาด: ' + err.message, 'error');
+            }
+        }
+
+        async function loadProducts() {
+            try {
+                const res = await API.get('getProducts');
+                products = res.products || [];
+                renderProducts();
+                document.getElementById('products-loading').style.display = 'none';
+                document.getElementById('products-grid').style.display = 'grid';
+            } catch (err) {
+                API.toast('❌ โหลดสินค้าผิดพลาด', 'error');
+            }
+        }
+
+        async function loadSettings() {
+            try {
+                const res = await API.get('getSettings');
+                settings = res.settings || {};
+                if (settings.promptpay_file_id) {
+                    const qrImg = document.getElementById('promptpay-qr');
+                    qrImg.src = API.driveImg(settings.promptpay_file_id, 1000);
+                    document.getElementById('promptpay-note').textContent = '📲 สแกน QR เพื่อชำระเงิน';
+                } else {
+                    API.toast('⚠️ ยังไม่ได้ตั้ง QR code PromptPay', 'warning');
+                }
+            } catch (err) {
+                console.error('Load settings error:', err);
+            }
+        }
+
+        function parseOptions(raw) {
+            if (!raw) return [];
+            try { return JSON.parse(raw); } catch (e) { return []; }
+        }
+
+        function renderProducts() {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '';
+            products.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                const imgs = [p.img_url1, p.img_url2, p.img_url3, p.img_url4, p.img_url5].filter(i => i);
+                const imgSrc = imgs.length ? API.driveImg(imgs[0], 500) : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23ddd"/%3E%3C/svg%3E';
+                const isOutOfStock = p.stock === 0;
+                const opts = parseOptions(p.options);
+                const optHtml = opts.length
+                    ? `<div class="product-opts">${opts.map(g => `<span class="opt-chip">${g.name}</span>`).join('')}</div>`
+                    : '';
+                card.innerHTML = `
+                    <img class="product-img" src="${imgSrc}" alt="${p.name}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23ddd%22/%3E%3C/svg%3E'">
+                    <div class="product-name">${p.name}</div>
+                    <div class="product-price">${API.fmtBaht(p.price)}</div>
+                    ${optHtml}
+                    <div class="product-stock ${isOutOfStock ? 'stock-0' : ''}">
+                        ${isOutOfStock ? '❌ หมด' : '✓ ' + p.stock + ' ชิ้น'}
+                    </div>
+                `;
+                if (!isOutOfStock) {
+                    card.addEventListener('click', () => addToCart(p));
+                }
+                grid.appendChild(card);
+            });
+        }
+
+        // ---- Cart key: productId + selected options ----
+        let pendingProduct = null;
+
+        function addToCart(product) {
+            const opts = parseOptions(product.options);
+            if (opts.length > 0) {
+                openOptModal(product, opts);
+            } else {
+                doAddToCart(product, {});
+            }
+        }
+
+        function doAddToCart(product, selectedOptions) {
+            const optKey = Object.entries(selectedOptions).map(([k, v]) => k + ':' + v).join('|');
+            const cartKey = product.id + (optKey ? '_' + optKey : '');
+            if (!cart[cartKey]) {
+                cart[cartKey] = { ...product, qty: 0, selectedOptions, _cartKey: cartKey };
+            }
+            if (cart[cartKey].qty < product.stock) {
+                cart[cartKey].qty++;
+                API.setKey('shop-cart', JSON.stringify(cart));
+                renderCart();
+                const optLabel = optKey ? ' (' + Object.values(selectedOptions).join(', ') + ')' : '';
+                API.toast('✓ เพิ่ม ' + product.name + optLabel + ' แล้ว', 'success');
+            }
+        }
+
+        function openOptModal(product, opts) {
+            pendingProduct = product;
+            document.getElementById('opt-modal-title').textContent = product.name;
+            document.getElementById('opt-modal-body').innerHTML = opts.map(g => `
+                <div class="opt-section">
+                    <label>${g.name}</label>
+                    <div class="opt-pills" data-group="${g.name}">
+                        ${(g.values || []).map(v => `<button type="button" class="opt-pill" onclick="selectPill(this)">${v}</button>`).join('')}
+                    </div>
+                </div>`).join('');
+            document.getElementById('opt-modal-bg').classList.add('open');
+        }
+
+        function selectPill(btn) {
+            btn.closest('.opt-pills').querySelectorAll('.opt-pill').forEach(p => p.classList.remove('selected'));
+            btn.classList.add('selected');
+        }
+
+        function closeOptModal(e) {
+            if (e.target === document.getElementById('opt-modal-bg')) {
+                document.getElementById('opt-modal-bg').classList.remove('open');
+            }
+        }
+
+        function confirmOptModal() {
+            if (!pendingProduct) return;
+            const opts = parseOptions(pendingProduct.options);
+            const selected = {};
+            let allSelected = true;
+            opts.forEach(g => {
+                const pill = document.querySelector('[data-group="' + g.name + '"] .opt-pill.selected');
+                if (!pill) { allSelected = false; return; }
+                selected[g.name] = pill.textContent.trim();
+            });
+            if (!allSelected) { API.toast('กรุณาเลือกตัวเลือกให้ครบ', 'warning'); return; }
+            document.getElementById('opt-modal-bg').classList.remove('open');
+            doAddToCart(pendingProduct, selected);
+            pendingProduct = null;
+        }
+
+        function renderCart() {
+            const cartList = document.getElementById('cart-list');
+            const items = Object.values(cart).filter(i => i.qty > 0);
+            if (items.length === 0) {
+                cartList.innerHTML = '<div class="cart-empty">🛒 ตะกร้าว่าง</div>';
+                document.getElementById('cart-total').style.display = 'none';
+                return;
+            }
+            cartList.innerHTML = items.map(item => {
+                const imgSrc = API.driveImg(([item.img_url1, item.img_url2, item.img_url3, item.img_url4, item.img_url5].filter(i => i))[0], 300) || '';
+                const optLabel = item.selectedOptions && Object.keys(item.selectedOptions).length
+                    ? '<div class="selected-opts">' + Object.entries(item.selectedOptions).map(([k, v]) => k + ': ' + v).join(', ') + '</div>'
+                    : '';
+                const key = item._cartKey || item.id;
+                return `
+                <div class="cart-item">
+                    <img class="cart-img" src="${imgSrc}" alt="" onerror="this.style.display='none'">
+                    <div class="cart-info">
+                        <div class="cart-name">${item.name}</div>
+                        ${optLabel}
+                        <div class="cart-price">${API.fmtBaht(item.price)}</div>
+                    </div>
+                    <div class="qty-control">
+                        <button type="button" onclick="changeQty('${key}', -1)">−</button>
+                        <div class="qty-display">${item.qty}</div>
+                        <button type="button" onclick="changeQty('${key}', 1)">+</button>
+                    </div>
+                </div>`;
+            }).join('');
+            const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+            document.getElementById('subtotal').textContent = API.fmtBaht(subtotal);
+            document.getElementById('total').textContent = API.fmtBaht(subtotal);
+            document.getElementById('final-total').textContent = API.fmtBaht(subtotal);
+            document.getElementById('cart-total').style.display = 'block';
+        }
+
+        function changeQty(cartKey, delta) {
+            if (cart[cartKey]) {
+                cart[cartKey].qty += delta;
+                if (cart[cartKey].qty <= 0) delete cart[cartKey];
+                API.setKey('shop-cart', JSON.stringify(cart));
+                renderCart();
+            }
+        }
+
+        // Slip upload
+        document.getElementById('slip-file').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                const preview = document.getElementById('slip-preview');
+                preview.innerHTML = `<img class="slip-img" src="${ev.target.result}" alt="slip">`;
+                try {
+                    const result = await API.ocrReceiptAmount(ev.target.result.split(',')[1]);
+                    if (result.success) {
+                        document.getElementById('slip-amount').value = result.amount.toFixed(2);
+                        API.toast(`✓ อ่านยอดเงิน: ฿${result.amount.toFixed(2)}`, 'success');
+                    } else {
+                        API.toast('⚠️ อ่านสลิปไม่สำเร็จ กรุณากรอกด้วยตัวเอง', 'warning');
+                        document.getElementById('slip-amount').focus();
+                    }
+                } catch (err) {
+                    API.toast('⚠️ ไม่สามารถอ่าน OCR ได้ กรุณากรอกด้วยตัวเอง', 'warning');
+                    document.getElementById('slip-amount').focus();
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Submit order
+        document.getElementById('submit-order').addEventListener('click', async () => {
+            const items = Object.values(cart).filter(i => i.qty > 0);
+            if (items.length === 0) { API.toast('❌ เลือกสินค้าก่อน', 'error'); return; }
+
+            const name = document.getElementById('customer-name').value.trim();
+            const phone = document.getElementById('customer-phone').value.trim();
+            const amount = parseFloat(document.getElementById('slip-amount').value);
+            const slipImg = document.getElementById('slip-preview').querySelector('img');
+            if (!name || !phone || !amount || !slipImg) { API.toast('❌ กรอกข้อมูลให้ครบ', 'error'); return; }
+
+            const btn = document.getElementById('submit-order');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> กำลังส่ง...';
+
+            try {
+                const uploadRes = await API.post('uploadSlip', {
+                    dataUrl: slipImg.src,
+                    filename: 'slip_' + Date.now() + '.jpg'
+                });
+                const slipUrl = uploadRes.url || '';
+                const itemsList = items.map(i => {
+                    const optStr = i.selectedOptions && Object.keys(i.selectedOptions).length
+                        ? ' (' + Object.entries(i.selectedOptions).map(([k, v]) => k + '=' + v).join('/') + ')'
+                        : '';
+                    return i.name + optStr + ' x' + i.qty;
+                }).join(', ');
+                const total = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+                await API.post('createOrder', {
+                    line_user_id: profileData.userId || '',
+                    customer_name: name,
+                    phone: phone,
+                    items: itemsList,
+                    total_amount: total,
+                    slip_url: slipUrl,
+                    slip_amount: amount
+                });
+                API.toast('✓ ส่งใบสั่งซื้อแล้ว! Staff จะยืนยันเดี๋ยว', 'success');
+                clearCart();
+            } catch (err) {
+                API.toast('❌ ส่งใบสั่งซื้อผิดพลาด: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '✓ ยืนยันการสั่งซื้อ';
+            }
+        });
+
+        function clearCart() {
+            cart = {};
+            API.setKey('shop-cart', '{}');
+            renderCart();
+        }
+
+        // Tab navigation
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                const tabId = btn.dataset.tab;
+                document.getElementById(tabId).classList.add('active');
+                if (tabId === 'cart') renderCart();
+            });
+        });
+
+        initShop();
+    </script>
+</body>
+</html>

@@ -74,7 +74,7 @@
 
     (async function () {
       session = API.getSession();
-      if (!session || !session.username) { location.href = 'index.html'; return; }
+      if (!session || !session.username) { location.replace('../login.html'); return; }
       API.qs('#staffname').textContent = session.display_name || session.username;
       await API.bootTheme().catch(function () {});
     })();
