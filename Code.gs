@@ -15,9 +15,9 @@
  */
 
 // ---- ค่าคงที่ ----
-const SHEET_ID       = '1QCQM1Y65YG9Mgt1g9VlCSdYlOQ5ZAFLVTyunJgn62no';
-const SLIP_FOLDER_ID        = '1ovjadtqJPx9nkw4sCEQ9gRhmYsnu3Znv'; // โฟลเดอร์เก็บสลิปชำระเงิน 
-const PRODUCT_IMG_FOLDER_ID = '15UDvwjf-3J4bBZeRihtodgNgL2sPGxMF'; // โฟลเดอร์เก็บรูปสินค้า 
+cconst SHEET_ID       = '1QCQM1Y65YG9Mgt1g9VlCSdYlOQ5ZAFLVTyunJgn62no';
+const SLIP_FOLDER_ID        = '15UDvwjf-3J4bBZeRihtodgNgL2sPGxMF'; // โฟลเดอร์เก็บสลิปชำระเงิน 
+const PRODUCT_IMG_FOLDER_ID = '1ovjadtqJPx9nkw4sCEQ9gRhmYsnu3Znv'; // โฟลเดอร์เก็บรูปสินค้า 
 const LINE_PUSH_URL  = 'https://api.line.me/v2/bot/message/push';
 
 // ---- ตัวช่วยพื้นฐาน ----
