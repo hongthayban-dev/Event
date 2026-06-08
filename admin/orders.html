@@ -7,305 +7,710 @@
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=Trirong:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../theme.css">
     <style>
-        body { background: #f5f5f5; padding: 10px; }
-        .admin-container { max-width: 1000px; margin: 0 auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .header h1 { margin: 0; color: var(--color-primary); font-family: Trirong; }
-        .logout-btn { padding: 8px 16px; background: #d32f2f; color: white; border: none; border-radius: 6px; cursor: pointer; }
-        
-        .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .filter-btn { padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer; }
+        * { box-sizing: border-box; }
+        body { background: #eef0f5; padding: 12px; font-family: Sarabun, sans-serif; }
+        .admin-container { max-width: 1100px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
+        .header h1 { margin: 0; color: var(--color-primary); font-family: Trirong; font-size: 20px; }
+        .logout-btn { padding: 8px 16px; background: #d32f2f; color: white; border: none; border-radius: 6px; cursor: pointer; font-family: Sarabun; font-size: 14px; }
+        .back-btn { padding: 8px 14px; background: #dde1ea; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-family: Sarabun; }
+
+        /* Stats */
+        .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+        @media (max-width: 600px) { .stats-bar { grid-template-columns: repeat(2,1fr); } }
+        .stat-card { background: white; border-radius: 10px; padding: 14px 16px; box-shadow: 0 1px 5px rgba(0,0,0,.07); display: flex; align-items: center; gap: 12px; }
+        .stat-icon { font-size: 28px; line-height: 1; }
+        .stat-val { font-size: 22px; font-weight: 700; color: var(--color-primary); line-height: 1.1; }
+        .stat-lbl { font-size: 11px; color: #888; margin-top: 2px; }
+        .stat-card.warn .stat-val { color: #e65100; }
+
+        /* Refresh Bar */
+        .refresh-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: white; border-radius: 8px; padding: 8px 14px; margin-bottom: 12px; font-size: 12px; color: #888; box-shadow: 0 1px 4px rgba(0,0,0,.06); flex-wrap: wrap; }
+        .refresh-dot { width: 8px; height: 8px; border-radius: 50%; background: #43a047; display: inline-block; }
+        .refresh-dot.syncing { background: #fb8c00; animation: pulse .8s ease-in-out infinite; }
+        .refresh-dot.error { background: #e53935; }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.3; } }
+        .refresh-btn { background: #e8f0fe; color: var(--color-primary); border: none; border-radius: 5px; padding: 5px 12px; font-size: 12px; cursor: pointer; font-family: Sarabun; font-weight: 600; }
+        .refresh-left  { display:flex; align-items:center; gap:8px; }
+        .refresh-right { display:flex; align-items:center; gap:8px; }
+        .refresh-countdown-text { color:#aaa; font-size:11px; }
+
+        /* Filter */
+        .filter-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+        .filter-btn { padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer; font-family: Sarabun; font-size: 14px; font-weight: 600; }
         .filter-btn.active { background: var(--color-primary); color: white; border-color: var(--color-primary); }
-        
-        .orders-list { display: grid; gap: 16px; }
-        .order-card { background: white; padding: 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid var(--color-primary); }
-        .order-card.pending { border-left-color: #ff9800; }
-        .order-card.verified { border-left-color: #4caf50; }
-        
-        .order-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px; }
-        .order-id { font-weight: 700; font-size: 16px; color: var(--color-primary); }
-        .order-status { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-        .status-pending { background: #ffe0b2; color: #e65100; }
-        .status-verified { background: #c8e6c9; color: #1b5e20; }
-        
-        .order-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px; font-size: 14px; }
-        .order-detail { }
-        .detail-label { color: #666; font-size: 12px; }
-        .detail-value { font-weight: 600; }
-        
-        .order-items { background: #f9f9f9; padding: 12px; border-radius: 6px; margin: 12px 0; }
-        .items-label { font-weight: 600; margin-bottom: 6px; }
-        .items-text { font-size: 14px; }
-        
-        .slip-section { margin: 12px 0; }
-        .slip-img { max-width: 200px; max-height: 300px; border-radius: 6px; border: 1px solid #ddd; }
-        .slip-amount { background: #f0f0f0; padding: 8px; border-radius: 4px; font-weight: 600; color: var(--color-primary); margin-top: 6px; }
-        
-        .order-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-        .btn { padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; }
+
+        /* Table */
+        .inv-wrap { background: white; border-radius: 12px; box-shadow: 0 1px 6px rgba(0,0,0,.08); overflow: hidden; }
+        .inv-table { width: 100%; border-collapse: collapse; }
+        .inv-table thead th { background: var(--color-primary); color: white; padding: 11px 14px; text-align: left; font-size: 13px; font-weight: 600; white-space: nowrap; }
+        .ord-row { cursor: pointer; border-bottom: 1px solid #f0f2f8; transition: background .1s; }
+        .ord-row:hover { background: #f5f7ff; }
+        .ord-row td { padding: 10px 14px; vertical-align: middle; font-size: 13px; }
+        .ord-row.expanded { background: #f0f4ff; }
+        .ord-row.row-pending { border-left: 4px solid #ff9800; }
+        .ord-row.row-verified { border-left: 4px solid #4caf50; }
+        .ord-row.row-rejected { border-left: 4px solid #d32f2f; }
+
+        /* Expand section */
+        .exp-section td { padding: 0; border-bottom: 2px solid #dee2ef; }
+        .exp-inner { display: none; padding: 14px 14px 18px 54px; }
+        .exp-inner.open { display: block; }
+
+        .arrow { font-size: 10px; color: #aaa; transition: transform .2s; display: inline-block; margin-right: 6px; }
+        .arrow.open { transform: rotate(90deg); color: var(--color-primary); }
+
+        /* Badges */
+        .badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+        .badge-pending  { background: #ffe0b2; color: #e65100; }
+        .badge-verified { background: #c8e6c9; color: #1b5e20; }
+        .badge-rejected { background: #ffcdd2; color: #b71c1c; }
+
+        /* Detail inside expanded row */
+        .exp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+        @media (max-width: 600px) { .exp-grid { grid-template-columns: 1fr; } }
+        .exp-block label { font-size: 11px; color: #888; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 3px; }
+        .exp-block p { margin: 0; font-size: 13px; font-weight: 600; color: #333; }
+        .exp-block p.address { white-space: pre-wrap; font-weight: 400; }
+
+        /* Items mini-table */
+        .items-mini { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px; }
+        .items-mini th { background: #eceff7; color: #3d4b6e; padding: 6px 10px; text-align: left; font-weight: 600; font-size: 11px; }
+        .items-mini td { padding: 6px 10px; border-bottom: 1px solid #f0f2f8; }
+        .items-mini tr:last-child td { border-bottom: none; }
+
+        /* Slip */
+        .slip-thumb { max-width: 160px; max-height: 200px; border-radius: 6px; border: 1px solid #ddd; cursor: pointer; display: block; margin-top: 6px; }
+        .slip-thumb:hover { opacity: .85; }
+        .slip-amount-badge { display: inline-block; background: #e8f5e9; color: #1b5e20; border-radius: 6px; padding: 5px 12px; font-weight: 700; font-size: 13px; margin-top: 6px; }
+
+        /* Actions */
+        .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .btn { padding: 7px 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; font-family: Sarabun; }
         .btn-verify { background: #4caf50; color: white; }
         .btn-reject { background: #d32f2f; color: white; }
-        .btn-view { background: var(--color-accent); color: #333; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
-        .modal.active { display: flex; align-items: center; justify-content: center; }
-        .modal-content { background: white; padding: 20px; border-radius: 8px; max-width: 500px; max-height: 80vh; overflow-y: auto; }
-        .modal-close { float: right; cursor: pointer; font-size: 24px; color: #999; }
-        .modal h3 { margin-top: 0; color: var(--color-primary); font-family: Trirong; }
-        
+        .btn-print  { background: var(--color-primary); color: white; }
+        .btn-view   { background: var(--color-accent); color: #333; }
+        .btn:disabled { opacity: .5; cursor: not-allowed; }
+
         .loading { text-align: center; padding: 40px; }
-        .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        .empty-state { text-align: center; padding: 60px 20px; color: #999; }
-        .success-msg { background: #e8f5e9; color: #2e7d32; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
+        .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #ddd; border-top-color: var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .empty-state { text-align: center; padding: 60px 20px; color: #aaa; }
+        #orders-wrap { display:none; }
+        #empty-state { display:none; }
+        .header-left { display:flex; align-items:center; gap:10px; }
+        .tbl-scroll { overflow-x:auto; }
+        .col-arrow  { width:36px; }
+        .col-total  { text-align:right; }
+        .col-status { text-align:center; }
+        .pl-th-center { text-align:center; }
+        .pl-th-right  { text-align:right; }
+        .pl-tfoot-label { text-align:right; font-weight:700; padding:8px 10px; }
+        .pl-tfoot-val   { text-align:center; font-weight:700; }
+
+        /* ════ Print Label Modal ════ */
+        .print-modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1000; align-items:center; justify-content:center; padding:16px; overflow-y:auto; }
+        .print-modal-bg.open { display:flex; }
+        .print-modal-inner { background:white; border-radius:10px; width:100%; max-width:600px; box-shadow:0 20px 60px rgba(0,0,0,.4); overflow:hidden; }
+
+        /* Label design */
+        .pl-wrap { padding: 0; font-family: Sarabun, sans-serif; }
+        .pl-top-bar { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:2px solid #333; }
+        .pl-org-name { font-size:18px; font-weight:700; color:#0d2b5e; font-family:Trirong; }
+        .pl-org-sub  { font-size:11px; color:#666; }
+        .pl-tag-box  { border:2px solid #333; padding:6px 14px; border-radius:4px; font-weight:700; font-size:13px; text-align:center; }
+
+        /* Barcode-style lines (decorative) */
+        .pl-barcode { height:40px; overflow:hidden; padding:4px 16px 0; display:flex; align-items:flex-end; gap:0; }
+        .pl-bc-line { display:inline-block; height:100%; background:#333; }
+
+        .pl-addr-grid { display:grid; grid-template-columns:1fr 1fr; border-top:1.5px solid #333; }
+        .pl-addr-box { padding:10px 14px; border-right:1.5px solid #333; }
+        .pl-addr-box:last-child { border-right:none; }
+        .pl-addr-label { font-size:10px; font-weight:700; color:#666; letter-spacing:1px; margin-bottom:4px; }
+        .pl-addr-name  { font-size:15px; font-weight:700; color:#333; }
+        .pl-addr-detail { font-size:12px; color:#555; margin-top:3px; line-height:1.5; }
+        .pl-addr-phone  { font-size:13px; font-weight:700; color:#0d2b5e; margin-top:4px; }
+
+        .pl-routing { text-align:center; padding:12px 16px; border-top:1.5px solid #333; border-bottom:1.5px solid #333; }
+        .pl-routing-label { font-size:10px; color:#888; letter-spacing:1px; margin-bottom:2px; }
+        .pl-routing-code  { font-size:30px; font-weight:700; color:#0d2b5e; font-family:monospace; letter-spacing:2px; }
+        .pl-date-row { display:flex; justify-content:space-around; font-size:12px; color:#666; margin-top:6px; }
+
+        .pl-items { padding:0 0 0 0; }
+        .pl-items-table { width:100%; border-collapse:collapse; font-size:12px; }
+        .pl-items-table th { background:#0d2b5e; color:white; padding:7px 10px; text-align:left; font-size:11px; }
+        .pl-items-table td { padding:6px 10px; border-bottom:1px solid #eee; vertical-align:middle; }
+        .pl-items-table tfoot td { font-weight:700; background:#f9f9f9; }
+
+        .pl-footer { display:flex; justify-content:space-between; padding:10px 14px; background:#f5f5f5; font-size:12px; color:#555; border-top:1.5px solid #ccc; }
+
+        .pl-actions { display:flex; gap:10px; padding:12px; background:#eef0f5; }
+        .btn-print-action { flex:1; padding:12px; background:#0d2b5e; color:white; border:none; border-radius:6px; font-size:15px; font-weight:700; cursor:pointer; font-family:Sarabun; }
+        .btn-close-print  { flex:1; padding:12px; background:#f0f0f0; color:#333; border:none; border-radius:6px; font-size:15px; font-weight:700; cursor:pointer; font-family:Sarabun; }
+
+        /* Slip lightbox */
+        .slip-lightbox { display:none; position:fixed; inset:0; background:rgba(0,0,0,.88); z-index:2000; align-items:center; justify-content:center; }
+        .slip-lightbox.open { display:flex; }
+        .slip-lightbox img { max-width:92vw; max-height:90vh; border-radius:8px; }
+        .slip-lightbox-close { position:absolute; top:16px; right:20px; color:white; font-size:32px; cursor:pointer; background:none; border:none; line-height:1; }
+
+        /* Print-only */
+        @media print {
+            body { padding:0; background:white; }
+            body > *:not(.print-modal-bg) { display:none !important; }
+            .print-modal-bg { display:block !important; position:static !important; background:none !important; padding:0 !important; }
+            .print-modal-inner { box-shadow:none !important; border-radius:0 !important; max-width:100% !important; width:100% !important; }
+            .pl-actions { display:none !important; }
+        }
     </style>
 </head>
 <body>
-    <div class="admin-container">
-        <div class="header">
+<div class="admin-container">
+
+    <div class="header">
+        <div class="header-left">
+            <button type="button" onclick="location.href='index.html'" class="back-btn">← กลับ</button>
             <h1>🛒 รายการสั่งซื้อ</h1>
-            <button class="logout-btn" onclick="logout()">🚪 ออกจากระบบ</button>
         </div>
-        
-        <div class="filter-bar">
-            <button class="filter-btn active" data-filter="all">📊 ทั้งหมด</button>
-            <button class="filter-btn" data-filter="pending">⏳ รอยืนยัน</button>
-            <button class="filter-btn" data-filter="verified">✓ ยืนยันแล้ว</button>
+        <button type="button" class="logout-btn" onclick="logout()">🚪 ออกจากระบบ</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-bar" id="stats-bar"></div>
+
+    <!-- Refresh bar -->
+    <div class="refresh-bar">
+        <div class="refresh-left">
+            <span class="refresh-dot" id="refresh-dot"></span>
+            <span id="refresh-label">กำลังโหลด...</span>
         </div>
-        
-        <div class="loading" id="orders-loading">
-            <div class="spinner"></div> กำลังโหลดใบสั่ง...
-        </div>
-        
-        <div id="orders-list" class="orders-list" style="display: none;"></div>
-        
-        <div id="empty-state" class="empty-state" style="display: none;">
-            📦 ไม่มีใบสั่งซื้อในขณะนี้
+        <div class="refresh-right">
+            <span class="refresh-countdown-text">รีเฟรชใน <strong id="refresh-countdown">—</strong> วิ</span>
+            <button type="button" class="refresh-btn" onclick="manualRefresh()">🔄 รีเฟรช</button>
         </div>
     </div>
-    
-    <!-- Detail Modal -->
-    <div id="detail-modal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" onclick="closeModal()">&times;</span>
-            <h3>📋 รายละเอียดใบสั่งซื้อ</h3>
-            <div id="detail-content"></div>
+
+    <!-- Filter -->
+    <div class="filter-bar">
+        <button type="button" class="filter-btn active" data-filter="all">📊 ทั้งหมด</button>
+        <button type="button" class="filter-btn" data-filter="pending">⏳ รอยืนยัน</button>
+        <button type="button" class="filter-btn" data-filter="verified">✓ ยืนยันแล้ว</button>
+        <button type="button" class="filter-btn" data-filter="rejected">✗ ปฏิเสธ</button>
+    </div>
+
+    <div class="loading" id="orders-loading"><div class="spinner"></div> กำลังโหลด...</div>
+
+    <div id="orders-wrap">
+        <div class="inv-wrap">
+            <div class="tbl-scroll">
+                <table class="inv-table">
+                    <thead>
+                        <tr>
+                            <th class="col-arrow"></th>
+                            <th>เลขที่</th>
+                            <th>ชื่อลูกค้า</th>
+                            <th>เบอร์</th>
+                            <th>สินค้า</th>
+                            <th class="col-total">ยอดรวม</th>
+                            <th class="col-status">สถานะ</th>
+                            <th>วันที่</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="inv-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+        <div id="empty-state" class="empty-state">📦 ไม่มีรายการ</div>
+    </div>
+
+</div>
+
+<!-- ══════ Print Label Modal ══════ -->
+<div class="print-modal-bg" id="print-modal-bg" onclick="closePrintModal(event)">
+    <div class="print-modal-inner" onclick="event.stopPropagation()">
+        <div class="pl-wrap" id="pl-wrap">
+
+            <!-- Top bar -->
+            <div class="pl-top-bar">
+                <div>
+                    <div class="pl-org-name" id="pl-org-name">ชื่องาน</div>
+                    <div class="pl-org-sub">ใบสั่งซื้อ / Shipping Label</div>
+                </div>
+                <div class="pl-tag-box" id="pl-tag-box">PENDING</div>
+            </div>
+
+            <!-- Decorative barcode -->
+            <div class="pl-barcode" id="pl-barcode-lines"></div>
+
+            <!-- Addresses -->
+            <div class="pl-addr-grid">
+                <div class="pl-addr-box">
+                    <div class="pl-addr-label">ผู้ส่ง (FROM)</div>
+                    <div class="pl-addr-name" id="pl-from-name">ผู้จัดงาน</div>
+                    <div class="pl-addr-detail" id="pl-from-detail"></div>
+                </div>
+                <div class="pl-addr-box">
+                    <div class="pl-addr-label">ผู้รับ (TO)</div>
+                    <div class="pl-addr-name" id="pl-to-name">—</div>
+                    <div class="pl-addr-detail" id="pl-to-addr"></div>
+                    <div class="pl-addr-phone" id="pl-to-phone"></div>
+                </div>
+            </div>
+
+            <!-- Routing code -->
+            <div class="pl-routing">
+                <div class="pl-routing-label">ORDER NO.</div>
+                <div class="pl-routing-code" id="pl-routing-code">—</div>
+                <div class="pl-date-row">
+                    <span>วันที่สั่ง: <strong id="pl-date"></strong></span>
+                    <span>ยอดรวม: <strong id="pl-total-routing"></strong></span>
+                </div>
+            </div>
+
+            <!-- Items table -->
+            <div class="pl-items">
+                <table class="pl-items-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>ชื่อสินค้า</th>
+                            <th>ตัวเลือกสินค้า</th>
+                            <th class="pl-th-center">จำนวน</th>
+                            <th class="pl-th-right">ราคา/ชิ้น</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pl-items-body"></tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="pl-tfoot-label">จำนวนรวม</td>
+                            <td class="pl-tfoot-val" id="pl-total-qty">—</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Footer -->
+            <div class="pl-footer">
+                <div>Order: <strong id="pl-footer-order"></strong></div>
+                <div>สลิปยอด: <strong id="pl-slip-amount"></strong></div>
+            </div>
+
+        </div><!-- /pl-wrap -->
+
+        <div class="pl-actions no-print">
+            <button type="button" class="btn-print-action" onclick="doPrint()">🖨️ พิมพ์</button>
+            <button type="button" class="btn-close-print" onclick="closePrintModal()">✕ ปิด</button>
         </div>
     </div>
-    
-    <script src="../api.js"></script>
-    <script>
-        let orders = [];
-        let authToken = '';
-        let currentFilter = 'all';
-        
-        async function init() {
-            authToken = API.getKey('admin-token') || API.getKey('access-code');
-            if (!authToken) {
-                location.replace('../login.html');
-                return;
-            }
-            
-            await loadOrders();
-            
-            // Filter buttons
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    currentFilter = btn.dataset.filter;
-                    renderOrders();
-                });
-            });
-        }
-        
-        async function loadOrders() {
-            try {
-                const res = await API.postAuth('getOrders', {}, authToken);
-                orders = res.orders || [];
-                renderOrders();
-                document.getElementById('orders-loading').style.display = 'none';
-            } catch (err) {
-                document.getElementById('orders-loading').innerHTML = '❌ โหลดผิดพลาด: ' + err.message;
-            }
-        }
-        
-        function renderOrders() {
-            const filtered = orders.filter(o => {
-                if (currentFilter === 'all') return true;
-                return o.status === currentFilter;
-            });
-            
-            const list = document.getElementById('orders-list');
-            
-            if (filtered.length === 0) {
-                list.style.display = 'none';
-                document.getElementById('empty-state').style.display = 'block';
-                return;
-            }
-            
-            list.style.display = 'grid';
-            document.getElementById('empty-state').style.display = 'none';
-            
-            list.innerHTML = filtered.map(o => `
-                <div class="order-card ${o.status}">
-                    <div class="order-header">
-                        <div>
-                            <div class="order-id">📦 ${o.order_id}</div>
-                            <div style="font-size: 12px; color: #666;">${new Date(o.created_at).toLocaleString('th-TH')}</div>
-                        </div>
-                        <span class="order-status status-${o.status}">
-                            ${o.status === 'pending' ? '⏳ รอยืนยัน' : '✓ ยืนยันแล้ว'}
-                        </span>
-                    </div>
-                    
-                    <div class="order-row">
-                        <div class="order-detail">
-                            <div class="detail-label">👤 ชื่อลูกค้า</div>
-                            <div class="detail-value">${o.customer_name}</div>
-                        </div>
-                        <div class="order-detail">
-                            <div class="detail-label">📱 เบอร์</div>
-                            <div class="detail-value">${o.phone}</div>
-                        </div>
-                        <div class="order-detail">
-                            <div class="detail-label">💰 ยอดรวม</div>
-                            <div class="detail-value" style="color: var(--color-accent);">${fmtBaht(o.total_amount)}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="order-items">
-                        <div class="items-label">🛒 สินค้า:</div>
-                        <div class="items-text">${fmtItems(o.items)}</div>
-                    </div>
-                    
-                    ${o.slip_url ? `
-                    <div class="slip-section">
-                        <div style="font-weight: 600; margin-bottom: 6px;">📸 สลิปการโอน:</div>
-                        <img src="${o.slip_url}" alt="slip" class="slip-img">
-                        <div class="slip-amount">💵 ยอดโอน: ${o.slip_amount ? fmtBaht(o.slip_amount) : '?'}</div>
-                    </div>
-                    ` : ''}
-                    
-                    <div class="order-actions">
-                        <button class="btn btn-view" onclick="viewDetails('${o.order_id}')">👁️ ดูรายละเอียด</button>
-                        ${o.status === 'pending' ? `
-                            <button class="btn btn-verify" onclick="verifyOrder(this,'${o.order_id}')">✓ ยืนยันและส่ง</button>
-                            <button class="btn btn-reject" onclick="rejectOrder(this,'${o.order_id}')">✗ ปฏิเสธ</button>
-                        ` : ''}
-                    </div>
-                </div>
-            `).join('');
-        }
-        
-        function viewDetails(orderId) {
-            const order = orders.find(o => o.order_id === orderId);
-            if (!order) return;
-            
-            const modal = document.getElementById('detail-modal');
-            const content = document.getElementById('detail-content');
-            
-            content.innerHTML = `
-                <div style="margin-bottom: 16px;">
-                    <div class="detail-label">📦 Order ID</div>
-                    <div class="detail-value">${order.order_id}</div>
-                </div>
-                <div style="margin-bottom: 16px;">
-                    <div class="detail-label">👤 ชื่อลูกค้า</div>
-                    <div class="detail-value">${order.customer_name}</div>
-                </div>
-                <div style="margin-bottom: 16px;">
-                    <div class="detail-label">📱 เบอร์</div>
-                    <div class="detail-value">${order.phone}</div>
-                </div>
-                <div style="margin-bottom: 16px;">
-                    <div class="detail-label">🛒 สินค้า</div>
-                    <div class="detail-value">${fmtItems(order.items)}</div>
-                </div>
-                <div style="margin-bottom: 16px;">
-                    <div class="detail-label">💰 ยอดรวม</div>
-                    <div class="detail-value" style="color: var(--color-accent); font-size: 20px;">${fmtBaht(order.total_amount)}</div>
-                </div>
-                <div style="margin-bottom: 16px;">
-                    <div class="detail-label">📅 วันที่สั่ง</div>
-                    <div class="detail-value">${new Date(order.created_at).toLocaleString('th-TH')}</div>
-                </div>
-                <div style="margin-bottom: 16px;">
-                    <div class="detail-label">🔖 สถานะ</div>
-                    <div class="detail-value">${order.status === 'pending' ? '⏳ รอยืนยัน' : '✓ ยืนยันแล้ว'}</div>
-                </div>
-                ${order.slip_url ? `
-                    <div style="margin-bottom: 16px;">
-                        <div class="detail-label">📸 สลิป</div>
-                        <img src="${order.slip_url}" style="max-width: 100%; border-radius: 6px; margin-top: 8px;">
-                        <div style="margin-top: 8px; font-size: 14px;">ยอดโอน: <strong>${fmtBaht(order.slip_amount)}</strong></div>
-                    </div>
-                ` : ''}
-            `;
-            
-            modal.classList.add('active');
-        }
-        
-        function closeModal() {
-            document.getElementById('detail-modal').classList.remove('active');
-        }
-        
-        async function verifyOrder(btn, orderId) {
-            if (!confirm('ยืนยันใบสั่งซื้อและส่ง LINE ให้ลูกค้า?')) return;
-            btn.disabled = true;
-            btn.innerHTML = '<div class="spinner"></div> กำลังส่ง...';
-            try {
-                await API.postAuth('verifyOrder', { order_id: orderId, status: 'verified' }, authToken);
-                toast('✓ ส่งใบสั่งซื้อแล้ว', 'success');
-                await loadOrders();
-            } catch (err) {
-                toast('❌ ยืนยันผิดพลาด: ' + err.message, 'error');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '✓ ยืนยันและส่ง';
-            }
-        }
+</div>
 
-        async function rejectOrder(btn, orderId) {
-            const reason = prompt('🚫 เหตุผลที่ปฏิเสธ:');
-            if (!reason) return;
-            btn.disabled = true;
-            try {
-                await API.postAuth('verifyOrder', { order_id: orderId, status: 'rejected', reason }, authToken);
-                toast('✓ ปฏิเสธใบสั่งแล้ว', 'success');
-                await loadOrders();
-            } catch (err) {
-                toast('❌ ผิดพลาด: ' + err.message, 'error');
-            } finally {
-                btn.disabled = false;
-            }
-        }
-        
-        // รองรับทั้ง JSON array ใหม่ และ string เก่า
-        function fmtItems(raw) {
-            if (!raw) return '—';
-            try {
-                const arr = JSON.parse(raw);
-                if (!Array.isArray(arr)) return String(raw);
-                return arr.map(function(i) {
-                    const label = [i.color, i.size].filter(Boolean).join(' ');
-                    return i.name + (label ? ' ' + label : '') + ' x' + i.qty + ' (' + fmtBaht(i.price) + ')';
-                }).join('<br>');
-            } catch (e) {
-                return String(raw);
-            }
-        }
+<!-- Slip lightbox -->
+<div class="slip-lightbox" id="slip-lightbox" onclick="closeSlipLightbox()">
+    <button type="button" class="slip-lightbox-close" onclick="closeSlipLightbox()">✕</button>
+    <img id="slip-lightbox-img" src="" alt="slip">
+</div>
 
-        function logout() {
-            if (confirm('ต้องการออกจากระบบ?')) {
-                clearSession();
-                location.href = '../admin/index.html';
-            }
-        }
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script>
+let orders = [];
+let authToken = '';
+let shopSettings = {};
+let currentFilter = 'all';
+const REFRESH_SEC = 30;
+let _countdown = REFRESH_SEC;
+let _refreshTimer = null;
+let _isRefreshing = false;
 
-        init();
-    </script>
+// ════════ Drive URL fix ════════
+function fixDriveUrl(url, size) {
+    if (!url) return '';
+    size = size || 600;
+    if (url.includes('lh3.googleusercontent.com')) return url;
+    const m = url.match(/[?&]id=([^&\s]+)/) || url.match(/\/d\/([^\/\s]+)/);
+    if (m) return API.driveImg(m[1].trim(), size);
+    return url;
+}
+
+// ════════ Auto-Refresh ════════
+function setDot(state) {
+    const d = document.getElementById('refresh-dot');
+    if (!d) return;
+    d.className = 'refresh-dot' + (state==='sync'?' syncing':state==='error'?' error':'');
+}
+function setLabel(t) { const e=document.getElementById('refresh-label'); if(e) e.textContent=t; }
+function setCountdown(n) { const e=document.getElementById('refresh-countdown'); if(e) e.textContent=n; }
+
+function startAutoRefresh() {
+    if (_refreshTimer) clearInterval(_refreshTimer);
+    _countdown = REFRESH_SEC;
+    setCountdown(_countdown);
+    _refreshTimer = setInterval(async () => {
+        _countdown--;
+        setCountdown(_countdown);
+        if (_countdown <= 0) { _countdown = REFRESH_SEC; await silentRefresh(); }
+    }, 1000);
+}
+
+async function silentRefresh() {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+    setDot('sync'); setLabel('กำลังตรวจสอบ...');
+    try {
+        const res = await API.postAuth('getOrders', {}, authToken);
+        const fresh = res.orders || [];
+        const newPending = fresh.filter(o => o.status === 'pending').length;
+        const oldPending = orders.filter(o => o.status === 'pending').length;
+        orders = fresh;
+        renderOrders();
+        renderStats();
+        if (newPending !== oldPending) API.toast('📥 คำสั่งซื้ออัปเดตแล้ว', 'info');
+        setLabel('อัปเดต ' + new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}));
+        setDot('ok');
+    } catch(e) {
+        setLabel('❌ รีเฟรชไม่สำเร็จ'); setDot('error');
+    } finally { _isRefreshing = false; }
+}
+
+async function manualRefresh() { _countdown = REFRESH_SEC; setCountdown(_countdown); await silentRefresh(); }
+
+// ════════ Init ════════
+async function init() {
+    authToken = API.getKey('admin-token') || API.getKey('access-code');
+    if (!authToken) { location.replace('../login.html'); return; }
+
+    // โหลด settings สำหรับ label (event_name)
+    try {
+        const sr = await API.postAuth('getAdminSettings', {}, authToken);
+        shopSettings = sr.settings || {};
+    } catch(e) { shopSettings = {}; }
+
+    await loadOrders();
+    startAutoRefresh();
+
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentFilter = btn.dataset.filter;
+            renderOrders();
+        });
+    });
+}
+
+async function loadOrders() {
+    try {
+        const res = await API.postAuth('getOrders', {}, authToken);
+        orders = res.orders || [];
+        document.getElementById('orders-loading').style.display = 'none';
+        document.getElementById('orders-wrap').style.display = 'block';
+        renderStats();
+        renderOrders();
+        setLabel('อัปเดต ' + new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}));
+        setDot('ok');
+    } catch(err) {
+        document.getElementById('orders-loading').innerHTML = '❌ โหลดผิดพลาด: ' + err.message;
+    }
+}
+
+// ════════ Stats ════════
+function renderStats() {
+    const total    = orders.length;
+    const pending  = orders.filter(o => o.status === 'pending').length;
+    const verified = orders.filter(o => o.status === 'verified').length;
+    const revenue  = orders.filter(o => o.status === 'verified').reduce((s,o) => s + (Number(o.total_amount)||0), 0);
+    document.getElementById('stats-bar').innerHTML = `
+        <div class="stat-card">
+            <div class="stat-icon">📋</div>
+            <div><div class="stat-val">${total}</div><div class="stat-lbl">คำสั่งซื้อทั้งหมด</div></div>
+        </div>
+        <div class="stat-card warn">
+            <div class="stat-icon">⏳</div>
+            <div><div class="stat-val">${pending}</div><div class="stat-lbl">รอยืนยัน</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div><div class="stat-val">${verified}</div><div class="stat-lbl">ยืนยันแล้ว</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div><div class="stat-val" style="font-size:16px">${API.fmtBaht(revenue)}</div><div class="stat-lbl">ยอดยืนยัน</div></div>
+        </div>`;
+}
+
+// ════════ Render Table ════════
+function renderOrders() {
+    const filtered = orders.filter(o => {
+        if (currentFilter === 'all') return true;
+        return o.status === currentFilter;
+    }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    const tbody  = document.getElementById('inv-tbody');
+    const empty  = document.getElementById('empty-state');
+    const wrap   = document.querySelector('.inv-wrap');
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        empty.style.display = 'block';
+        wrap.style.display  = 'none';
+        return;
+    }
+    empty.style.display = 'none';
+    wrap.style.display  = '';
+
+    let html = '';
+    filtered.forEach(o => {
+        const sid = o.order_id.replace(/[^a-zA-Z0-9]/g,'_');
+        const statusBadge = o.status === 'pending'
+            ? '<span class="badge badge-pending">⏳ รอยืนยัน</span>'
+            : o.status === 'verified'
+            ? '<span class="badge badge-verified">✓ ยืนยันแล้ว</span>'
+            : '<span class="badge badge-rejected">✗ ปฏิเสธ</span>';
+        const items = parseItems(o.items);
+        const itemsSummary = items.length
+            ? items.map(i => i.name + (i.color||i.size ? ' ('+ [i.color,i.size].filter(Boolean).join('/')+ ')' : '') + ' ×' + i.qty).join(', ')
+            : (o.items || '—');
+        const shortSummary = itemsSummary.length > 60 ? itemsSummary.slice(0,60) + '…' : itemsSummary;
+        const dateStr = o.created_at ? new Date(o.created_at).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'}) : '—';
+
+        html += `
+        <tr class="ord-row row-${o.status}" id="row-${sid}" onclick="toggleExpand('${sid}')">
+            <td><span class="arrow" id="arr-${sid}">▶</span></td>
+            <td><strong style="font-family:monospace;font-size:12px">${o.order_id}</strong></td>
+            <td>${o.customer_name || '—'}</td>
+            <td>${o.phone || '—'}</td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#666">${shortSummary}</td>
+            <td style="text-align:right;font-weight:700;color:var(--color-accent)">${API.fmtBaht(o.total_amount)}</td>
+            <td style="text-align:center">${statusBadge}</td>
+            <td style="font-size:12px;color:#888;white-space:nowrap">${dateStr}</td>
+            <td onclick="event.stopPropagation()">
+                <div class="row-actions">
+                    <button class="btn btn-print" onclick="openPrintLabel('${o.order_id}')">🖨️</button>
+                </div>
+            </td>
+        </tr>
+        <tr class="exp-section" id="expsec-${sid}">
+            <td colspan="9">
+                <div class="exp-inner" id="expinner-${sid}">
+                    ${buildExpandHTML(o)}
+                </div>
+            </td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+}
+
+function buildExpandHTML(o) {
+    const items = parseItems(o.items);
+    const slipUrl = fixDriveUrl(o.slip_url, 800);
+
+    const itemsTableRows = items.map((i,idx) => {
+        const v = [i.color, i.size].filter(Boolean).join('/');
+        return `<tr>
+            <td>${idx+1}</td>
+            <td>${i.name || '—'}</td>
+            <td>${v || '—'}</td>
+            <td style="text-align:center">${i.qty}</td>
+            <td style="text-align:right">${API.fmtBaht(i.price)}</td>
+        </tr>`;
+    }).join('');
+
+    const slipSection = slipUrl
+        ? `<div>
+            <label>📸 สลิปการโอน</label>
+            <img src="${slipUrl}" alt="slip" class="slip-thumb" onclick="openSlipLightbox('${slipUrl}')">
+            ${o.slip_amount ? `<div class="slip-amount-badge">ยอดโอน: ${API.fmtBaht(o.slip_amount)}</div>` : ''}
+          </div>`
+        : `<div><label>📸 สลิป</label><p>ไม่มีสลิป</p></div>`;
+
+    const actionBtns = o.status === 'pending'
+        ? `<button class="btn btn-verify" onclick="verifyOrder(this,'${o.order_id}')">✓ ยืนยันและส่ง LINE</button>
+           <button class="btn btn-reject" onclick="rejectOrder(this,'${o.order_id}')">✗ ปฏิเสธ</button>`
+        : `<span style="font-size:13px;color:#666">${o.status==='verified'?'✅ ยืนยันแล้ว':'✗ ปฏิเสธแล้ว'} (${o.verified_at ? new Date(o.verified_at).toLocaleDateString('th-TH') : '—'})</span>`;
+
+    return `
+        <div class="exp-grid" style="margin-bottom:12px">
+            <div class="exp-block">
+                <label>📦 ที่อยู่จัดส่ง</label>
+                <p class="address">${o.address || '(ไม่ระบุ)'}</p>
+            </div>
+            <div class="exp-block">
+                <label>📅 วันที่สั่ง</label>
+                <p>${o.created_at ? new Date(o.created_at).toLocaleString('th-TH') : '—'}</p>
+                <label style="margin-top:10px">💰 ยอดสลิป</label>
+                <p>${o.slip_amount ? API.fmtBaht(o.slip_amount) : '—'}</p>
+            </div>
+        </div>
+
+        <div style="overflow-x:auto;margin-bottom:14px">
+            <table class="items-mini">
+                <thead><tr><th>#</th><th>สินค้า</th><th>ตัวเลือก</th><th style="text-align:center">จำนวน</th><th style="text-align:right">ราคา</th></tr></thead>
+                <tbody>${itemsTableRows}</tbody>
+                <tfoot><tr>
+                    <td colspan="4" style="text-align:right;font-weight:700">รวมทั้งหมด</td>
+                    <td style="text-align:right;font-weight:700;color:var(--color-primary)">${API.fmtBaht(o.total_amount)}</td>
+                </tr></tfoot>
+            </table>
+        </div>
+
+        <div class="exp-grid" style="margin-bottom:14px">
+            ${slipSection}
+        </div>
+
+        <div class="row-actions">
+            ${actionBtns}
+            <button class="btn btn-print" onclick="openPrintLabel('${o.order_id}')">🖨️ ใบปะหน้า</button>
+        </div>`;
+}
+
+function toggleExpand(sid) {
+    const inner = document.getElementById('expinner-' + sid);
+    const arrow = document.getElementById('arr-' + sid);
+    const row   = document.getElementById('row-' + sid);
+    if (!inner) return;
+    const opening = !inner.classList.contains('open');
+    inner.classList.toggle('open', opening);
+    arrow.classList.toggle('open', opening);
+    row.classList.toggle('expanded', opening);
+}
+
+// ════════ Verify / Reject ════════
+async function verifyOrder(btn, orderId) {
+    if (!confirm('ยืนยันใบสั่งซื้อและส่ง LINE ให้ลูกค้า?')) return;
+    btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;border-top-color:#fff;border-color:rgba(255,255,255,.4);border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle"></div>';
+    try {
+        await API.postAuth('verifyOrder', { order_id: orderId, status: 'verified' }, authToken);
+        API.toast('✓ ยืนยันและส่ง LINE แล้ว', 'success');
+        await silentRefresh();
+    } catch(err) {
+        API.toast('❌ ผิดพลาด: ' + err.message, 'error');
+        btn.disabled = false; btn.innerHTML = '✓ ยืนยันและส่ง LINE';
+    }
+}
+
+async function rejectOrder(btn, orderId) {
+    const reason = prompt('🚫 เหตุผลที่ปฏิเสธ:');
+    if (reason === null) return;
+    btn.disabled = true;
+    try {
+        await API.postAuth('verifyOrder', { order_id: orderId, status: 'rejected', reason }, authToken);
+        API.toast('✓ ปฏิเสธใบสั่งแล้ว', 'success');
+        await silentRefresh();
+    } catch(err) {
+        API.toast('❌ ผิดพลาด: ' + err.message, 'error');
+        btn.disabled = false;
+    }
+}
+
+// ════════ Print Label ════════
+function openPrintLabel(orderId) {
+    const o = orders.find(x => x.order_id === orderId);
+    if (!o) return;
+
+    const items = parseItems(o.items);
+    const eventName = shopSettings.event_name || 'ชื่องาน';
+
+    // Fill header
+    document.getElementById('pl-org-name').textContent = eventName;
+    const tagEl = document.getElementById('pl-tag-box');
+    tagEl.textContent = o.status === 'verified' ? '✓ ยืนยัน' : o.status === 'rejected' ? '✗ ปฏิเสธ' : 'รอยืนยัน';
+    tagEl.style.borderColor = o.status === 'verified' ? '#4caf50' : o.status === 'rejected' ? '#d32f2f' : '#ff9800';
+    tagEl.style.color       = o.status === 'verified' ? '#1b5e20' : o.status === 'rejected' ? '#b71c1c' : '#e65100';
+
+    // Decorative barcode lines
+    const bcEl = document.getElementById('pl-barcode-lines');
+    bcEl.innerHTML = '';
+    const seed = orderId.charCodeAt(3) || 65;
+    for (let i = 0; i < 60; i++) {
+        const w = ((seed * (i + 7) * 3) % 3) + 1;
+        const gap = ((seed * (i + 3)) % 3) + 1;
+        const line = document.createElement('div');
+        line.className = 'pl-bc-line';
+        line.style.width = w + 'px';
+        line.style.marginRight = gap + 'px';
+        bcEl.appendChild(line);
+    }
+
+    // Addresses
+    document.getElementById('pl-from-name').textContent = eventName;
+    document.getElementById('pl-from-detail').textContent = shopSettings.event_location || '';
+    document.getElementById('pl-to-name').textContent = o.customer_name || '—';
+    document.getElementById('pl-to-addr').textContent = o.address || '(ไม่ระบุ)';
+    document.getElementById('pl-to-phone').textContent = o.phone || '';
+
+    // Routing code
+    document.getElementById('pl-routing-code').textContent = o.order_id;
+    document.getElementById('pl-date').textContent = o.created_at ? new Date(o.created_at).toLocaleDateString('th-TH') : '—';
+    document.getElementById('pl-total-routing').textContent = API.fmtBaht(o.total_amount);
+
+    // Items
+    let totalQty = 0;
+    document.getElementById('pl-items-body').innerHTML = items.map((i, idx) => {
+        totalQty += Number(i.qty) || 0;
+        const v = [i.color, i.size].filter(Boolean).join('/');
+        return `<tr>
+            <td>${idx+1}</td>
+            <td>${i.name || '—'}</td>
+            <td>${v || '—'}</td>
+            <td style="text-align:center">${i.qty}</td>
+            <td style="text-align:right">${API.fmtBaht(i.price)}</td>
+        </tr>`;
+    }).join('');
+    document.getElementById('pl-total-qty').textContent = totalQty;
+
+    // Footer
+    document.getElementById('pl-footer-order').textContent = o.order_id;
+    document.getElementById('pl-slip-amount').textContent = o.slip_amount ? API.fmtBaht(o.slip_amount) : '—';
+
+    // Open modal
+    document.getElementById('print-modal-bg').classList.add('open');
+
+    // Auto-print on desktop
+    if (window.innerWidth >= 992) {
+        requestAnimationFrame(() => setTimeout(doPrint, 400));
+    }
+}
+
+function doPrint() { window.print(); }
+
+function closePrintModal(e) {
+    if (!e || e.target === document.getElementById('print-modal-bg')) {
+        document.getElementById('print-modal-bg').classList.remove('open');
+    }
+}
+
+// ════════ Slip Lightbox ════════
+function openSlipLightbox(url) {
+    document.getElementById('slip-lightbox-img').src = url;
+    document.getElementById('slip-lightbox').classList.add('open');
+}
+function closeSlipLightbox() {
+    document.getElementById('slip-lightbox').classList.remove('open');
+    document.getElementById('slip-lightbox-img').src = '';
+}
+
+// ════════ Helpers ════════
+function parseItems(raw) {
+    if (!raw) return [];
+    try {
+        const a = JSON.parse(raw);
+        return Array.isArray(a) ? a : [];
+    } catch(e) { return []; }
+}
+
+function logout() {
+    if (confirm('ต้องการออกจากระบบ?')) {
+        API.clearSession();
+        API.clearKey('access-code');
+        location.replace('../login.html');
+    }
+}
+
+init();
+</script>
 </body>
 </html>
