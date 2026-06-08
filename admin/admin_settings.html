@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚙️ ตั้งค่า</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=Trirong:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../theme.css">
+    <style>
+        body { background: #f5f5f5; padding: 10px; }
+        .admin-container { max-width: 800px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header h1 { margin: 0; color: var(--color-primary); font-family: Trirong; }
+        .logout-btn { padding: 8px 16px; background: #d32f2f; color: white; border: none; border-radius: 6px; cursor: pointer; }
+        
+        .settings-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .settings-card h3 { margin-top: 0; color: var(--color-primary); font-family: Trirong; border-bottom: 2px solid var(--color-accent); padding-bottom: 10px; }
+        
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; font-family: Sarabun; box-sizing: border-box; }
+        .form-group textarea { resize: vertical; min-height: 60px; }
+        
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        
+        .color-input { width: 100%; height: 40px; cursor: pointer; border-radius: 6px; border: 1px solid #ddd; }
+        .color-display { margin-top: 6px; padding: 10px; border-radius: 6px; text-align: center; font-weight: 600; color: white; }
+        
+        .field-toggle { display: flex; gap: 12px; margin-bottom: 12px; padding: 10px; background: #f9f9f9; border-radius: 6px; align-items: center; }
+        .toggle-checkbox { width: 20px; height: 20px; cursor: pointer; }
+        
+        .qr-upload { margin-bottom: 16px; }
+        .qr-label { display: block; padding: 12px; background: var(--color-accent); color: #333; border-radius: 6px; cursor: pointer; text-align: center; font-weight: 600; margin-bottom: 8px; transition: all 0.2s; }
+        .qr-label:hover { background: #e8b540; }
+        .qr-input { display: none; }
+        .qr-preview { text-align: center; margin: 12px 0; }
+        .qr-img { max-width: 200px; height: auto; border-radius: 6px; border: 2px solid var(--color-accent); }
+        
+        .btn { padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .btn-primary { background: var(--color-primary); color: white; width: 100%; }
+        .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-danger { background: #d32f2f; color: white; }
+        
+        .loading { text-align: center; padding: 40px; }
+        .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .success-msg { background: #e8f5e9; color: #2e7d32; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
+        .section-note { font-size: 13px; color: #666; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="header">
+            <h1>⚙️ ตั้งค่าระบบ</h1>
+            <button class="logout-btn" onclick="logout()">🚪 ออกจากระบบ</button>
+        </div>
+        
+        <div class="loading" id="settings-loading">
+            <div class="spinner"></div> กำลังโหลดตั้งค่า...
+        </div>
+        
+        <div id="settings-form" style="display: none;">
+            <!-- Event Info -->
+            <div class="settings-card">
+                <h3>🎉 ข้อมูลงาน</h3>
+                <div class="form-group">
+                    <label>ชื่องาน *</label>
+                    <input type="text" id="event-name" placeholder="เช่น รามจิตติ ๔๔">
+                </div>
+                <div class="form-group">
+                    <label>วันที่จัดงาน</label>
+                    <input type="text" id="event-date" placeholder="เช่น 2024-12-01">
+                </div>
+                <div class="form-group">
+                    <label>สถานที่</label>
+                    <input type="text" id="event-location" placeholder="เช่น หอประชุมมหาวชิราวุธ">
+                </div>
+                <div class="form-group">
+                    <label>โลโก้ (Google Drive File ID)</label>
+                    <input type="text" id="logo-url" placeholder="File ID จาก Drive">
+                </div>
+            </div>
+            
+            <!-- Colors -->
+            <div class="settings-card">
+                <h3>🎨 สีธีม</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>สีหลัก</label>
+                        <input type="color" id="color-primary" class="color-input">
+                        <div class="color-display" id="color-primary-display"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>สีเน้น</label>
+                        <input type="color" id="color-accent" class="color-input">
+                        <div class="color-display" id="color-accent-display"></div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>สีวงล้อ A</label>
+                        <input type="color" id="wheel-color-a" class="color-input">
+                    </div>
+                    <div class="form-group">
+                        <label>สีวงล้อ B</label>
+                        <input type="color" id="wheel-color-b" class="color-input">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>สีข้อความวงล้อ A</label>
+                        <input type="color" id="wheel-text-a" class="color-input">
+                    </div>
+                    <div class="form-group">
+                        <label>สีข้อความวงล้อ B</label>
+                        <input type="color" id="wheel-text-b" class="color-input">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Payment -->
+            <div class="settings-card">
+                <h3>💳 PromptPay QR</h3>
+                <div class="qr-upload">
+                    <label class="qr-label" for="qr-file">📤 อัปโหลด QR code PromptPay</label>
+                    <input type="file" id="qr-file" class="qr-input" accept="image/*">
+                </div>
+                <div id="qr-preview" class="qr-preview"></div>
+                <div class="section-note">
+                    <strong>หมายเหตุ:</strong> อัปโหลด QR code ของ PromptPay ที่คุณสามารถสแกนเพื่อชำระเงิน
+                </div>
+            </div>
+            
+            <!-- Fields -->
+            <div class="settings-card">
+                <h3>📋 ฟิลด์ลงทะเบียนที่ปรากฏ</h3>
+                <div class="field-toggle">
+                    <input type="checkbox" id="field-generation" class="toggle-checkbox">
+                    <label for="field-generation">ชั้นปีศิษย์เก่า</label>
+                </div>
+                <div class="field-toggle">
+                    <input type="checkbox" id="field-province" class="toggle-checkbox">
+                    <label for="field-province">จังหวัด</label>
+                </div>
+                <div class="field-toggle">
+                    <input type="checkbox" id="field-occupation" class="toggle-checkbox">
+                    <label for="field-occupation">อาชีพ</label>
+                </div>
+                <div class="field-toggle">
+                    <input type="checkbox" id="field-organization" class="toggle-checkbox">
+                    <label for="field-organization">หน่วยงาน</label>
+                </div>
+                <div class="field-toggle">
+                    <input type="checkbox" id="field-email" class="toggle-checkbox">
+                    <label for="field-email">Email</label>
+                </div>
+                <div class="field-toggle">
+                    <input type="checkbox" id="field-address" class="toggle-checkbox">
+                    <label for="field-address">ที่อยู่</label>
+                </div>
+            </div>
+            
+            <!-- Security -->
+            <div class="settings-card">
+                <h3>🔐 ความปลอดภัย</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>PIN ลอตเตอรี่ (ตัวเลข)</label>
+                        <input type="text" id="pin-lottery" placeholder="เช่น 1234">
+                    </div>
+                    <div class="form-group">
+                        <label>PIN รีโมท (ตัวเลข)</label>
+                        <input type="text" id="pin-remote" placeholder="เช่น 5678">
+                    </div>
+                </div>
+                <div class="section-note">
+                    ⚠️ PIN ใช้สำหรับป้องกันการเข้าถึงจอวงล้อและรีโมท
+                </div>
+            </div>
+            
+            <!-- Messages -->
+            <div class="settings-card">
+                <h3>💬 ข้อความ LINE</h3>
+                <div class="form-group">
+                    <label>ข้อความเมื่อผู้เข้าเกณฑ์ลอตเตอรี่ (ใช้ {name} และ {reward})</label>
+                    <textarea id="line-winner-msg" placeholder="ยินดีด้วย {name}! คุณชนะรางวัล {reward}"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>ข้อความสวัสดี (ใช้ {name})</label>
+                    <textarea id="line-greeting" placeholder="สวัสดี {name} ยินดีต้อนรับเข้างาน"></textarea>
+                </div>
+            </div>
+            
+            <!-- Promptpay Number -->
+            <div class="settings-card">
+                <h3>📱 เบอร์ PromptPay</h3>
+                <div class="form-group">
+                    <label>เบอร์โทร / เลขประจำตัวประชาชน (สำหรับ PromptPay)</label>
+                    <input type="text" id="promptpay-number" placeholder="เช่น 0812345678 หรือ 1234567890123">
+                </div>
+            </div>
+            
+            <!-- Save Button -->
+            <button class="btn btn-primary" onclick="saveSettings()" style="margin-bottom: 20px;">
+                ✓ บันทึกตั้งค่า
+            </button>
+        </div>
+    </div>
+    
+    <script src="../api.js"></script>
+    <script>
+        let authToken = '';
+        let settings = {};
+        let qrFileId = '';
+        
+        async function init() {
+            authToken = getKey('admin-token');
+            if (!authToken) {
+                location.href = '../admin/index.html';
+                return;
+            }
+            
+            await loadSettings();
+        }
+        
+        async function loadSettings() {
+            try {
+                settings = await API.postAuth('/getSettings', {}, authToken);
+                renderSettings();
+                document.getElementById('settings-loading').style.display = 'none';
+                document.getElementById('settings-form').style.display = 'block';
+            } catch (err) {
+                document.getElementById('settings-loading').innerHTML = '❌ โหลดผิดพลาด: ' + err.message;
+            }
+        }
+        
+        function renderSettings() {
+            document.getElementById('event-name').value = settings.event_name || '';
+            document.getElementById('event-date').value = settings.event_date || '';
+            document.getElementById('event-location').value = settings.event_location || '';
+            document.getElementById('logo-url').value = settings.logo_url || '';
+            
+            document.getElementById('color-primary').value = settings.color_primary || '#0d2b5e';
+            document.getElementById('color-accent').value = settings.color_accent || '#f0c040';
+            document.getElementById('wheel-color-a').value = settings.wheel_color_a || '#ff6b6b';
+            document.getElementById('wheel-color-b').value = settings.wheel_color_b || '#4ecdc4';
+            document.getElementById('wheel-text-a').value = settings.wheel_text_a || '#ffffff';
+            document.getElementById('wheel-text-b').value = settings.wheel_text_b || '#ffffff';
+            
+            updateColorDisplay();
+            
+            document.getElementById('field-generation').checked = settings.field_generation !== false;
+            document.getElementById('field-province').checked = settings.field_province !== false;
+            document.getElementById('field-occupation').checked = settings.field_occupation !== false;
+            document.getElementById('field-organization').checked = settings.field_organization !== false;
+            document.getElementById('field-email').checked = settings.field_email !== false;
+            document.getElementById('field-address').checked = settings.field_address !== false;
+            
+            document.getElementById('pin-lottery').value = settings.pin_lottery || '';
+            document.getElementById('pin-remote').value = settings.pin_remote || '';
+            
+            document.getElementById('line-winner-msg').value = settings.line_winner_msg || '';
+            document.getElementById('line-greeting').value = settings.line_greeting || '';
+            
+            document.getElementById('promptpay-number').value = settings.promptpay_number || '';
+            
+            // QR preview
+            if (settings.promptpay_file_id) {
+                qrFileId = settings.promptpay_file_id;
+                document.getElementById('qr-preview').innerHTML = `
+                    <img class="qr-img" src="${driveImg(qrFileId, 500)}" alt="promptpay-qr">
+                    <div style="margin-top: 8px; font-size: 12px; color: #666;">File ID: ${qrFileId}</div>
+                `;
+            }
+        }
+        
+        function updateColorDisplay() {
+            const primary = document.getElementById('color-primary').value;
+            const accent = document.getElementById('color-accent').value;
+            
+            document.getElementById('color-primary-display').style.backgroundColor = primary;
+            document.getElementById('color-primary-display').textContent = primary;
+            
+            document.getElementById('color-accent-display').style.backgroundColor = accent;
+            document.getElementById('color-accent-display').textContent = accent;
+        }
+        
+        document.getElementById('color-primary').addEventListener('change', updateColorDisplay);
+        document.getElementById('color-accent').addEventListener('change', updateColorDisplay);
+        
+        // QR File Upload Handler
+        document.getElementById('qr-file').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            toast('📤 กำลังอัปโหลด QR code...', 'info');
+            
+            // ในกรณีจริง ต้องอัปโหลดไปยัง Google Drive และได้ file ID
+            // ตอนนี้จะใช้ temporary preview
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                document.getElementById('qr-preview').innerHTML = `
+                    <img class="qr-img" src="${ev.target.result}" alt="qr-preview">
+                    <div style="margin-top: 8px; font-size: 12px; color: #666;">📤 รอบันทึกตั้งค่า</div>
+                `;
+                toast('✓ เลือก QR code แล้ว', 'success');
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        async function saveSettings() {
+            const updatedSettings = {
+                event_name: document.getElementById('event-name').value,
+                event_date: document.getElementById('event-date').value,
+                event_location: document.getElementById('event-location').value,
+                logo_url: document.getElementById('logo-url').value,
+                color_primary: document.getElementById('color-primary').value,
+                color_accent: document.getElementById('color-accent').value,
+                wheel_color_a: document.getElementById('wheel-color-a').value,
+                wheel_color_b: document.getElementById('wheel-color-b').value,
+                wheel_text_a: document.getElementById('wheel-text-a').value,
+                wheel_text_b: document.getElementById('wheel-text-b').value,
+                field_generation: document.getElementById('field-generation').checked,
+                field_province: document.getElementById('field-province').checked,
+                field_occupation: document.getElementById('field-occupation').checked,
+                field_organization: document.getElementById('field-organization').checked,
+                field_email: document.getElementById('field-email').checked,
+                field_address: document.getElementById('field-address').checked,
+                pin_lottery: document.getElementById('pin-lottery').value,
+                pin_remote: document.getElementById('pin-remote').value,
+                line_winner_msg: document.getElementById('line-winner-msg').value,
+                line_greeting: document.getElementById('line-greeting').value,
+                promptpay_number: document.getElementById('promptpay-number').value,
+                promptpay_file_id: qrFileId
+            };
+            
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> บันทึก...';
+            
+            try {
+                await API.postAuth('/updateSettings', updatedSettings, authToken);
+                toast('✓ บันทึกตั้งค่าแล้ว', 'success');
+                settings = updatedSettings;
+            } catch (err) {
+                toast('❌ บันทึกผิดพลาด: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '✓ บันทึกตั้งค่า';
+            }
+        }
+        
+        function logout() {
+            if (confirm('ต้องการออกจากระบบ?')) {
+                clearSession();
+                location.href = '../admin/index.html';
+            }
+        }
+        
+        init();
+    </script>
+</body>
+</html>

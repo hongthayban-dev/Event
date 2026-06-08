@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📦 จัดการสินค้า</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=Trirong:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../theme.css">
+    <style>
+        body { background: #f5f5f5; padding: 10px; }
+        .admin-container { max-width: 900px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header h1 { margin: 0; color: var(--color-primary); font-family: Trirong; }
+        .logout-btn { padding: 8px 16px; background: #d32f2f; color: white; border: none; border-radius: 6px; cursor: pointer; }
+        
+        .tab-nav { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-nav button { padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; background: #e0e0e0; }
+        .tab-nav button.active { background: var(--color-primary); color: white; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* Products List */
+        .products-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+        .product-card { background: white; padding: 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .product-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px; }
+        .product-name { font-weight: 700; font-size: 16px; color: var(--color-primary); }
+        .product-actions { display: flex; gap: 6px; }
+        .product-actions button { padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .btn-edit { background: var(--color-accent); color: #333; }
+        .btn-delete { background: #d32f2f; color: white; }
+        .product-info { font-size: 14px; margin-bottom: 8px; }
+        .product-stock { padding: 8px; background: #f0f0f0; border-radius: 4px; margin-top: 8px; }
+        .stock-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .stock-save { width: 100%; padding: 8px; margin-top: 8px; background: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        
+        /* Add Product Form */
+        .form-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; font-family: Sarabun; box-sizing: border-box; }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        
+        .img-upload { margin-bottom: 16px; }
+        .img-upload label { display: block; padding: 12px; background: #f0f0f0; border-radius: 6px; cursor: pointer; text-align: center; font-weight: 600; }
+        .img-upload input { display: none; }
+        .img-preview { margin-top: 8px; display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; }
+        .img-preview img { width: 100%; height: 80px; object-fit: cover; border-radius: 4px; border: 2px solid #ddd; }
+        
+        .btn { padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .btn-primary { background: var(--color-primary); color: white; }
+        .btn-secondary { background: var(--color-accent); color: #333; }
+        .btn-full { width: 100%; }
+        
+        .loading { text-align: center; padding: 40px; }
+        .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .error-msg { background: #ffebee; color: #c62828; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
+        .success-msg { background: #e8f5e9; color: #2e7d32; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="header">
+            <h1>📦 จัดการสินค้า</h1>
+            <button class="logout-btn" onclick="logout()">🚪 ออกจากระบบ</button>
+        </div>
+        
+        <div class="tab-nav">
+            <button class="tab-btn active" data-tab="list">📋 รายการสินค้า</button>
+            <button class="tab-btn" data-tab="add">➕ เพิ่มสินค้าใหม่</button>
+        </div>
+        
+        <!-- Products List -->
+        <div id="list" class="tab-content active">
+            <div class="loading" id="list-loading">
+                <div class="spinner"></div> กำลังโหลดสินค้า...
+            </div>
+            <div id="products-list" class="products-list" style="display: none;"></div>
+        </div>
+        
+        <!-- Add Product -->
+        <div id="add" class="tab-content">
+            <div class="form-card">
+                <h3 style="margin-top: 0; color: var(--color-primary); font-family: Trirong;">เพิ่มสินค้าใหม่</h3>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>ชื่อสินค้า *</label>
+                        <input type="text" id="product-name" placeholder="เช่น ขนมจีนน้ำยา">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>ราคา (฿) *</label>
+                            <input type="number" id="product-price" placeholder="50" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label>สต็อก (ชิ้น) *</label>
+                            <input type="number" id="product-stock" placeholder="100">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>คำอธิบาย</label>
+                    <textarea id="product-desc" placeholder="รายละเอียดสินค้า..."></textarea>
+                </div>
+                
+                <div>
+                    <label style="font-weight: 600; margin-bottom: 10px; display: block;">รูปสินค้า (สามารถเลือก 5 รูป)</label>
+                    <div id="image-inputs">
+                        <div class="img-upload">
+                            <label for="img1">📤 รูป 1</label>
+                            <input type="text" id="img1" placeholder="Google Drive file ID">
+                        </div>
+                        <div class="img-upload">
+                            <label for="img2">📤 รูป 2</label>
+                            <input type="text" id="img2" placeholder="Google Drive file ID">
+                        </div>
+                        <div class="img-upload">
+                            <label for="img3">📤 รูป 3</label>
+                            <input type="text" id="img3" placeholder="Google Drive file ID">
+                        </div>
+                        <div class="img-upload">
+                            <label for="img4">📤 รูป 4</label>
+                            <input type="text" id="img4" placeholder="Google Drive file ID">
+                        </div>
+                        <div class="img-upload">
+                            <label for="img5">📤 รูป 5</label>
+                            <input type="text" id="img5" placeholder="Google Drive file ID">
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary btn-full" onclick="addProduct()" style="margin-top: 20px;">
+                    ✓ บันทึกสินค้า
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../api.js"></script>
+    <script>
+        let products = [];
+        let authToken = '';
+        
+        async function init() {
+            authToken = getKey('admin-token');
+            if (!authToken) {
+                location.href = '../admin/index.html';
+                return;
+            }
+            
+            await loadProducts();
+        }
+        
+        async function loadProducts() {
+            try {
+                products = await API.postAuth('/getProducts', {}, authToken);
+                renderProducts();
+                document.getElementById('list-loading').style.display = 'none';
+                document.getElementById('products-list').style.display = 'grid';
+            } catch (err) {
+                document.getElementById('list-loading').innerHTML = '❌ โหลดผิดพลาด: ' + err.message;
+            }
+        }
+        
+        function renderProducts() {
+            const list = document.getElementById('products-list');
+            list.innerHTML = products.map(p => `
+                <div class="product-card">
+                    <div class="product-header">
+                        <div class="product-name">${p.name}</div>
+                        <div class="product-actions">
+                            <button class="btn-edit" onclick="editProduct('${p.id}')">✏️ แก้ไข</button>
+                            <button class="btn-delete" onclick="deleteProduct('${p.id}')">🗑️ ลบ</button>
+                        </div>
+                    </div>
+                    <div class="product-info">💰 ราคา: <strong>${fmtBaht(p.price)}</strong></div>
+                    <div class="product-info">📋 ${p.description || '-'}</div>
+                    <div class="product-stock">
+                        <div style="font-size: 12px; margin-bottom: 6px;">สต็อก: <strong>${p.stock}</strong> ชิ้น</div>
+                        <input type="number" class="stock-input" id="stock-${p.id}" value="${p.stock}" min="0">
+                        <button class="stock-save" onclick="updateStock('${p.id}')">บันทึกสต็อก</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        async function updateStock(productId) {
+            const newStock = parseInt(document.getElementById('stock-' + productId).value);
+            if (isNaN(newStock) || newStock < 0) {
+                toast('❌ ใส่สต็อกเป็นตัวเลขที่ถูกต้อง', 'error');
+                return;
+            }
+            
+            try {
+                const product = products.find(p => p.id === productId);
+                const updated = { ...product, stock: newStock };
+                await API.postAuth('/saveProduct', updated, authToken);
+                toast('✓ บันทึกสต็อกแล้ว', 'success');
+            } catch (err) {
+                toast('❌ บันทึกผิดพลาด: ' + err.message, 'error');
+            }
+        }
+        
+        async function addProduct() {
+            const name = document.getElementById('product-name').value.trim();
+            const price = parseFloat(document.getElementById('product-price').value);
+            const stock = parseInt(document.getElementById('product-stock').value);
+            const desc = document.getElementById('product-desc').value.trim();
+            
+            if (!name || isNaN(price) || isNaN(stock)) {
+                toast('❌ กรอกข้อมูลให้ครบ', 'error');
+                return;
+            }
+            
+            const product = {
+                id: 'prod_' + Date.now(),
+                name,
+                price,
+                stock,
+                description: desc,
+                img_url1: document.getElementById('img1').value.trim() || '',
+                img_url2: document.getElementById('img2').value.trim() || '',
+                img_url3: document.getElementById('img3').value.trim() || '',
+                img_url4: document.getElementById('img4').value.trim() || '',
+                img_url5: document.getElementById('img5').value.trim() || ''
+            };
+            
+            try {
+                await API.postAuth('/saveProduct', product, authToken);
+                toast('✓ เพิ่มสินค้าแล้ว', 'success');
+                
+                // Clear form
+                document.getElementById('product-name').value = '';
+                document.getElementById('product-price').value = '';
+                document.getElementById('product-stock').value = '';
+                document.getElementById('product-desc').value = '';
+                for (let i = 1; i <= 5; i++) {
+                    document.getElementById('img' + i).value = '';
+                }
+                
+                await loadProducts();
+            } catch (err) {
+                toast('❌ บันทึกผิดพลาด: ' + err.message, 'error');
+            }
+        }
+        
+        async function deleteProduct(productId) {
+            if (!confirm('⚠️ ต้องการลบสินค้านี้?')) return;
+            
+            try {
+                await API.postAuth('/deleteProduct', { id: productId }, authToken);
+                toast('✓ ลบสินค้าแล้ว', 'success');
+                await loadProducts();
+            } catch (err) {
+                toast('❌ ลบผิดพลาด: ' + err.message, 'error');
+            }
+        }
+        
+        function logout() {
+            if (confirm('ต้องการออกจากระบบ?')) {
+                clearSession();
+                location.href = '../admin/index.html';
+            }
+        }
+        
+        // Tab navigation
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.tab).classList.add('active');
+            });
+        });
+        
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛒 รายการสั่งซื้อ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=Trirong:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../theme.css">
+    <style>
+        body { background: #f5f5f5; padding: 10px; }
+        .admin-container { max-width: 1000px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header h1 { margin: 0; color: var(--color-primary); font-family: Trirong; }
+        .logout-btn { padding: 8px 16px; background: #d32f2f; color: white; border: none; border-radius: 6px; cursor: pointer; }
+        
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .filter-btn { padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer; }
+        .filter-btn.active { background: var(--color-primary); color: white; border-color: var(--color-primary); }
+        
+        .orders-list { display: grid; gap: 16px; }
+        .order-card { background: white; padding: 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid var(--color-primary); }
+        .order-card.pending { border-left-color: #ff9800; }
+        .order-card.verified { border-left-color: #4caf50; }
+        
+        .order-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px; }
+        .order-id { font-weight: 700; font-size: 16px; color: var(--color-primary); }
+        .order-status { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .status-pending { background: #ffe0b2; color: #e65100; }
+        .status-verified { background: #c8e6c9; color: #1b5e20; }
+        
+        .order-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px; font-size: 14px; }
+        .order-detail { }
+        .detail-label { color: #666; font-size: 12px; }
+        .detail-value { font-weight: 600; }
+        
+        .order-items { background: #f9f9f9; padding: 12px; border-radius: 6px; margin: 12px 0; }
+        .items-label { font-weight: 600; margin-bottom: 6px; }
+        .items-text { font-size: 14px; }
+        
+        .slip-section { margin: 12px 0; }
+        .slip-img { max-width: 200px; max-height: 300px; border-radius: 6px; border: 1px solid #ddd; }
+        .slip-amount { background: #f0f0f0; padding: 8px; border-radius: 4px; font-weight: 600; color: var(--color-primary); margin-top: 6px; }
+        
+        .order-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+        .btn { padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; }
+        .btn-verify { background: #4caf50; color: white; }
+        .btn-reject { background: #d32f2f; color: white; }
+        .btn-view { background: var(--color-accent); color: #333; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+        .modal.active { display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 8px; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+        .modal-close { float: right; cursor: pointer; font-size: 24px; color: #999; }
+        .modal h3 { margin-top: 0; color: var(--color-primary); font-family: Trirong; }
+        
+        .loading { text-align: center; padding: 40px; }
+        .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .empty-state { text-align: center; padding: 60px 20px; color: #999; }
+        .success-msg { background: #e8f5e9; color: #2e7d32; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="header">
+            <h1>🛒 รายการสั่งซื้อ</h1>
+            <button class="logout-btn" onclick="logout()">🚪 ออกจากระบบ</button>
+        </div>
+        
+        <div class="filter-bar">
+            <button class="filter-btn active" data-filter="all">📊 ทั้งหมด</button>
+            <button class="filter-btn" data-filter="pending">⏳ รอยืนยัน</button>
+            <button class="filter-btn" data-filter="verified">✓ ยืนยันแล้ว</button>
+        </div>
+        
+        <div class="loading" id="orders-loading">
+            <div class="spinner"></div> กำลังโหลดใบสั่ง...
+        </div>
+        
+        <div id="orders-list" class="orders-list" style="display: none;"></div>
+        
+        <div id="empty-state" class="empty-state" style="display: none;">
+            📦 ไม่มีใบสั่งซื้อในขณะนี้
+        </div>
+    </div>
+    
+    <!-- Detail Modal -->
+    <div id="detail-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <h3>📋 รายละเอียดใบสั่งซื้อ</h3>
+            <div id="detail-content"></div>
+        </div>
+    </div>
+    
+    <script src="../api.js"></script>
+    <script>
+        let orders = [];
+        let authToken = '';
+        let currentFilter = 'all';
+        
+        async function init() {
+            authToken = getKey('admin-token');
+            if (!authToken) {
+                location.href = '../admin/index.html';
+                return;
+            }
+            
+            await loadOrders();
+            
+            // Filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentFilter = btn.dataset.filter;
+                    renderOrders();
+                });
+            });
+        }
+        
+        async function loadOrders() {
+            try {
+                orders = await API.postAuth('/getOrders', {}, authToken);
+                renderOrders();
+                document.getElementById('orders-loading').style.display = 'none';
+            } catch (err) {
+                document.getElementById('orders-loading').innerHTML = '❌ โหลดผิดพลาด: ' + err.message;
+            }
+        }
+        
+        function renderOrders() {
+            const filtered = orders.filter(o => {
+                if (currentFilter === 'all') return true;
+                return o.status === currentFilter;
+            });
+            
+            const list = document.getElementById('orders-list');
+            
+            if (filtered.length === 0) {
+                list.style.display = 'none';
+                document.getElementById('empty-state').style.display = 'block';
+                return;
+            }
+            
+            list.style.display = 'grid';
+            document.getElementById('empty-state').style.display = 'none';
+            
+            list.innerHTML = filtered.map(o => `
+                <div class="order-card ${o.status}">
+                    <div class="order-header">
+                        <div>
+                            <div class="order-id">📦 ${o.order_id}</div>
+                            <div style="font-size: 12px; color: #666;">${new Date(o.created_at).toLocaleString('th-TH')}</div>
+                        </div>
+                        <span class="order-status status-${o.status}">
+                            ${o.status === 'pending' ? '⏳ รอยืนยัน' : '✓ ยืนยันแล้ว'}
+                        </span>
+                    </div>
+                    
+                    <div class="order-row">
+                        <div class="order-detail">
+                            <div class="detail-label">👤 ชื่อลูกค้า</div>
+                            <div class="detail-value">${o.customer_name}</div>
+                        </div>
+                        <div class="order-detail">
+                            <div class="detail-label">📱 เบอร์</div>
+                            <div class="detail-value">${o.phone}</div>
+                        </div>
+                        <div class="order-detail">
+                            <div class="detail-label">💰 ยอดรวม</div>
+                            <div class="detail-value" style="color: var(--color-accent);">${fmtBaht(o.total_amount)}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="order-items">
+                        <div class="items-label">🛒 สินค้า:</div>
+                        <div class="items-text">${o.items}</div>
+                    </div>
+                    
+                    ${o.slip_url ? `
+                    <div class="slip-section">
+                        <div style="font-weight: 600; margin-bottom: 6px;">📸 สลิปการโอน:</div>
+                        <img src="${o.slip_url}" alt="slip" class="slip-img">
+                        <div class="slip-amount">💵 ยอดโอน: ${o.slip_amount ? fmtBaht(o.slip_amount) : '?'}</div>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="order-actions">
+                        <button class="btn btn-view" onclick="viewDetails('${o.order_id}')">👁️ ดูรายละเอียด</button>
+                        ${o.status === 'pending' ? `
+                            <button class="btn btn-verify" onclick="verifyOrder('${o.order_id}')">✓ ยืนยันและส่ง</button>
+                            <button class="btn btn-reject" onclick="rejectOrder('${o.order_id}')">✗ ปฏิเสธ</button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function viewDetails(orderId) {
+            const order = orders.find(o => o.order_id === orderId);
+            if (!order) return;
+            
+            const modal = document.getElementById('detail-modal');
+            const content = document.getElementById('detail-content');
+            
+            content.innerHTML = `
+                <div style="margin-bottom: 16px;">
+                    <div class="detail-label">📦 Order ID</div>
+                    <div class="detail-value">${order.order_id}</div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <div class="detail-label">👤 ชื่อลูกค้า</div>
+                    <div class="detail-value">${order.customer_name}</div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <div class="detail-label">📱 เบอร์</div>
+                    <div class="detail-value">${order.phone}</div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <div class="detail-label">🛒 สินค้า</div>
+                    <div class="detail-value">${order.items}</div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <div class="detail-label">💰 ยอดรวม</div>
+                    <div class="detail-value" style="color: var(--color-accent); font-size: 20px;">${fmtBaht(order.total_amount)}</div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <div class="detail-label">📅 วันที่สั่ง</div>
+                    <div class="detail-value">${new Date(order.created_at).toLocaleString('th-TH')}</div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <div class="detail-label">🔖 สถานะ</div>
+                    <div class="detail-value">${order.status === 'pending' ? '⏳ รอยืนยัน' : '✓ ยืนยันแล้ว'}</div>
+                </div>
+                ${order.slip_url ? `
+                    <div style="margin-bottom: 16px;">
+                        <div class="detail-label">📸 สลิป</div>
+                        <img src="${order.slip_url}" style="max-width: 100%; border-radius: 6px; margin-top: 8px;">
+                        <div style="margin-top: 8px; font-size: 14px;">ยอดโอน: <strong>${fmtBaht(order.slip_amount)}</strong></div>
+                    </div>
+                ` : ''}
+            `;
+            
+            modal.classList.add('active');
+        }
+        
+        function closeModal() {
+            document.getElementById('detail-modal').classList.remove('active');
+        }
+        
+        async function verifyOrder(orderId) {
+            if (!confirm('ยืนยันใบสั่งซื้อและส่ง LINE ให้ลูกค้า?')) return;
+            
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> กำลังส่ง...';
+            
+            try {
+                await API.postAuth('/verifyOrder', { order_id: orderId }, authToken);
+                toast('✓ ส่งใบสั่งซื้อแล้ว', 'success');
+                await loadOrders();
+            } catch (err) {
+                toast('❌ ยืนยันผิดพลาด: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '✓ ยืนยันและส่ง';
+            }
+        }
+        
+        async function rejectOrder(orderId) {
+            const reason = prompt('🚫 เหตุผลที่ปฏิเสธ:');
+            if (!reason) return;
+            
+            try {
+                await API.postAuth('/rejectOrder', { order_id: orderId, reason }, authToken);
+                toast('✓ ปฏิเสธใบสั่งแล้ว', 'success');
+                await loadOrders();
+            } catch (err) {
+                toast('❌ ผิดพลาด: ' + err.message, 'error');
+            }
+        }
+        
+        function logout() {
+            if (confirm('ต้องการออกจากระบบ?')) {
+                clearSession();
+                location.href = '../admin/index.html';
+            }
+        }
+        
+        init();
+    </script>
+</body>
+</html>
