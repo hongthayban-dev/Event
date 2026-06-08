@@ -6,8 +6,8 @@ const CONFIG = {
   DRIVE_FOLDER_ID: '1uuF70gDDiPQ8qnpYasKwjCojR7nuGW6R'
 };
 
-// ========== LIFF ==========
-async function liffInit() {
+// ========== LIFF (FIXED) ==========
+async function liffInit(silentFail) {
   return new Promise((resolve, reject) => {
     if (!window.liff) {
       reject(new Error('LIFF SDK not loaded'));
@@ -30,7 +30,7 @@ async function liffInit() {
 
 async function getProfile() {
   return new Promise((resolve, reject) => {
-    if (!liff.isLoggedIn()) {
+    if (!liff || !liff.isLoggedIn()) {
       reject(new Error('LIFF: Not logged in'));
       return;
     }
@@ -48,13 +48,13 @@ const API = {
     const url = new URL(CONFIG.API_URL);
     url.searchParams.append('action', action);
     Object.keys(params).forEach(key => {
-      url.searchParams.append(key, JSON.stringify(params[key]));
+      url.searchParams.append(key, typeof params[key] === 'string' ? params[key] : JSON.stringify(params[key]));
     });
     
     const resp = await fetch(url, { method: 'GET' });
     const json = await resp.json();
     if (!json.ok) throw new Error(json.error);
-    return json.data;
+    return json;
   },
   
   async post(action, data = {}) {
@@ -72,7 +72,7 @@ const API = {
     });
     const json = await resp.json();
     if (!json.ok) throw new Error(json.error);
-    return json.data;
+    return json;
   },
   
   async getAuth(action, params = {}, token) {
@@ -81,13 +81,13 @@ const API = {
     url.searchParams.append('action', action);
     url.searchParams.append('admin_key', token);
     Object.keys(params).forEach(key => {
-      url.searchParams.append(key, JSON.stringify(params[key]));
+      url.searchParams.append(key, typeof params[key] === 'string' ? params[key] : JSON.stringify(params[key]));
     });
     
     const resp = await fetch(url, { method: 'GET' });
     const json = await resp.json();
     if (!json.ok) throw new Error(json.error);
-    return json.data;
+    return json;
   },
   
   async postAuth(action, data = {}, token) {
@@ -106,41 +106,49 @@ const API = {
     });
     const json = await resp.json();
     if (!json.ok) throw new Error(json.error);
-    return json.data;
+    return json;
   }
 };
 
-// ========== OCR (TYPHOON) ==========
+// ========== OCR (IMPROVED) ==========
 async function ocrReceiptAmount(imageBase64) {
   try {
-    // Method 1: Typhoon OCR API
-    const response = await fetch('https://api.typhoon.ai/v1/ocr', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${CONFIG.TYPHOON_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        image: imageBase64,
-        language: 'th'
-      })
-    });
-    
-    const data = await response.json();
-    
-    // Extract amount from OCR text
-    if (data.text) {
-      const amounts = data.text.match(/\d+(?:\.\d{2})?/g) || [];
-      // Find largest amount (likely the total)
-      const amount = Math.max(...amounts.map(parseFloat));
-      return {
-        success: true,
-        amount: amount,
-        text: data.text
-      };
+    // Method 1: Typhoon OCR API (Optional fallback)
+    if (CONFIG.TYPHOON_API_KEY) {
+      try {
+        const response = await fetch('https://api.typhoon.ai/v1/ocr', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${CONFIG.TYPHOON_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            image: imageBase64,
+            language: 'th'
+          })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.text) {
+            const amounts = data.text.match(/\d+(?:\.\d{2})?/g) || [];
+            if (amounts.length > 0) {
+              const amount = Math.max(...amounts.map(parseFloat));
+              return { success: true, amount: amount, text: data.text };
+            }
+          }
+        }
+      } catch (typhoonErr) {
+        console.warn('Typhoon OCR not available:', typhoonErr.message);
+      }
     }
     
-    return { success: false, error: 'No text found' };
+    // Fallback: ให้ user กรอกเอง
+    return {
+      success: false,
+      error: 'OCR not available',
+      hint: 'กรุณากรอกยอดเงินด้วยตัวเอง'
+    };
   } catch (err) {
     console.error('OCR error:', err);
     return {
@@ -151,75 +159,14 @@ async function ocrReceiptAmount(imageBase64) {
   }
 }
 
-// Alternative: Browser-side OCR with Tesseract.js
-async function ocrWithTesseract(imageUrl) {
-  try {
-    // Load Tesseract if not loaded
-    if (!window.Tesseract) {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js';
-      await new Promise((resolve, reject) => {
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-      });
-    }
-    
-    const { createWorker } = Tesseract;
-    const worker = await createWorker('tha');
-    const { data: { text } } = await worker.recognize(imageUrl);
-    await worker.terminate();
-    
-    // Extract numbers
-    const amounts = text.match(/\d+(?:\.\d{2})?/g) || [];
-    const amount = Math.max(...amounts.map(parseFloat));
-    
-    return {
-      success: true,
-      amount: amount,
-      text: text
-    };
-  } catch (err) {
-    return {
-      success: false,
-      error: err.message
-    };
-  }
-}
-
 // ========== PROMPTPAY QR ==========
-async function generatePromptPayQR(phoneOrId, amount) {
+function generatePromptPayQR(phoneOrId, amount) {
   // PromptPay QR format
   // Can use: https://promptpay.io/api/generateQR endpoint
   // Or pre-generate and upload to Drive
   
   // For now, return service URL
   return `https://api.promptpay.io/qr/generate?phoneNumber=${encodeURIComponent(phoneOrId)}&amount=${amount}`;
-}
-
-async function uploadSlip(slipBase64) {
-  try {
-    // Upload to Google Drive
-    const blob = base64ToBlob(slipBase64, 'image/jpeg');
-    const folder = DriveApp.getFolderById(CONFIG.DRIVE_FOLDER_ID);
-    const file = folder.createFile(blob).setName('slip_' + Date.now() + '.jpg');
-    
-    // Return Drive image URL
-    return driveImg(file.getId(), 500);
-  } catch (err) {
-    console.error('Upload error:', err);
-    throw new Error('อัปโหลดสลิปผิดพลาด');
-  }
-}
-
-function base64ToBlob(base64, mimeType) {
-  const bstr = atob(base64);
-  const n = bstr.length;
-  const u8arr = new Uint8Array(n);
-  for (let i = 0; i < n; i++) {
-    u8arr[i] = bstr.charCodeAt(i);
-  }
-  return new Blob([u8arr], { type: mimeType });
 }
 
 // ========== DRIVE IMAGE ==========
@@ -230,10 +177,13 @@ function driveImg(fileId, size = 500) {
 // ========== THEME ==========
 async function bootTheme() {
   try {
-    const settings = await API.get('/getSettings');
+    const res = await API.get('/getSettings');
+    const settings = res.settings || {};
     applyTheme(settings);
+    return settings;
   } catch (err) {
     console.error('Boot theme error:', err);
+    return {};
   }
 }
 
@@ -247,10 +197,10 @@ function applyTheme(settings) {
   root.style.setProperty('--wheel-text-b', settings.wheel_text_b || '#ffffff');
 }
 
-// ========== STORAGE ==========
+// ========== STORAGE (FIXED) ==========
 function setKey(key, value) {
   try {
-    localStorage.setItem(key, value);
+    localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
   } catch (err) {
     console.warn('localStorage full:', err);
   }
@@ -264,17 +214,45 @@ function getKey(key) {
   }
 }
 
-function setSession(key, value) {
-  sessionStorage.setItem(key, value);
+function clearKey(key) {
+  try {
+    if (key) {
+      localStorage.removeItem(key);
+    } else {
+      localStorage.clear();
+    }
+  } catch (err) {
+    console.warn('Clear key error:', err);
+  }
 }
 
-function getSession(key) {
-  return sessionStorage.getItem(key) || '';
+// ========== SESSION (FIXED) ==========
+function setSession(data) {
+  try {
+    sessionStorage.setItem('staff-session', typeof data === 'string' ? data : JSON.stringify(data));
+  } catch (err) {
+    console.error('Session storage error:', err);
+  }
+}
+
+function getSession() {
+  try {
+    const s = sessionStorage.getItem('staff-session');
+    return s ? JSON.parse(s) : null;
+  } catch (err) {
+    return null;
+  }
 }
 
 function clearSession() {
-  sessionStorage.clear();
-  localStorage.removeItem('admin-token');
+  try {
+    sessionStorage.clear();
+    localStorage.removeItem('admin-token');
+    localStorage.removeItem('admin-key');
+    localStorage.removeItem('access-code');
+  } catch (err) {
+    console.error('Clear session error:', err);
+  }
 }
 
 // ========== FORMATTING ==========
@@ -317,9 +295,10 @@ function toast(message, type = 'info') {
   setTimeout(() => toast.remove(), 3000);
 }
 
-// ========== FIELD TOGGLE HELPERS ==========
-function fieldOn(key, settings) {
-  return settings[`field_${key}`] !== false;
+// ========== FIELD TOGGLE HELPERS (FIXED) ==========
+function fieldOn(settings, key) {
+  if (!settings) return false;
+  return settings['field_' + key] !== false;
 }
 
 // ========== QR CODE GENERATION (optional) ==========

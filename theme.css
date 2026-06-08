@@ -1,4 +1,4 @@
-/* ========== CSS VARIABLES ==========  */
+/* ========== CSS VARIABLES (FIXED - เพิ่มตัวแปรที่ขาดหายไป) ==========  */
 :root {
   --color-primary: #0d2b5e;
   --color-accent: #f0c040;
@@ -6,6 +6,20 @@
   --wheel-color-b: #4ecdc4;
   --wheel-text-a: #ffffff;
   --wheel-text-b: #ffffff;
+  
+  /* Additional variables (FIXED) */
+  --navy-grad: linear-gradient(135deg, #0d2b5e, #1a3d7a);
+  --gold-grad: linear-gradient(135deg, #f0c040, #e8b535);
+  --ok: #4caf50;
+  --danger: #d32f2f;
+  --ink: #333;
+  --ink-soft: #666;
+  --line: #ddd;
+  --bg: #f5f5f5;
+  --font-display: 'Trirong', serif;
+  --font-body: 'Sarabun', sans-serif;
+  --radius-sm: 6px;
+  --accent-600: #d4a525;
 }
 
 /* ========== GLOBAL ==========  */

@@ -37,18 +37,38 @@ function json_(obj) {
 function doGet(e)  { return handle_(e, 'GET'); }
 function doPost(e) { return handle_(e, 'POST'); }
 
+// FIXED: แก้ POST parsing สำหรับ URLSearchParams
 function handle_(e, method) {
   var p = {};
   try {
     if (method === 'POST' && e.postData && e.postData.contents) {
-      p = JSON.parse(e.postData.contents);
+      // Parse URLSearchParams format: key=value&key2=value2
+      var contents = String(e.postData.contents);
+      var pairs = contents.split('&');
+      pairs.forEach(function (pair) {
+        var eqIdx = pair.indexOf('=');
+        if (eqIdx < 0) return;
+        var key = decodeURIComponent(pair.substring(0, eqIdx));
+        var value = decodeURIComponent(pair.substring(eqIdx + 1));
+        
+        // พยายาม parse เป็น JSON ก่อน ถ้าใช้งาน ก็ใช้ string
+        try {
+          p[key] = JSON.parse(value);
+        } catch (err) {
+          p[key] = value;
+        }
+      });
     } else {
       p = (e && e.parameter) ? e.parameter : {};
     }
   } catch (err) {
     p = (e && e.parameter) ? e.parameter : {};
   }
+  
   var action = p.action;
+  if (typeof action !== 'string') action = '';
+  action = String(action).replace(/^"/, '').replace(/"$/, ''); // Remove quotes
+  
   var result;
   try {
     result = route_(action, p);
@@ -188,7 +208,7 @@ function updateSettings_(p) {
   var values = sh.getDataRange().getValues();
   var rowOf = {};
   values.forEach(function (r, i) { if (r[0] !== '') rowOf[String(r[0])] = i + 1; });
-  var upd = p.settings || {};
+  var upd = p.settings || p;
   Object.keys(upd).forEach(function (k) {
     if (rowOf[k]) sh.getRange(rowOf[k], 2).setValue(upd[k]);
     else sh.appendRow([k, upd[k]]);
@@ -202,7 +222,7 @@ function updateSettings_(p) {
 function requireKey_(p) {
   var need = props_().getProperty('ADMIN_KEY');
   if (!need) return true; // ยังไม่ตั้ง = โหมด dev (อนุญาต)
-  if (String(p.key) === String(need)) return true;
+  if (String(p.admin_key) === String(need)) return true;
   throw new Error('unauthorized');
 }
 
@@ -436,7 +456,8 @@ function getEligible_(f) {
 }
 
 function eligible_(p) {
-  var list = getEligible_(parseFilters_(p.filters));
+  var filters = typeof p.filters === 'string' ? JSON.parse(p.filters) : (p.filters || {});
+  var list = getEligible_(filters);
   return {
     ok: true,
     count: list.length,
@@ -458,12 +479,6 @@ function shuffle_(a) {
   return a;
 }
 
-// filters อาจมาเป็น object (POST) หรือ JSON string (GET) — แปลงให้เป็น object เสมอ
-function parseFilters_(f) {
-  if (typeof f === 'string') { try { return JSON.parse(f); } catch (e) { return {}; } }
-  return f || {};
-}
-
 function getWheelState_() {
   var s = props_().getProperty('WHEEL_STATE');
   return s ? JSON.parse(s) : { status: 'idle', round: 0 };
@@ -476,7 +491,7 @@ function setWheelState_(obj) {
 // รีโมทสั่งหมุน: server สุ่มผู้ชนะ -> บันทึก -> ตั้ง state ให้จอ poll -> ยิง LINE
 function requestSpin_(p) {
   var count = parseInt(p.count || 1, 10);
-  var filters = parseFilters_(p.filters);
+  var filters = typeof p.filters === 'string' ? JSON.parse(p.filters) : (p.filters || {});
   var pool = getEligible_(filters);
   if (pool.length === 0) return { ok: false, error: 'no eligible participants' };
 
