@@ -98,7 +98,8 @@ function route_(action, p) {
     // ---------- public writes ----------
     case 'register':     return register_(p);
     case 'createOrder':  return createOrder_(p);
-    case 'uploadSlip':   return uploadSlip_(p);
+    case 'uploadSlip':      return uploadSlip_(p);
+    case 'uploadProductImg': return uploadProductImg_(p);
     case 'staffLogin':   return staffLogin_(p);
     case 'verifyPin':    return verifyPin_(p);
 
@@ -445,12 +446,19 @@ function verifyOrder_(p) {
   return { ok: true };
 }
 
-// บันทึกไฟล์ลง Drive แล้วคืน id + url
-// p.type = 'product' → PRODUCT_IMG_FOLDER_ID, อื่น ๆ → SLIP_FOLDER_ID
+// อัปโหลดสลิปชำระเงิน → SLIP_FOLDER_ID
 function uploadSlip_(p) {
+  return uploadToFolder_(p, SLIP_FOLDER_ID);
+}
+
+// อัปโหลดรูปสินค้า → PRODUCT_IMG_FOLDER_ID
+function uploadProductImg_(p) {
+  return uploadToFolder_(p, PRODUCT_IMG_FOLDER_ID);
+}
+
+function uploadToFolder_(p, folderId) {
   var m = String(p.dataUrl || '').match(/^data:(.+);base64,(.*)$/);
   if (!m) return { ok: false, error: 'bad dataUrl' };
-  var folderId = (p.type === 'product') ? PRODUCT_IMG_FOLDER_ID : SLIP_FOLDER_ID;
   var folder = DriveApp.getFolderById(folderId);
   var blob = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], p.filename || ('file_' + Date.now()));
   var file = folder.createFile(blob);
@@ -806,19 +814,23 @@ function testSheets() {
   });
 }
 
-// ---- ตรวจสอบ DriveApp + SLIP_FOLDER_ID ----
+// ---- ตรวจสอบ DriveApp + ทั้ง 2 folders ----
 function testDriveUpload() {
-  try {
-    var folder = DriveApp.getFolderById(SLIP_FOLDER_ID);
-    Logger.log('✅ Folder พบ: "' + folder.getName() + '"');
-    var blob = Utilities.newBlob('drive-test', 'text/plain', 'test_' + Date.now() + '.txt');
-    var file = folder.createFile(blob);
-    file.setTrashed(true);
-    Logger.log('✅ อัปโหลดทดสอบสำเร็จ — DriveApp ใช้งานได้');
-  } catch (e) {
-    Logger.log('❌ DriveApp error: ' + e.message);
-    Logger.log('   → ตรวจสอบว่า SLIP_FOLDER_ID ถูกต้องและ script มีสิทธิ์เข้าถึง folder');
-  }
+  var tests = [
+    { label: 'SLIP_FOLDER_ID (สลิปชำระเงิน)', id: SLIP_FOLDER_ID },
+    { label: 'PRODUCT_IMG_FOLDER_ID (รูปสินค้า)', id: PRODUCT_IMG_FOLDER_ID }
+  ];
+  tests.forEach(function (t) {
+    try {
+      var folder = DriveApp.getFolderById(t.id);
+      var blob = Utilities.newBlob('test', 'text/plain', 'test_' + Date.now() + '.txt');
+      var file = folder.createFile(blob);
+      file.setTrashed(true);
+      Logger.log('✅ ' + t.label + ' → "' + folder.getName() + '" — OK');
+    } catch (e) {
+      Logger.log('❌ ' + t.label + ' → ' + e.message);
+    }
+  });
 }
 
 // ---- ตรวจสอบ getProducts + options ----

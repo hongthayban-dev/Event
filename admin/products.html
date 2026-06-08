@@ -298,10 +298,9 @@
                 thumb.src = dataUrl;
                 lbl.textContent = '⏳ กำลังอัปโหลด...';
                 try {
-                    const res = await API.postAuth('uploadSlip', {
+                    const res = await API.postAuth('uploadProductImg', {
                         dataUrl,
-                        filename: 'product_' + Date.now() + '_' + num + '.jpg',
-                        type: 'product'
+                        filename: 'product_' + Date.now() + '_' + num + '.jpg'
                     }, authToken);
                     document.getElementById('img' + num).value = res.id || res.fileId || '';
                     lbl.textContent = '✓ อัปโหลดแล้ว — คลิกเพื่อเปลี่ยน';
