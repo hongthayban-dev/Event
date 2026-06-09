@@ -107,10 +107,15 @@
 
         .form-group { margin-bottom: 14px; }
         .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; }
-        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; font-family: Sarabun; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; font-family: Sarabun; background: #fff; }
         .form-group textarea { resize: vertical; min-height: 70px; }
+        .form-group select:disabled { background: #f5f5f5; color: #aaa; }
+        .addr-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .req { color: #d32f2f; }
         .prefilled-note { font-size: 11px; color: #4caf50; margin-top: 3px; }
+        .shop-lp-bar { display: flex; align-items: center; gap: 10px; background: #f0fff4; border: 1px solid #b2dfdb; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; }
+        .shop-lp-bar img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid #00c300; flex-shrink: 0; }
+        .shop-lp-name { font-weight: 700; font-size: .95rem; color: #1a3d1a; }
         .line-profile-banner { display: flex; align-items: center; gap: 12px; background: #e8f5e9; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; border: 1px solid #c8e6c9; }
         .line-avatar { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; border: 2px solid #4caf50; flex-shrink: 0; }
         .line-display-name { font-weight: 700; color: #1b5e20; font-size: 14px; }
@@ -125,14 +130,16 @@
         /* ── Variant Modal ── */
         .opt-modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 200; align-items: flex-end; justify-content: center; }
         .opt-modal-bg.open { display: flex; }
-        .opt-modal { background: #fff; border-radius: 18px 18px 0 0; padding: 0; width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto; display: flex; flex-direction: column; }
+        .opt-modal { background: #fff; border-radius: 18px 18px 0 0; padding: 0; width: 100%; max-width: 480px; max-height: 88vh; overflow-y: hidden; display: flex; flex-direction: column; }
+        .opt-modal-scroll { flex: 1; overflow-y: auto; }
 
         /* Image Slider */
         .modal-slider { position: relative; width: 100%; overflow: hidden; border-radius: 18px 18px 0 0; background: #0a0a0a; flex-shrink: 0; -webkit-user-select: none; user-select: none; touch-action: pan-y; }
-        .modal-slider-track { display: flex; width: 100%; flex-wrap: nowrap; will-change: transform; }
-        .modal-slider-slide { min-width: 100%; flex-shrink: 0; }
-        .modal-slider-slide img { width: 100%; height: 280px; object-fit: cover; display: block; }
-        .modal-slide-ph { width: 100%; height: 280px; background: #1a1a1a; display: flex; align-items: center; justify-content: center; font-size: 60px; }
+        .modal-slider-track { display: block; width: 100%; }
+        .modal-slider-slide { display: none; }
+        .modal-slider-slide.active { display: block; }
+        .modal-slider-slide img { width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block; }
+        .modal-slide-ph { width: 100%; aspect-ratio: 1/1; background: #1a1a1a; display: flex; align-items: center; justify-content: center; font-size: 60px; }
         .modal-slider-dots { position: absolute; bottom: 10px; left: 0; right: 0; display: flex; justify-content: center; gap: 5px; pointer-events: none; }
         .modal-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.45); transition: all .25s; }
         .modal-dot.active { background: #fff; width: 20px; border-radius: 4px; }
@@ -144,7 +151,7 @@
         .modal-body { padding: 18px 20px 32px; }
         .opt-modal h3 { margin: 0 0 6px; font-family: Trirong; color: var(--color-primary); font-size: 18px; }
         .opt-modal-price { font-size: 16px; font-weight: 700; color: var(--color-accent); margin: 0 0 10px; }
-        .opt-desc { font-size: 13px; color: #666; margin-bottom: 14px; line-height: 1.55; }
+        .opt-desc { font-size: 13px; color: #666; margin-bottom: 14px; line-height: 1.55; white-space: pre-wrap; }
         .opt-section { margin-bottom: 14px; }
         .opt-section label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 8px; color: #555; }
         .opt-pills { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -155,8 +162,10 @@
         .variant-info-price { font-weight: 700; color: var(--color-primary); font-size: 22px; }
         .variant-info-stock { font-size: 13px; color: #666; margin-top: 2px; }
         .variant-info-stock.no-stock { color: #d32f2f; font-weight: 600; }
-        .modal-add-btn { margin-top: 8px; }
-        .modal-cancel-btn { margin-top: 8px; background: #f0f0f0; color: #333; }
+        .opt-modal-footer { display: flex; gap: 10px; padding: 12px 16px; background: #fff; border-top: 1px solid #eee; flex-shrink: 0; }
+        .btn-add-cart { flex: 1; padding: 13px; background: #e8f0fe; color: var(--color-primary); border: 1.5px solid var(--color-primary); border-radius: 10px; font-size: 15px; font-weight: 700; font-family: Sarabun; cursor: pointer; }
+        .btn-buy-now  { flex: 1; padding: 13px; background: var(--color-primary); color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; font-family: Sarabun; cursor: pointer; }
+        .btn-add-cart:disabled, .btn-buy-now:disabled { opacity: .4; cursor: not-allowed; }
 
         /* ── Order Success ── */
         .order-success-overlay { position: fixed; inset: 0; background: rgba(5,15,40,.92); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px; animation: fadeInBg .25s ease; }
@@ -203,6 +212,12 @@
         <!-- Shop Banner -->
         <div id="banner-wrap" class="hidden">
             <img id="banner-img" class="shop-banner" alt="banner">
+        </div>
+
+        <!-- LINE Profile Bar (when logged in) -->
+        <div id="shop-line-profile-bar" class="shop-lp-bar hidden">
+            <img id="shop-lp-avatar" src="" alt="">
+            <div class="shop-lp-name" id="shop-lp-name"></div>
         </div>
 
         <!-- LINE Friend Banner (top) -->
@@ -294,8 +309,32 @@
                         <div class="prefilled-note hidden" id="phone-prefilled">✓ ดึงข้อมูลจากการลงทะเบียนแล้ว</div>
                     </div>
                     <div class="form-group">
-                        <label>ที่อยู่จัดส่ง <span class="req">*</span></label>
-                        <textarea id="customer-address" placeholder="บ้านเลขที่ ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์"></textarea>
+                        <label>บ้านเลขที่ / ถนน <span class="req">*</span></label>
+                        <textarea id="customer-addr-line" placeholder="บ้านเลขที่ ถนน หมู่บ้าน" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>จังหวัด <span class="req">*</span></label>
+                        <select id="shop-province" onchange="onShopProvinceChange()">
+                            <option value="">— เลือกจังหวัด —</option>
+                        </select>
+                    </div>
+                    <div class="addr-row">
+                        <div class="form-group">
+                            <label>อำเภอ/เขต <span class="req">*</span></label>
+                            <select id="shop-district" onchange="onShopDistrictChange()" disabled>
+                                <option value="">— เลือกอำเภอ —</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>ตำบล/แขวง <span class="req">*</span></label>
+                            <select id="shop-subdistrict" onchange="onShopSubdistrictChange()" disabled>
+                                <option value="">— เลือกตำบล —</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>รหัสไปรษณีย์</label>
+                        <input type="text" id="shop-postal" readonly placeholder="อัตโนมัติ">
                     </div>
                 </div>
                 <button type="button" class="btn btn-primary" onclick="goToStep2()">ถัดไป →</button>
@@ -358,34 +397,38 @@
     <!-- ══ Variant Selector Modal ══ -->
     <div class="opt-modal-bg" id="opt-modal-bg" onclick="closeOptModal(event)">
         <div class="opt-modal" id="opt-modal">
-            <div class="modal-slider" id="modal-slider"
-                 ontouchstart="sliderTouchStart(event)"
-                 ontouchmove="sliderTouchMove(event)"
-                 ontouchend="sliderTouchEnd(event)">
-                <div class="modal-slider-track" id="modal-slider-track"></div>
-                <div class="modal-slider-dots" id="modal-slider-dots"></div>
-                <button type="button" class="modal-slider-arrow prev" id="slider-prev" onclick="goSlide(sliderIndex-1)">‹</button>
-                <button type="button" class="modal-slider-arrow next" id="slider-next" onclick="goSlide(sliderIndex+1)">›</button>
-                <div class="modal-slider-count" id="slider-count"></div>
+            <div class="opt-modal-scroll">
+                <div class="modal-slider" id="modal-slider"
+                     ontouchstart="sliderTouchStart(event)"
+                     ontouchmove="sliderTouchMove(event)"
+                     ontouchend="sliderTouchEnd(event)">
+                    <div class="modal-slider-track" id="modal-slider-track"></div>
+                    <div class="modal-slider-dots" id="modal-slider-dots"></div>
+                    <button type="button" class="modal-slider-arrow prev" id="slider-prev" onclick="goSlide(sliderIndex-1)">‹</button>
+                    <button type="button" class="modal-slider-arrow next" id="slider-next" onclick="goSlide(sliderIndex+1)">›</button>
+                    <div class="modal-slider-count" id="slider-count"></div>
+                </div>
+                <div class="modal-body">
+                    <h3 id="opt-modal-title">เลือกตัวเลือก</h3>
+                    <div class="opt-modal-price hidden" id="opt-modal-price"></div>
+                    <div class="opt-desc hidden" id="opt-modal-desc"></div>
+                    <div id="opt-color-section" class="opt-section">
+                        <label>สี</label>
+                        <div class="opt-pills" id="opt-colors"></div>
+                    </div>
+                    <div id="opt-size-section" class="opt-section">
+                        <label>ขนาด</label>
+                        <div class="opt-pills" id="opt-sizes"></div>
+                    </div>
+                    <div class="variant-info-box" id="opt-variant-info">
+                        <div class="variant-info-price" id="opt-variant-price"></div>
+                        <div class="variant-info-stock" id="opt-variant-stock"></div>
+                    </div>
+                </div>
             </div>
-            <div class="modal-body">
-                <h3 id="opt-modal-title">เลือกตัวเลือก</h3>
-                <div class="opt-modal-price hidden" id="opt-modal-price"></div>
-                <div class="opt-desc hidden" id="opt-modal-desc"></div>
-                <div id="opt-color-section" class="opt-section">
-                    <label>สี</label>
-                    <div class="opt-pills" id="opt-colors"></div>
-                </div>
-                <div id="opt-size-section" class="opt-section">
-                    <label>ขนาด</label>
-                    <div class="opt-pills" id="opt-sizes"></div>
-                </div>
-                <div class="variant-info-box" id="opt-variant-info">
-                    <div class="variant-info-price" id="opt-variant-price"></div>
-                    <div class="variant-info-stock" id="opt-variant-stock"></div>
-                </div>
-                <button type="button" class="btn btn-primary modal-add-btn" id="opt-confirm-btn" onclick="confirmOptModal()" disabled>✓ เพิ่มลงตะกร้า</button>
-                <button type="button" class="btn modal-cancel-btn" onclick="document.getElementById('opt-modal-bg').classList.remove('open')">ยกเลิก</button>
+            <div class="opt-modal-footer">
+                <button type="button" class="btn-add-cart" id="opt-confirm-btn" onclick="confirmOptModal()">+ ตะกร้า</button>
+                <button type="button" class="btn-buy-now"  id="opt-buynow-btn"  onclick="buyNowOptModal()">ซื้อเลย</button>
             </div>
         </div>
     </div>
@@ -397,6 +440,7 @@
         let cart = {};
         let products = [];
         let settings = {};
+        let shopLocationData = null;
         let profileData = {};
         let registrationData = null;
         let isLIFF = false;
@@ -444,13 +488,12 @@
             document.getElementById('slider-count').textContent  = total > 1 ? (sliderIndex+1)+'/'+total : '';
             document.getElementById('slider-prev').classList.toggle('hidden', total <= 1);
             document.getElementById('slider-next').classList.toggle('hidden', total <= 1);
-            _applySlide(false);
+            _applySlide();
         }
 
-        function _applySlide(animate) {
-            const track = document.getElementById('modal-slider-track');
-            track.style.transition = animate ? 'transform .32s cubic-bezier(.4,0,.2,1)' : 'none';
-            track.style.transform  = `translateX(-${sliderIndex*100}%)`;
+        function _applySlide() {
+            document.querySelectorAll('#modal-slider-track .modal-slider-slide').forEach((s,i) =>
+                s.classList.toggle('active', i === sliderIndex));
             document.querySelectorAll('#modal-slider-dots .modal-dot').forEach((d,i) =>
                 d.classList.toggle('active', i === sliderIndex));
             document.getElementById('slider-count').textContent =
@@ -460,31 +503,90 @@
         function goSlide(i) {
             if (!sliderImages.length) return;
             sliderIndex = Math.max(0, Math.min(i, sliderImages.length - 1));
-            _applySlide(true);
+            _applySlide();
         }
 
         function sliderTouchStart(e) {
             touchX0 = e.touches[0].clientX;
             window._sliderTouchY0 = e.touches[0].clientY;
             touchDX = 0; dragging = true;
-            document.getElementById('modal-slider-track').style.transition = 'none';
         }
         function sliderTouchMove(e) {
             if (!dragging) return;
             const dy = e.touches[0].clientY - (window._sliderTouchY0 || e.touches[0].clientY);
             touchDX = e.touches[0].clientX - touchX0;
             if (Math.abs(touchDX) > Math.abs(dy)) e.preventDefault();
-            const pct = touchDX / document.getElementById('modal-slider').offsetWidth * 100;
-            document.getElementById('modal-slider-track').style.transform =
-                `translateX(calc(-${sliderIndex*100}% + ${pct}%))`;
         }
         function sliderTouchEnd() {
             dragging = false;
-            if (Math.abs(touchDX) > 50) {
+            if (Math.abs(touchDX) > 40) {
                 goSlide(touchDX < 0 ? sliderIndex + 1 : sliderIndex - 1);
-            } else {
-                _applySlide(true);
             }
+            touchDX = 0;
+        }
+
+        // ════════════════════════════════
+        //  Location (province/district)
+        // ════════════════════════════════
+        async function loadShopLocationData() {
+            if (shopLocationData) return;
+            try {
+                const res = await API.get('getLocationData');
+                shopLocationData = res.data || [];
+                const provinces = [...new Set(shopLocationData.map(r => r.province).filter(Boolean))].sort();
+                const sel = document.getElementById('shop-province');
+                provinces.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p; opt.textContent = p; sel.appendChild(opt);
+                });
+            } catch(e) { /* silently ignore */ }
+        }
+
+        function shopVal(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+        function onShopProvinceChange() {
+            const prov = shopVal('shop-province');
+            const distSel = document.getElementById('shop-district');
+            const subSel  = document.getElementById('shop-subdistrict');
+            distSel.innerHTML = '<option value="">— เลือกอำเภอ —</option>';
+            subSel.innerHTML  = '<option value="">— เลือกตำบล —</option>';
+            document.getElementById('shop-postal').value = '';
+            distSel.disabled = true; subSel.disabled = true;
+            if (!prov || !shopLocationData) return;
+            const districts = [...new Set(shopLocationData.filter(r => r.province === prov).map(r => r.district).filter(Boolean))].sort();
+            districts.forEach(d => { const o = document.createElement('option'); o.value = d; o.textContent = d; distSel.appendChild(o); });
+            distSel.disabled = false;
+        }
+
+        function onShopDistrictChange() {
+            const prov = shopVal('shop-province');
+            const dist = shopVal('shop-district');
+            const subSel = document.getElementById('shop-subdistrict');
+            subSel.innerHTML = '<option value="">— เลือกตำบล —</option>';
+            document.getElementById('shop-postal').value = '';
+            subSel.disabled = true;
+            if (!prov || !dist || !shopLocationData) return;
+            const subs = [...new Set(shopLocationData.filter(r => r.province === prov && r.district === dist).map(r => r.subdistrict).filter(Boolean))].sort();
+            subs.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; subSel.appendChild(o); });
+            subSel.disabled = false;
+        }
+
+        function onShopSubdistrictChange() {
+            const prov = shopVal('shop-province');
+            const dist = shopVal('shop-district');
+            const sub  = shopVal('shop-subdistrict');
+            if (!sub || !shopLocationData) return;
+            const match = shopLocationData.find(r => r.province === prov && r.district === dist && r.subdistrict === sub);
+            if (match) document.getElementById('shop-postal').value = match.postal_code || '';
+        }
+
+        function buildAddress() {
+            const line     = shopVal('customer-addr-line');
+            const sub      = shopVal('shop-subdistrict');
+            const dist     = shopVal('shop-district');
+            const prov     = shopVal('shop-province');
+            const postal   = shopVal('shop-postal');
+            return [line, sub && 'ต.' + sub, dist && 'อ.' + dist, prov && 'จ.' + prov, postal].filter(Boolean).join(' ');
         }
 
         // ════════════════════════════════
@@ -498,13 +600,17 @@
                     profileData = await API.getProfile();
                 } catch (e) { isLIFF = false; }
 
-                // แสดงรูปโปรไฟล์ LINE แทน logo
+                // แสดงรูปโปรไฟล์ LINE แทน logo + profile bar
                 if (isLIFF && profileData && profileData.pictureUrl) {
                     const logoEl = document.querySelector('.shop-header-logo');
                     if (logoEl) {
                         logoEl.src = profileData.pictureUrl;
                         logoEl.classList.add('is-line-avatar');
                     }
+                    document.getElementById('shop-lp-avatar').src = profileData.pictureUrl;
+                    document.getElementById('shop-lp-name').textContent = profileData.displayName || '';
+                    document.getElementById('shop-line-profile-bar').classList.remove('hidden');
+                    document.getElementById('line-friend-banner').classList.add('hidden');
                 }
 
                 await Promise.all([loadProducts(), loadSettings()]);
@@ -720,6 +826,7 @@
             selectedVariant = match || null;
             const infoBox    = document.getElementById('opt-variant-info');
             const confirmBtn = document.getElementById('opt-confirm-btn');
+            const buyNowBtn  = document.getElementById('opt-buynow-btn');
 
             if (match) {
                 infoBox.style.display = 'block';
@@ -728,23 +835,60 @@
                 if (match.stock <= 0) {
                     stockEl.textContent = '❌ หมดสต็อก';
                     stockEl.className = 'variant-info-stock no-stock';
-                    confirmBtn.disabled = true;
+                    confirmBtn.disabled = true; buyNowBtn.disabled = true;
                 } else {
                     stockEl.textContent = 'สต็อก ' + match.stock + ' ชิ้น';
                     stockEl.className = 'variant-info-stock';
-                    confirmBtn.disabled = false;
+                    confirmBtn.disabled = false; buyNowBtn.disabled = false;
                 }
             } else {
                 infoBox.style.display = 'none';
-                confirmBtn.disabled = true;
+                confirmBtn.disabled = false; buyNowBtn.disabled = false;
             }
         }
 
+        function scrollToOptSection(id) {
+            const el = document.getElementById(id);
+            const scroll = document.querySelector('.opt-modal-scroll');
+            if (el && scroll) scroll.scrollTo({ top: el.offsetTop - 12, behavior: 'smooth' });
+        }
+
+        function checkOptSelected() {
+            if (!pendingProduct) return false;
+            const hasColor = pendingProduct.colors && pendingProduct.colors.length > 0;
+            const hasSize  = pendingProduct.sizes  && pendingProduct.sizes.length  > 0;
+            if (hasColor && !selectedColor) {
+                API.toast('กรุณาเลือกสี', 'warning');
+                scrollToOptSection('opt-color-section');
+                return false;
+            }
+            if (hasSize && !selectedSize) {
+                API.toast('กรุณาเลือกขนาด', 'warning');
+                scrollToOptSection('opt-size-section');
+                return false;
+            }
+            if (!selectedVariant) {
+                API.toast('กรุณาเลือกตัวเลือก', 'warning');
+                scrollToOptSection('opt-color-section');
+                return false;
+            }
+            return true;
+        }
+
         function confirmOptModal() {
-            if (!pendingProduct || !selectedVariant) return;
+            if (!checkOptSelected()) return;
             document.getElementById('opt-modal-bg').classList.remove('open');
             doAddToCart(pendingProduct, selectedVariant);
             pendingProduct = null;
+        }
+
+        function buyNowOptModal() {
+            if (!checkOptSelected()) return;
+            document.getElementById('opt-modal-bg').classList.remove('open');
+            doAddToCart(pendingProduct, selectedVariant);
+            pendingProduct = null;
+            openCart();
+            openCheckout();
         }
 
         function closeOptModal(e) {
@@ -893,7 +1037,6 @@
                 document.getElementById('line-add-friend-link').href = friendUrl;
             }
 
-            const addressInput = document.getElementById('customer-address');
             if (registrationData) {
                 const fullName = ((registrationData.first_name || '') + ' ' + (registrationData.last_name || '')).trim();
                 if (fullName && !nameInput.value) {
@@ -904,12 +1047,13 @@
                     phoneInput.value = registrationData.phone;
                     document.getElementById('phone-prefilled').classList.remove('hidden');
                 }
-                if (registrationData.address && !addressInput.value) {
-                    addressInput.value = registrationData.address;
+                if (registrationData.address && !document.getElementById('customer-addr-line').value) {
+                    document.getElementById('customer-addr-line').value = registrationData.address;
                 }
             } else if (isLIFF && profileData && profileData.displayName && !nameInput.value) {
                 nameInput.value = profileData.displayName;
             }
+            loadShopLocationData();
 
             document.getElementById('cart-items-section').classList.add('hidden');
             document.getElementById('checkout-section').classList.remove('hidden');
@@ -921,10 +1065,14 @@
         function goToStep2() {
             const name    = document.getElementById('customer-name').value.trim();
             const phone   = document.getElementById('customer-phone').value.trim();
-            const address = document.getElementById('customer-address').value.trim();
-            if (!name)    { API.toast('กรอกชื่อ-นามสกุล', 'warning'); return; }
-            if (!phone)   { API.toast('กรอกเบอร์โทร', 'warning'); return; }
-            if (!address) { API.toast('กรอกที่อยู่จัดส่ง', 'warning'); return; }
+            const addrLine = document.getElementById('customer-addr-line').value.trim();
+            const province = document.getElementById('shop-province').value;
+            const district = document.getElementById('shop-district').value;
+            if (!name)     { API.toast('กรอกชื่อ-นามสกุล', 'warning'); return; }
+            if (!phone)    { API.toast('กรอกเบอร์โทร', 'warning'); return; }
+            if (!addrLine) { API.toast('กรอกบ้านเลขที่/ถนน', 'warning'); return; }
+            if (!province) { API.toast('เลือกจังหวัด', 'warning'); return; }
+            if (!district) { API.toast('เลือกอำเภอ/เขต', 'warning'); return; }
 
             renderOrderSummary();
             showStep(2);
@@ -1047,7 +1195,7 @@
 
             const name    = document.getElementById('customer-name').value.trim();
             const phone   = document.getElementById('customer-phone').value.trim();
-            const address = document.getElementById('customer-address').value.trim();
+            const address = buildAddress();
             const slipImg = document.getElementById('slip-preview').querySelector('img');
 
             if (!slipImg) { API.toast('❌ แนบสลิปก่อน', 'error'); return; }
@@ -1135,7 +1283,13 @@
             appliedDiscountCode = '';
             API.setKey('shop-cart', '{}');
             updateCartBadge();
-            document.getElementById('customer-address').value = '';
+            document.getElementById('customer-addr-line').value = '';
+            document.getElementById('shop-province').value = '';
+            document.getElementById('shop-district').innerHTML = '<option value="">— เลือกอำเภอ —</option>';
+            document.getElementById('shop-district').disabled = true;
+            document.getElementById('shop-subdistrict').innerHTML = '<option value="">— เลือกตำบล —</option>';
+            document.getElementById('shop-subdistrict').disabled = true;
+            document.getElementById('shop-postal').value = '';
             document.getElementById('customer-name').value = '';
             document.getElementById('customer-phone').value = '';
             document.getElementById('name-prefilled').classList.add('hidden');

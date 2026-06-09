@@ -336,8 +336,7 @@
 
       if (profile && profile.userId) {
         var barHTML = '<img src="' + (profile.pictureUrl || '') + '" alt="">' +
-          '<div><div class="lp-name">' + (profile.displayName || '') + '</div>' +
-          '<div class="lp-id">' + profile.userId + '</div></div>';
+          '<div><div class="lp-name">' + (profile.displayName || '') + '</div></div>';
         ['#done-line-id', '#form-line-id'].forEach(function(sel) {
           var el = API.qs(sel);
           if (el) { el.innerHTML = barHTML; el.classList.remove('hidden'); }
