@@ -122,6 +122,11 @@
     .hidden { display: none; }
     .ic-gen-section.hidden { display: none; }
     .btn-ghost-white { background: #fff; }
+    .done-line-id { font-size: .72rem; color: #aab4cc; font-family: monospace; word-break: break-all; margin-top: 6px; }
+    .line-profile-bar { display: flex; align-items: center; gap: 10px; background: #f0fff4; border: 1px solid #b2dfdb; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; }
+    .line-profile-bar img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid #00c300; flex-shrink: 0; }
+    .line-profile-bar .lp-name { font-weight: 700; font-size: .95rem; color: #1a3d1a; line-height: 1.3; }
+    .line-profile-bar .lp-id { font-size: .65rem; color: #aab4cc; font-family: monospace; word-break: break-all; }
   </style>
 </head>
 <body class="app-bg">
@@ -150,6 +155,7 @@
     <div id="done-wrap" class="card gold-top center hidden">
       <h2>คุณลงทะเบียนแล้ว ✅</h2>
       <p class="muted">แสดงบัตร QR ของคุณที่จุดลงทะเบียนเพื่อเข้างาน</p>
+      <div id="done-line-id" class="line-profile-bar hidden"></div>
       <button type="button" class="btn btn-gold mt" onclick="openCard()">แสดงบัตร QR</button>
     </div>
 
@@ -157,6 +163,7 @@
     <div id="form-wrap" class="card gold-top hidden">
       <h2>ลงทะเบียนเข้างาน</h2>
       <p class="hint">กรอกข้อมูลเพื่อรับบัตรเข้างาน (* จำเป็น)</p>
+      <div id="form-line-id" class="line-profile-bar hidden"></div>
 
       <div class="row">
         <div class="field">
@@ -326,6 +333,16 @@
 
       var r = await API.get('getRegistration', { line_user_id: profile ? profile.userId : '' });
       API.qs('#loading').classList.add('hidden');
+
+      if (profile && profile.userId) {
+        var barHTML = '<img src="' + (profile.pictureUrl || '') + '" alt="">' +
+          '<div><div class="lp-name">' + (profile.displayName || '') + '</div>' +
+          '<div class="lp-id">' + profile.userId + '</div></div>';
+        ['#done-line-id', '#form-line-id'].forEach(function(sel) {
+          var el = API.qs(sel);
+          if (el) { el.innerHTML = barHTML; el.classList.remove('hidden'); }
+        });
+      }
 
       if (r.found) {
         current = r.registration;
