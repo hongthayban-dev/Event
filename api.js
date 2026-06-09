@@ -88,8 +88,6 @@ const API = {
   getProfile,
   bootTheme,
   applyTheme,
-  withDefaults,
-  DEFAULT_SETTINGS,
   setKey,
   getKey,
   clearKey,
@@ -161,6 +159,10 @@ function withDefaults(settings) {
   if (settings) Object.keys(settings).forEach(k => { if (settings[k] !== '' && settings[k] !== null && settings[k] !== undefined) out[k] = settings[k]; });
   return out;
 }
+
+// Attach after declaration to avoid temporal dead zone
+API.DEFAULT_SETTINGS = DEFAULT_SETTINGS;
+API.withDefaults = withDefaults;
 
 // ========== THEME ==========
 async function bootTheme() {
