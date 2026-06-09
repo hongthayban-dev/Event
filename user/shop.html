@@ -433,7 +433,7 @@
         </div>
     </div>
 
-    <script src="https://liff.line.me/sdk/web/liff.js"></script>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="../config.js"></script>
     <script src="../api.js"></script>
     <script>
@@ -596,20 +596,22 @@
             try {
                 try {
                     await API.liffInit(true);
-                    isLIFF = true;
-                    profileData = await API.getProfile();
+                    const p = await API.getProfile();
+                    if (p && p.userId) { profileData = p; isLIFF = true; }
                 } catch (e) { isLIFF = false; }
 
                 await Promise.all([loadProducts(), loadSettings()]);
 
                 // แสดงรูปโปรไฟล์ LINE หลัง bootTheme (ไม่งั้น bootTheme ทับ logo)
-                if (isLIFF && profileData && profileData.pictureUrl) {
+                if (isLIFF && profileData.userId) {
                     const logoEl = document.querySelector('.shop-header-logo');
-                    if (logoEl) {
+                    if (logoEl && profileData.pictureUrl) {
                         logoEl.src = profileData.pictureUrl;
                         logoEl.classList.add('is-line-avatar');
                     }
-                    document.getElementById('shop-lp-avatar').src = profileData.pictureUrl;
+                    const avatarEl = document.getElementById('shop-lp-avatar');
+                    if (profileData.pictureUrl) avatarEl.src = profileData.pictureUrl;
+                    else avatarEl.style.display = 'none';
                     document.getElementById('shop-lp-name').textContent = profileData.displayName || '';
                     document.getElementById('shop-line-profile-bar').classList.remove('hidden');
                     document.getElementById('line-friend-banner').classList.add('hidden');
