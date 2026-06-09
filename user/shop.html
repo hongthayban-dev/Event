@@ -656,8 +656,8 @@
                     document.getElementById('banner-wrap').classList.remove('hidden');
                 }
 
-                // LINE friend banner
-                if (settings.line_friend_url) {
+                // LINE friend banner — แสดงเฉพาะเมื่อไม่ได้ login ผ่าน LIFF
+                if (settings.line_friend_url && !isLIFF) {
                     const el = document.getElementById('line-friend-banner');
                     el.href = settings.line_friend_url;
                     el.classList.remove('hidden');
