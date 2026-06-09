@@ -880,7 +880,7 @@
                 document.getElementById('line-profile-banner').classList.add('hidden');
                 const addFriendBanner = document.getElementById('line-add-friend-banner');
                 addFriendBanner.classList.remove('hidden');
-                const friendUrl = (shopSettings && shopSettings.line_friend_url) ? shopSettings.line_friend_url : '#';
+                const friendUrl = (settings && settings.line_friend_url) ? settings.line_friend_url : '#';
                 document.getElementById('line-add-friend-link').href = friendUrl;
             }
 
