@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>จัดการของรางวัล</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=Trirong:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../theme.css">
+  <style>
+    * { box-sizing: border-box; }
+    body { background: #eef0f5; font-family: Sarabun, sans-serif; margin: 0; }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 18px; }
+
+    .tab-nav { display: flex; gap: 8px; margin-bottom: 18px; }
+    .tab-nav button { padding: 9px 18px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; background: #dde1ea; color: #555; font-family: Sarabun; font-size: 14px; }
+    .tab-nav button.active { background: var(--color-primary); color: white; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Cards grid */
+    .rewards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+    .reward-card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.08); overflow: hidden; position: relative; }
+    .reward-img-wrap { width: 100%; aspect-ratio: 1; background: #f0f2f8; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .reward-img { width: 100%; height: 100%; object-fit: cover; }
+    .reward-img-ph { font-size: 56px; }
+    .reward-body { padding: 14px; }
+    .reward-name { font-weight: 700; font-size: 15px; color: var(--color-primary); margin-bottom: 4px; font-family: Trirong; }
+    .reward-value { font-size: 13px; color: #666; margin-bottom: 6px; }
+    .reward-qty { display: inline-block; background: #e8f5e9; color: #1b5e20; border-radius: 20px; padding: 3px 10px; font-size: 12px; font-weight: 700; }
+    .reward-qty.zero { background: #ffebee; color: #c62828; }
+    .reward-order { position: absolute; top: 8px; right: 8px; background: rgba(13,43,94,.75); color: #fff; border-radius: 6px; padding: 2px 7px; font-size: 11px; font-weight: 700; }
+    .card-actions { display: flex; gap: 6px; margin-top: 10px; }
+    .btn-sm { padding: 6px 12px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; font-family: Sarabun; font-weight: 600; flex: 1; text-align: center; }
+    .btn-edit { background: var(--color-accent); color: #333; }
+    .btn-delete { background: #ffebee; color: #c62828; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: #aaa; }
+    .loading { text-align: center; padding: 40px; color: #888; }
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid #ddd; border-top-color: var(--color-primary); border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Form */
+    .form-card { background: white; padding: 22px; border-radius: 12px; box-shadow: 0 1px 6px rgba(0,0,0,.08); max-width: 560px; }
+    .form-card h3 { margin: 0 0 18px; color: var(--color-primary); font-family: Trirong; border-bottom: 2px solid var(--color-accent); padding-bottom: 10px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
+    .form-group input, .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 7px; font-size: 14px; font-family: Sarabun; }
+    .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(13,43,94,.1); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+    .btn { padding: 11px 20px; border: none; border-radius: 7px; cursor: pointer; font-weight: 600; font-family: Sarabun; font-size: 14px; }
+    .btn-primary { background: var(--color-primary); color: white; width: 100%; margin-top: 4px; }
+    .btn-ghost { background: #eee; color: #555; width: 100%; margin-top: 8px; }
+
+    .img-upload-label { display: block; padding: 10px; background: #f0f2f8; border-radius: 6px; cursor: pointer; text-align: center; font-weight: 600; font-size: 13px; transition: background .15s; }
+    .img-upload-label:hover { background: #dde1ea; }
+    .img-thumb { width: 100%; max-height: 100px; object-fit: cover; border-radius: 6px; margin-top: 6px; border: 2px solid var(--color-accent); display: block; }
+    .note { font-size: 12px; color: #888; margin-top: 3px; }
+    .req { color: #d32f2f; }
+
+    /* Winners history */
+    .tbl-wrap { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,.08); }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { background: var(--color-primary); color: white; padding: 10px 14px; text-align: left; font-size: 13px; }
+    tbody tr { border-bottom: 1px solid #f0f2f8; }
+    tbody tr:hover { background: #f5f7ff; }
+    tbody td { padding: 10px 14px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="ph-left">
+      <img class="ph-logo" data-logo alt="">
+      <div class="ph-info">
+        <div class="ph-event" data-event-name>Event</div>
+        <div class="ph-user"><span class="ph-role" id="ph-role">ADMIN</span></div>
+      </div>
+    </div>
+    <div class="ph-center">
+      <div class="ph-title">🏆 จัดการของรางวัล</div>
+    </div>
+    <div class="ph-right">
+      <a href="index.html" class="ph-nav-btn">← Dashboard</a>
+      <button class="ph-logout" onclick="logout()">🚪 ออก</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="tab-nav">
+      <button class="tab-btn active" data-tab="rewards">🏆 รายการรางวัล</button>
+      <button class="tab-btn" data-tab="add">➕ เพิ่ม / แก้ไข</button>
+      <button class="tab-btn" data-tab="winners">🎉 ผู้ชนะ</button>
+    </div>
+
+    <!-- REWARDS LIST -->
+    <div id="rewards" class="tab-content active">
+      <div class="loading" id="rewards-loading"><div class="spinner"></div> กำลังโหลด...</div>
+      <div id="rewards-wrap" style="display:none">
+        <div class="rewards-grid" id="rewards-grid"></div>
+      </div>
+    </div>
+
+    <!-- ADD/EDIT FORM -->
+    <div id="add" class="tab-content">
+      <div class="form-card">
+        <h3 id="form-title">➕ เพิ่มของรางวัลใหม่</h3>
+
+        <div class="form-group">
+          <label>ชื่อรางวัล <span class="req">*</span></label>
+          <input type="text" id="f-name" placeholder="เช่น รางวัลที่ 1">
+        </div>
+
+        <div class="form-group">
+          <label>รายละเอียด / มูลค่า</label>
+          <input type="text" id="f-value" placeholder="เช่น ทองคำ 1 บาท, บัตรของขวัญ 500 บาท">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>จำนวนที่มี (quantity)</label>
+            <input type="number" id="f-qty" min="0" value="1" placeholder="1">
+            <div class="note">จำนวนรางวัลทั้งหมดในลำดับนี้</div>
+          </div>
+          <div class="form-group">
+            <label>ลำดับ (order)</label>
+            <input type="number" id="f-order" min="1" placeholder="อัตโนมัติ">
+            <div class="note">กำหนดลำดับในวงล้อ (ไม่บังคับ)</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>รูปรางวัล (Google Drive File ID)</label>
+          <input type="text" id="f-img-id" placeholder="File ID จาก Google Drive">
+          <div class="note">หรืออัปโหลดรูปด้านล่าง</div>
+        </div>
+
+        <div class="form-group">
+          <label class="img-upload-label" for="f-img-file">📤 อัปโหลดรูปรางวัล</label>
+          <input type="file" id="f-img-file" accept="image/*" style="display:none" onchange="handleImgUpload(this)">
+          <img class="img-thumb" id="img-thumb" src="" alt="" style="display:none">
+        </div>
+
+        <button class="btn btn-primary" id="save-btn" onclick="saveReward()">✓ บันทึกรางวัล</button>
+        <button class="btn btn-ghost" onclick="cancelEdit()">ยกเลิก</button>
+      </div>
+    </div>
+
+    <!-- WINNERS HISTORY -->
+    <div id="winners" class="tab-content">
+      <div class="loading" id="winners-loading"><div class="spinner"></div> กำลังโหลด...</div>
+      <div id="winners-wrap" style="display:none">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>ชื่อ</th><th>รางวัล</th><th>รอบที่</th><th>วันที่</th></tr>
+            </thead>
+            <tbody id="winners-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../config.js"></script>
+  <script src="../api.js"></script>
+  <script>
+    let authToken = '';
+    let rewardsList = [];
+    let editingOrder = null;
+
+    async function init() {
+      authToken = API.getKey('admin-token') || API.getKey('access-code');
+      if (!authToken) { location.replace('../login.html'); return; }
+      const session = API.getSession();
+      if (session && session.role) document.getElementById('ph-role').textContent = session.role.toUpperCase();
+      await API.bootTheme();
+      await loadRewards();
+    }
+
+    async function loadRewards() {
+      try {
+        const res = await API.get('getRewards');
+        rewardsList = res.rewards || [];
+        document.getElementById('rewards-loading').style.display = 'none';
+        document.getElementById('rewards-wrap').style.display = 'block';
+        renderRewards();
+      } catch (err) {
+        document.getElementById('rewards-loading').innerHTML = '❌ โหลดไม่สำเร็จ: ' + err.message;
+      }
+    }
+
+    function renderRewards() {
+      const grid = document.getElementById('rewards-grid');
+      if (!rewardsList.length) {
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">🏆 ยังไม่มีของรางวัล</div>';
+        return;
+      }
+      grid.innerHTML = rewardsList.map(r => {
+        const qty = Number(r.quantity) || 0;
+        const imgHtml = r.img_url
+          ? `<img class="reward-img" src="${API.driveImg(r.img_url, 400)}" alt="" onerror="this.outerHTML='<div class=\\'reward-img-ph\\'>🏆</div>'">`
+          : '<div class="reward-img-ph">🏆</div>';
+        return `
+          <div class="reward-card">
+            <div class="reward-order">#${r.order}</div>
+            <div class="reward-img-wrap">${imgHtml}</div>
+            <div class="reward-body">
+              <div class="reward-name">${r.name || '(ไม่ระบุ)'}</div>
+              ${r.value ? `<div class="reward-value">${r.value}</div>` : ''}
+              <span class="reward-qty${qty === 0 ? ' zero' : ''}">จำนวน: ${qty}</span>
+              <div class="card-actions">
+                <button class="btn-sm btn-edit" onclick="editReward(${r.order})">✏️ แก้ไข</button>
+                <button class="btn-sm btn-delete" onclick="deleteReward(${r.order})">🗑️</button>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function editReward(order) {
+      const r = rewardsList.find(x => Number(x.order) === Number(order));
+      if (!r) return;
+      editingOrder = order;
+      switchTab('add');
+      document.getElementById('form-title').textContent = '✏️ แก้ไขรางวัล — ' + (r.name || '#' + order);
+      document.getElementById('f-name').value = r.name || '';
+      document.getElementById('f-value').value = r.value || '';
+      document.getElementById('f-qty').value = r.quantity || 1;
+      document.getElementById('f-order').value = r.order || '';
+      document.getElementById('f-img-id').value = r.img_url || '';
+      if (r.img_url) {
+        const th = document.getElementById('img-thumb');
+        th.src = API.driveImg(r.img_url, 300);
+        th.style.display = 'block';
+      }
+      document.getElementById('save-btn').textContent = '✓ บันทึกการแก้ไข';
+    }
+
+    function cancelEdit() {
+      editingOrder = null;
+      document.getElementById('form-title').textContent = '➕ เพิ่มของรางวัลใหม่';
+      document.getElementById('f-name').value = '';
+      document.getElementById('f-value').value = '';
+      document.getElementById('f-qty').value = '1';
+      document.getElementById('f-order').value = '';
+      document.getElementById('f-img-id').value = '';
+      const th = document.getElementById('img-thumb');
+      th.src = ''; th.style.display = 'none';
+      document.getElementById('f-img-file').value = '';
+      document.getElementById('save-btn').textContent = '✓ บันทึกรางวัล';
+      switchTab('rewards');
+    }
+
+    async function handleImgUpload(input) {
+      if (!input.files || !input.files[0]) return;
+      const reader = new FileReader();
+      reader.onload = async e => {
+        const th = document.getElementById('img-thumb');
+        th.src = e.target.result; th.style.display = 'block';
+        API.toast('📤 กำลังอัปโหลด...', 'info');
+        try {
+          const res = await API.postAuth('uploadSlip', {
+            dataUrl: e.target.result,
+            filename: 'reward_' + Date.now() + '.jpg'
+          }, authToken);
+          document.getElementById('f-img-id').value = res.id || '';
+          API.toast('✓ อัปโหลดรูปแล้ว', 'success');
+        } catch (err) {
+          API.toast('❌ อัปโหลดผิดพลาด: ' + err.message, 'error');
+        }
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+
+    async function saveReward() {
+      const name  = document.getElementById('f-name').value.trim();
+      const value = document.getElementById('f-value').value.trim();
+      const qty   = parseInt(document.getElementById('f-qty').value) || 0;
+      const order = parseInt(document.getElementById('f-order').value) || undefined;
+      const imgId = document.getElementById('f-img-id').value.trim();
+
+      if (!name) { API.toast('กรอกชื่อรางวัล', 'error'); return; }
+
+      const btn = document.getElementById('save-btn');
+      btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
+      try {
+        const payload = { name, value, quantity: qty, img_url: imgId };
+        if (editingOrder) payload.order = editingOrder;
+        else if (order) payload.order = order;
+        await API.postAuth('saveReward', payload, authToken);
+        API.toast(editingOrder ? '✓ แก้ไขรางวัลแล้ว' : '✓ เพิ่มรางวัลแล้ว', 'success');
+        cancelEdit();
+        await loadRewards();
+      } catch (err) {
+        API.toast('❌ ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = editingOrder ? '✓ บันทึกการแก้ไข' : '✓ บันทึกรางวัล';
+      }
+    }
+
+    async function deleteReward(order) {
+      if (!confirm('ลบรางวัลลำดับ #' + order + '?')) return;
+      try {
+        await API.postAuth('deleteReward', { order }, authToken);
+        API.toast('✓ ลบรางวัลแล้ว', 'success');
+        await loadRewards();
+      } catch (err) { API.toast('❌ ' + err.message, 'error'); }
+    }
+
+    async function loadWinners() {
+      if (document.getElementById('winners-wrap').style.display === 'block') return;
+      try {
+        const res = await API.postAuth('getWinners', {}, authToken);
+        const winners = res.winners || [];
+        document.getElementById('winners-loading').style.display = 'none';
+        document.getElementById('winners-wrap').style.display = 'block';
+        const tbody = document.getElementById('winners-tbody');
+        if (!winners.length) {
+          tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">ยังไม่มีผู้ชนะ</div></td></tr>';
+          return;
+        }
+        tbody.innerHTML = winners.map(w => `
+          <tr>
+            <td><strong>${(w.first_name||'')} ${(w.last_name||'')}${w.nickname ? ' ('+w.nickname+')' : ''}</strong></td>
+            <td>${w.reward_name || w.reward_value || '—'}</td>
+            <td>${w.round || '—'}</td>
+            <td style="font-size:12px;color:#888">${w.won_at ? new Date(w.won_at).toLocaleString('th-TH') : '—'}</td>
+          </tr>`).join('');
+      } catch (err) {
+        document.getElementById('winners-loading').innerHTML = '❌ โหลดไม่สำเร็จ';
+      }
+    }
+
+    function switchTab(id) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === id));
+      if (id === 'winners') loadWinners();
+    }
+    document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+
+    function logout() {
+      API.clearSession(); API.clearKey('access-code'); location.replace('../login.html');
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -86,6 +86,8 @@ const API = {
   getProfile,
   bootTheme,
   applyTheme,
+  withDefaults,
+  DEFAULT_SETTINGS,
   setKey,
   getKey,
   clearKey,
@@ -123,14 +125,49 @@ function driveImg(fileId, size = 500) {
   return `https://lh3.googleusercontent.com/d/${fileId}=w${size}`;
 }
 
+// ========== DEFAULT SETTINGS ==========
+const DEFAULT_SETTINGS = {
+  event_name: 'งานอีเวนต์',
+  event_date: '',
+  event_location: '',
+  logo_url: '',
+  color_primary: '#0d2b5e',
+  color_accent: '#f0c040',
+  bg_color: '#f0f2f7',
+  wheel_color_a: '#ff6b6b',
+  wheel_color_b: '#4ecdc4',
+  wheel_text_a: '#ffffff',
+  wheel_text_b: '#ffffff',
+  field_generation: true,
+  field_province: true,
+  field_occupation: true,
+  field_organization: true,
+  field_email: true,
+  field_address: true,
+  pin_lottery: '1234',
+  pin_remote: '5678',
+  line_winner_msg: 'ยินดีด้วย {name}! คุณได้รับรางวัล {reward}',
+  line_greeting: 'สวัสดี {name} ยินดีต้อนรับเข้างาน!',
+  promptpay_number: '',
+  promptpay_file_id: '',
+  banner_url: '',
+  line_friend_url: ''
+};
+
+function withDefaults(settings) {
+  const out = Object.assign({}, DEFAULT_SETTINGS);
+  if (settings) Object.keys(settings).forEach(k => { if (settings[k] !== '' && settings[k] !== null && settings[k] !== undefined) out[k] = settings[k]; });
+  return out;
+}
+
 // ========== THEME ==========
 async function bootTheme() {
   try {
     const res = await API.get('getSettings');
-    const settings = res.settings || {};
+    const settings = withDefaults(res.settings || {});
     applyTheme(settings);
     document.querySelectorAll('[data-event-name]').forEach(el => {
-      if (settings.event_name) el.textContent = settings.event_name;
+      el.textContent = settings.event_name || 'งานอีเวนต์';
     });
     document.querySelectorAll('[data-event-date]').forEach(el => {
       if (settings.event_date) el.textContent = settings.event_date;
@@ -140,11 +177,12 @@ async function bootTheme() {
     });
     document.querySelectorAll('[data-logo]').forEach(el => {
       if (settings.logo_url) el.src = driveImg(settings.logo_url);
+      else el.style.display = 'none';
     });
     return settings;
   } catch (err) {
     console.error('Boot theme error:', err);
-    return {};
+    return Object.assign({}, DEFAULT_SETTINGS);
   }
 }
 

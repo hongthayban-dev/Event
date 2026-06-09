@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>จัดการ Staff</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=Trirong:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../theme.css">
+  <style>
+    * { box-sizing: border-box; }
+    body { background: #eef0f5; font-family: Sarabun, sans-serif; margin: 0; }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 18px; }
+
+    /* ── Tabs ── */
+    .tab-nav { display: flex; gap: 8px; margin-bottom: 18px; }
+    .tab-nav button { padding: 9px 18px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; background: #dde1ea; color: #555; font-family: Sarabun; font-size: 14px; }
+    .tab-nav button.active { background: var(--color-primary); color: white; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ── Table ── */
+    .tbl-wrap { background: white; border-radius: 12px; box-shadow: 0 1px 6px rgba(0,0,0,.08); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { background: var(--color-primary); color: white; padding: 11px 14px; text-align: left; font-size: 13px; white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid #f0f2f8; transition: background .1s; }
+    tbody tr:hover { background: #f5f7ff; }
+    tbody td { padding: 11px 14px; font-size: 13px; vertical-align: middle; }
+
+    .role-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .role-admin { background: #e8f0fe; color: #1a3d7a; }
+    .role-staff { background: #e8f5e9; color: #1b5e20; }
+
+    .row-actions { display: flex; gap: 6px; }
+    .btn-sm { padding: 5px 11px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; font-family: Sarabun; font-weight: 600; }
+    .btn-edit { background: var(--color-accent); color: #333; }
+    .btn-delete { background: #ffebee; color: #c62828; }
+
+    .empty-state { text-align: center; padding: 50px 20px; color: #aaa; }
+    .loading { text-align: center; padding: 40px; color: #888; }
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid #ddd; border-top-color: var(--color-primary); border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Form ── */
+    .form-card { background: white; padding: 22px; border-radius: 12px; box-shadow: 0 1px 6px rgba(0,0,0,.08); max-width: 540px; }
+    .form-card h3 { margin: 0 0 18px; color: var(--color-primary); font-family: Trirong; border-bottom: 2px solid var(--color-accent); padding-bottom: 10px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
+    .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 7px; font-size: 14px; font-family: Sarabun; }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(13,43,94,.1); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+    .btn { padding: 11px 20px; border: none; border-radius: 7px; cursor: pointer; font-weight: 600; font-family: Sarabun; font-size: 14px; }
+    .btn-primary { background: var(--color-primary); color: white; width: 100%; margin-top: 4px; }
+    .btn-ghost { background: #eee; color: #555; width: 100%; margin-top: 8px; }
+    .note { font-size: 12px; color: #888; margin-top: 4px; }
+    .req { color: #d32f2f; }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="ph-left">
+      <img class="ph-logo" data-logo alt="">
+      <div class="ph-info">
+        <div class="ph-event" data-event-name>Event</div>
+        <div class="ph-user">
+          <span class="ph-role" id="ph-role">ADMIN</span>
+        </div>
+      </div>
+    </div>
+    <div class="ph-center">
+      <div class="ph-title">👤 จัดการ Staff</div>
+    </div>
+    <div class="ph-right">
+      <a href="index.html" class="ph-nav-btn">← Dashboard</a>
+      <button class="ph-logout" onclick="logout()">🚪 ออก</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="tab-nav">
+      <button class="tab-btn active" data-tab="list">📋 รายชื่อ Staff</button>
+      <button class="tab-btn" data-tab="add">➕ เพิ่ม / แก้ไข</button>
+    </div>
+
+    <!-- LIST TAB -->
+    <div id="list" class="tab-content active">
+      <div class="loading" id="list-loading"><div class="spinner"></div> กำลังโหลด...</div>
+      <div id="list-wrap" style="display:none">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>ชื่อ (Display)</th>
+                <th>Role</th>
+                <th>สร้างเมื่อ</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="staff-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADD/EDIT TAB -->
+    <div id="add" class="tab-content">
+      <div class="form-card">
+        <h3 id="form-title">➕ เพิ่ม Staff ใหม่</h3>
+
+        <div class="form-group">
+          <label>Username <span class="req">*</span></label>
+          <input type="text" id="f-username" placeholder="เช่น staff01" autocomplete="off">
+          <div class="note" id="username-note">แก้ไข Username ไม่ได้หลังสร้างแล้ว</div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>รหัสผ่าน <span class="req" id="pass-req">*</span></label>
+            <input type="password" id="f-password" placeholder="รหัสผ่าน" autocomplete="new-password">
+            <div class="note" id="pass-note">เว้นว่างเพื่อไม่เปลี่ยนรหัสผ่าน (แก้ไข)</div>
+          </div>
+          <div class="form-group">
+            <label>Role <span class="req">*</span></label>
+            <select id="f-role">
+              <option value="staff">Staff</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>ชื่อที่แสดง (Display Name)</label>
+          <input type="text" id="f-display" placeholder="เช่น คุณสมชาย ใจดี">
+        </div>
+
+        <button class="btn btn-primary" id="save-btn" onclick="saveStaff()">✓ บันทึก Staff</button>
+        <button class="btn btn-ghost" onclick="cancelEdit()">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../config.js"></script>
+  <script src="../api.js"></script>
+  <script>
+    let authToken = '';
+    let staffList = [];
+    let editingUsername = null;
+
+    async function init() {
+      authToken = API.getKey('admin-token') || API.getKey('access-code');
+      if (!authToken) { location.replace('../login.html'); return; }
+      const session = API.getSession();
+      if (session && session.role) document.getElementById('ph-role').textContent = session.role.toUpperCase();
+      await API.bootTheme();
+      await loadStaff();
+    }
+
+    async function loadStaff() {
+      try {
+        const res = await API.postAuth('getStaff', {}, authToken);
+        staffList = res.staff || [];
+        document.getElementById('list-loading').style.display = 'none';
+        document.getElementById('list-wrap').style.display = 'block';
+        renderTable();
+      } catch (err) {
+        document.getElementById('list-loading').innerHTML = '❌ โหลดไม่สำเร็จ: ' + err.message;
+      }
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('staff-tbody');
+      if (!staffList.length) {
+        tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">ยังไม่มี Staff</div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = staffList.map(s => `
+        <tr>
+          <td><strong style="font-family:monospace">${s.username}</strong></td>
+          <td>${s.display_name || '—'}</td>
+          <td><span class="role-badge role-${s.role || 'staff'}">${(s.role || 'staff').toUpperCase()}</span></td>
+          <td style="font-size:12px;color:#888">${s.created_at ? new Date(s.created_at).toLocaleDateString('th-TH') : '—'}</td>
+          <td>
+            <div class="row-actions">
+              <button class="btn-sm btn-edit" onclick="editStaff('${s.username}')">✏️ แก้ไข</button>
+              <button class="btn-sm btn-delete" onclick="deleteStaff('${s.username}')">🗑️</button>
+            </div>
+          </td>
+        </tr>`).join('');
+    }
+
+    function editStaff(username) {
+      const s = staffList.find(x => x.username === username);
+      if (!s) return;
+      editingUsername = username;
+      switchTab('add');
+      document.getElementById('form-title').textContent = '✏️ แก้ไข Staff — ' + username;
+      document.getElementById('f-username').value = username;
+      document.getElementById('f-username').disabled = true;
+      document.getElementById('username-note').style.display = 'none';
+      document.getElementById('f-password').placeholder = 'เว้นว่างเพื่อไม่เปลี่ยนรหัสผ่าน';
+      document.getElementById('pass-req').style.display = 'none';
+      document.getElementById('pass-note').style.display = '';
+      document.getElementById('f-display').value = s.display_name || '';
+      document.getElementById('f-role').value = s.role || 'staff';
+      document.getElementById('save-btn').textContent = '✓ บันทึกการแก้ไข';
+    }
+
+    function cancelEdit() {
+      editingUsername = null;
+      document.getElementById('form-title').textContent = '➕ เพิ่ม Staff ใหม่';
+      document.getElementById('f-username').value = '';
+      document.getElementById('f-username').disabled = false;
+      document.getElementById('username-note').style.display = '';
+      document.getElementById('f-password').value = '';
+      document.getElementById('f-password').placeholder = 'รหัสผ่าน';
+      document.getElementById('pass-req').style.display = '';
+      document.getElementById('pass-note').style.display = 'none';
+      document.getElementById('f-display').value = '';
+      document.getElementById('f-role').value = 'staff';
+      document.getElementById('save-btn').textContent = '✓ บันทึก Staff';
+      switchTab('list');
+    }
+
+    async function saveStaff() {
+      const username = document.getElementById('f-username').value.trim();
+      const password = document.getElementById('f-password').value;
+      const role     = document.getElementById('f-role').value;
+      const display  = document.getElementById('f-display').value.trim();
+
+      if (!username) { API.toast('กรอก Username', 'error'); return; }
+      if (!editingUsername && !password) { API.toast('กรอกรหัสผ่าน', 'error'); return; }
+
+      const btn = document.getElementById('save-btn');
+      btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
+      try {
+        const payload = { username, role, display_name: display };
+        if (password) payload.password = password;
+        await API.postAuth('saveStaff', payload, authToken);
+        API.toast(editingUsername ? '✓ แก้ไข Staff แล้ว' : '✓ เพิ่ม Staff แล้ว', 'success');
+        cancelEdit();
+        await loadStaff();
+      } catch (err) {
+        API.toast('❌ ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = editingUsername ? '✓ บันทึกการแก้ไข' : '✓ บันทึก Staff';
+      }
+    }
+
+    async function deleteStaff(username) {
+      if (!confirm('ลบ Staff "' + username + '"?')) return;
+      try {
+        await API.postAuth('deleteStaff', { username }, authToken);
+        API.toast('✓ ลบแล้ว', 'success');
+        await loadStaff();
+      } catch (err) { API.toast('❌ ' + err.message, 'error'); }
+    }
+
+    function switchTab(id) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === id));
+    }
+    document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+
+    function logout() {
+      API.clearSession(); API.clearKey('access-code'); location.replace('../login.html');
+    }
+
+    init();
+  </script>
+</body>
+</html>

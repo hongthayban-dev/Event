@@ -3,64 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚙️ ตั้งค่า</title>
+    <title>ตั้งค่าระบบ</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=Trirong:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../theme.css">
     <style>
-        body { background: #f5f5f5; padding: 10px; }
-        .admin-container { max-width: 800px; margin: 0 auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .header h1 { margin: 0; color: var(--color-primary); font-family: Trirong; }
-        .logout-btn { padding: 8px 16px; background: #d32f2f; color: white; border: none; border-radius: 6px; cursor: pointer; }
-        
-        .settings-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .settings-card h3 { margin-top: 0; color: var(--color-primary); font-family: Trirong; border-bottom: 2px solid var(--color-accent); padding-bottom: 10px; }
-        
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; }
-        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; font-family: Sarabun; box-sizing: border-box; }
+        * { box-sizing: border-box; }
+        body { background: #eef0f5; font-family: Sarabun, sans-serif; margin: 0; }
+        .wrap { max-width: 820px; margin: 0 auto; padding: 18px; }
+
+        .settings-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.08); margin-bottom: 18px; }
+        .settings-card h3 { margin: 0 0 16px; color: var(--color-primary); font-family: Trirong; border-bottom: 2px solid var(--color-accent); padding-bottom: 8px; font-size: 1rem; }
+
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-weight: 600; font-size: 13px; color: #444; margin-bottom: 5px; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 7px; font-size: 14px; font-family: Sarabun; background: #fff; }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(13,43,94,.1); }
         .form-group textarea { resize: vertical; min-height: 60px; }
-        
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        
-        .color-input { width: 100%; height: 40px; cursor: pointer; border-radius: 6px; border: 1px solid #ddd; }
-        .color-display { margin-top: 6px; padding: 10px; border-radius: 6px; text-align: center; font-weight: 600; color: white; }
-        
-        .field-toggle { display: flex; gap: 12px; margin-bottom: 12px; padding: 10px; background: #f9f9f9; border-radius: 6px; align-items: center; }
-        .toggle-checkbox { width: 20px; height: 20px; cursor: pointer; }
-        
-        .qr-upload { margin-bottom: 16px; }
-        .qr-label { display: block; padding: 12px; background: var(--color-accent); color: #333; border-radius: 6px; cursor: pointer; text-align: center; font-weight: 600; margin-bottom: 8px; transition: all 0.2s; }
-        .qr-label:hover { background: #e8b540; }
+        .note { font-size: 11px; color: #888; margin-top: 3px; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        @media (max-width: 520px) { .form-row { grid-template-columns: 1fr; } }
+
+        .color-input { width: 100%; height: 42px; cursor: pointer; border-radius: 7px; border: 1.5px solid #ddd; padding: 2px; }
+        .color-preview { margin-top: 6px; padding: 8px 12px; border-radius: 6px; text-align: center; font-weight: 700; font-size: 12px; color: white; text-shadow: 0 1px 2px rgba(0,0,0,.4); }
+
+        .field-toggle { display: flex; gap: 10px; margin-bottom: 10px; padding: 10px 12px; background: #f9f9f9; border-radius: 7px; align-items: center; border: 1px solid #eee; }
+        .toggle-checkbox { width: 18px; height: 18px; cursor: pointer; accent-color: var(--color-primary); }
+
+        .qr-label { display: block; padding: 11px; background: #f0f2f8; border-radius: 7px; cursor: pointer; text-align: center; font-weight: 600; font-size: 13px; transition: background .15s; }
+        .qr-label:hover { background: #dde1ea; }
         .qr-input { display: none; }
-        .qr-preview { text-align: center; margin: 12px 0; }
-        .qr-img { max-width: 200px; height: auto; border-radius: 6px; border: 2px solid var(--color-accent); }
-        
-        .btn { padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
-        .btn-primary { background: var(--color-primary); color: white; width: 100%; }
+        .qr-preview { text-align: center; margin: 10px 0; }
+        .qr-img { max-width: 180px; height: auto; border-radius: 6px; border: 2px solid var(--color-accent); }
+
+        .btn-primary { display: block; width: 100%; padding: 13px; background: var(--color-primary); color: white; border: none; border-radius: 7px; cursor: pointer; font-weight: 700; font-size: 15px; font-family: Sarabun; margin-bottom: 20px; }
         .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
-        .btn-danger { background: #d32f2f; color: white; }
-        
-        .loading { text-align: center; padding: 40px; }
+
+        .loading-txt { text-align: center; padding: 40px; }
         .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        .success-msg { background: #e8f5e9; color: #2e7d32; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
-        .section-note { font-size: 13px; color: #666; margin-top: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .banner-thumb { width: 100%; max-width: 220px; aspect-ratio: 1; object-fit: cover; border-radius: 8px; border: 2px solid var(--color-accent); display: block; margin-top: 6px; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
-    <div class="admin-container">
-        <div class="header">
-            <h1>⚙️ ตั้งค่าระบบ</h1>
-            <button class="logout-btn" onclick="logout()">🚪 ออกจากระบบ</button>
+    <header class="page-header">
+        <div class="ph-left">
+            <img class="ph-logo" data-logo alt="">
+            <div class="ph-info">
+                <div class="ph-event" data-event-name>Event</div>
+                <div class="ph-user"><span class="ph-role" id="ph-role">ADMIN</span></div>
+            </div>
         </div>
-        
-        <div class="loading" id="settings-loading">
-            <div class="spinner"></div> กำลังโหลดตั้งค่า...
+        <div class="ph-center">
+            <div class="ph-title">⚙️ ตั้งค่าระบบ</div>
         </div>
-        
-        <div id="settings-form" style="display: none;">
+        <div class="ph-right">
+            <a href="index.html" class="ph-nav-btn">← Dashboard</a>
+            <button type="button" class="ph-logout" onclick="logout()">🚪 ออก</button>
+        </div>
+    </header>
+
+    <div class="wrap">
+        <div class="loading-txt" id="settings-loading">
+            <div class="spinner"></div> กำลังโหลด...
+        </div>
+
+        <div id="settings-form" class="hidden">
+
             <!-- Event Info -->
             <div class="settings-card">
                 <h3>🎉 ข้อมูลงาน</h3>
@@ -68,20 +79,56 @@
                     <label>ชื่องาน *</label>
                     <input type="text" id="event-name" placeholder="เช่น รามจิตติ ๔๔">
                 </div>
-                <div class="form-group">
-                    <label>วันที่จัดงาน</label>
-                    <input type="text" id="event-date" placeholder="เช่น 2024-12-01">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>วันที่จัดงาน</label>
+                        <input type="text" id="event-date" placeholder="เช่น 2025-01-01">
+                    </div>
+                    <div class="form-group">
+                        <label>สถานที่</label>
+                        <input type="text" id="event-location" placeholder="เช่น หอประชุมใหญ่">
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label>สถานที่</label>
-                    <input type="text" id="event-location" placeholder="เช่น หอประชุมมหาวชิราวุธ">
-                </div>
-                <div class="form-group">
-                    <label>โลโก้ (Google Drive File ID)</label>
-                    <input type="text" id="logo-url" placeholder="File ID จาก Drive">
+                    <label>โลโก้งาน (Google Drive File ID)</label>
+                    <input type="text" id="logo-url" placeholder="File ID จาก Google Drive">
+                    <div class="note">รองรับ Google Drive File ID หรืออัปโหลดผ่านแดชบอร์ด</div>
                 </div>
             </div>
-            
+
+            <!-- Shop Banner -->
+            <div class="settings-card">
+                <h3>🖼️ แบนเนอร์ร้านค้า</h3>
+                <div class="form-group">
+                    <label>Banner ร้านค้า (Google Drive File ID) — สัดส่วน 1:1</label>
+                    <input type="text" id="banner-url" placeholder="File ID จาก Google Drive">
+                    <div class="note">แสดงที่หน้าร้านค้า ควรเป็นภาพสี่เหลี่ยมจัตุรัส</div>
+                </div>
+                <div class="form-group">
+                    <label class="qr-label" for="banner-file">📤 อัปโหลด Banner ร้านค้า</label>
+                    <input type="file" id="banner-file" class="qr-input" accept="image/*">
+                    <div id="banner-preview" class="qr-preview"></div>
+                </div>
+            </div>
+
+            <!-- LINE Settings -->
+            <div class="settings-card">
+                <h3>💚 LINE OA</h3>
+                <div class="form-group">
+                    <label>ลิงก์เพิ่มเพื่อน LINE OA</label>
+                    <input type="url" id="line-friend-url" placeholder="https://line.me/R/ti/p/@xxxxxxx">
+                    <div class="note">แสดง banner "เพิ่มเพื่อน LINE" ในหน้าร้านค้า</div>
+                </div>
+                <div class="form-group">
+                    <label>ข้อความสวัสดี (ใช้ {name})</label>
+                    <textarea id="line-greeting" placeholder="สวัสดี {name} ยินดีต้อนรับเข้างาน!"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>ข้อความแจ้งผู้ชนะ (ใช้ {name} และ {reward})</label>
+                    <textarea id="line-winner-msg" placeholder="ยินดีด้วย {name}! คุณได้รับรางวัล {reward}"></textarea>
+                </div>
+            </div>
+
             <!-- Colors -->
             <div class="settings-card">
                 <h3>🎨 สีธีม</h3>
@@ -89,19 +136,19 @@
                     <div class="form-group">
                         <label>สีหลัก</label>
                         <input type="color" id="color-primary" class="color-input">
-                        <div class="color-display" id="color-primary-display"></div>
+                        <div class="color-preview" id="color-primary-display"></div>
                     </div>
                     <div class="form-group">
-                        <label>สีเน้น</label>
+                        <label>สีเน้น (ทอง)</label>
                         <input type="color" id="color-accent" class="color-input">
-                        <div class="color-display" id="color-accent-display"></div>
+                        <div class="color-preview" id="color-accent-display"></div>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>สีพื้นหลัง</label>
                         <input type="color" id="bg-color" class="color-input">
-                        <div class="color-display" id="bg-color-display"></div>
+                        <div class="color-preview" id="bg-color-display"></div>
                     </div>
                     <div class="form-group"></div>
                 </div>
@@ -117,35 +164,36 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>สีข้อความวงล้อ A</label>
+                        <label>สีตัวอักษรวงล้อ A</label>
                         <input type="color" id="wheel-text-a" class="color-input">
                     </div>
                     <div class="form-group">
-                        <label>สีข้อความวงล้อ B</label>
+                        <label>สีตัวอักษรวงล้อ B</label>
                         <input type="color" id="wheel-text-b" class="color-input">
                     </div>
                 </div>
             </div>
-            
+
             <!-- Payment -->
             <div class="settings-card">
-                <h3>💳 PromptPay QR</h3>
-                <div class="qr-upload">
-                    <label class="qr-label" for="qr-file">📤 อัปโหลด QR code PromptPay</label>
-                    <input type="file" id="qr-file" class="qr-input" accept="image/*">
+                <h3>💳 PromptPay</h3>
+                <div class="form-group">
+                    <label>เบอร์โทร / เลขบัตรประชาชน (PromptPay)</label>
+                    <input type="text" id="promptpay-number" placeholder="เช่น 0812345678">
                 </div>
-                <div id="qr-preview" class="qr-preview"></div>
-                <div class="section-note">
-                    <strong>หมายเหตุ:</strong> อัปโหลด QR code ของ PromptPay ที่คุณสามารถสแกนเพื่อชำระเงิน
+                <div class="form-group">
+                    <label class="qr-label" for="qr-file">📤 อัปโหลด QR Code PromptPay</label>
+                    <input type="file" id="qr-file" class="qr-input" accept="image/*">
+                    <div id="qr-preview" class="qr-preview"></div>
                 </div>
             </div>
-            
-            <!-- Fields -->
+
+            <!-- Registration Fields -->
             <div class="settings-card">
-                <h3>📋 ฟิลด์ลงทะเบียนที่ปรากฏ</h3>
+                <h3>📋 ฟิลด์ลงทะเบียน</h3>
                 <div class="field-toggle">
                     <input type="checkbox" id="field-generation" class="toggle-checkbox">
-                    <label for="field-generation">ชั้นปีศิษย์เก่า</label>
+                    <label for="field-generation">ชั้นปีศิษย์เก่า / รุ่น</label>
                 </div>
                 <div class="field-toggle">
                     <input type="checkbox" id="field-province" class="toggle-checkbox">
@@ -157,7 +205,7 @@
                 </div>
                 <div class="field-toggle">
                     <input type="checkbox" id="field-organization" class="toggle-checkbox">
-                    <label for="field-organization">หน่วยงาน</label>
+                    <label for="field-organization">หน่วยงาน / องค์กร</label>
                 </div>
                 <div class="field-toggle">
                     <input type="checkbox" id="field-email" class="toggle-checkbox">
@@ -168,216 +216,197 @@
                     <label for="field-address">ที่อยู่</label>
                 </div>
             </div>
-            
+
             <!-- Security -->
             <div class="settings-card">
                 <h3>🔐 ความปลอดภัย</h3>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>PIN ลอตเตอรี่ (ตัวเลข)</label>
+                        <label>PIN ลอตเตอรี่</label>
                         <input type="text" id="pin-lottery" placeholder="เช่น 1234">
                     </div>
                     <div class="form-group">
-                        <label>PIN รีโมท (ตัวเลข)</label>
+                        <label>PIN รีโมทวงล้อ</label>
                         <input type="text" id="pin-remote" placeholder="เช่น 5678">
                     </div>
                 </div>
-                <div class="section-note">
-                    ⚠️ PIN ใช้สำหรับป้องกันการเข้าถึงจอวงล้อและรีโมท
-                </div>
+                <div class="note">⚠️ PIN ใช้ป้องกันการเข้าถึงหน้าวงล้อและรีโมท</div>
             </div>
-            
-            <!-- Messages -->
-            <div class="settings-card">
-                <h3>💬 ข้อความ LINE</h3>
-                <div class="form-group">
-                    <label>ข้อความเมื่อผู้เข้าเกณฑ์ลอตเตอรี่ (ใช้ {name} และ {reward})</label>
-                    <textarea id="line-winner-msg" placeholder="ยินดีด้วย {name}! คุณชนะรางวัล {reward}"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>ข้อความสวัสดี (ใช้ {name})</label>
-                    <textarea id="line-greeting" placeholder="สวัสดี {name} ยินดีต้อนรับเข้างาน"></textarea>
-                </div>
-            </div>
-            
-            <!-- Promptpay Number -->
-            <div class="settings-card">
-                <h3>📱 เบอร์ PromptPay</h3>
-                <div class="form-group">
-                    <label>เบอร์โทร / เลขประจำตัวประชาชน (สำหรับ PromptPay)</label>
-                    <input type="text" id="promptpay-number" placeholder="เช่น 0812345678 หรือ 1234567890123">
-                </div>
-            </div>
-            
-            <!-- Save Button -->
-            <button class="btn btn-primary" onclick="saveSettings()" style="margin-bottom: 20px;">
-                ✓ บันทึกตั้งค่า
+
+            <button type="button" class="btn-primary" id="save-btn" onclick="saveSettings()">
+                ✓ บันทึกตั้งค่าทั้งหมด
             </button>
         </div>
     </div>
-    
+
+    <script src="../config.js"></script>
     <script src="../api.js"></script>
     <script>
         let authToken = '';
         let settings = {};
         let qrFileId = '';
-        
+        let bannerFileId = '';
+
         async function init() {
             authToken = API.getKey('admin-token') || API.getKey('access-code');
-            if (!authToken) {
-                location.replace('../login.html');
-                return;
-            }
+            if (!authToken) { location.replace('../login.html'); return; }
+            const session = API.getSession();
+            if (session && session.role) document.getElementById('ph-role').textContent = session.role.toUpperCase();
             await loadSettings();
         }
 
         async function loadSettings() {
             try {
                 const res = await API.postAuth('getAdminSettings', {}, authToken);
-                settings = res.settings || {};
+                settings = API.withDefaults(res.settings || {});
                 renderSettings();
-                document.getElementById('settings-loading').style.display = 'none';
-                document.getElementById('settings-form').style.display = 'block';
+                document.getElementById('settings-loading').classList.add('hidden');
+                document.getElementById('settings-form').classList.remove('hidden');
+                await API.bootTheme();
             } catch (err) {
                 document.getElementById('settings-loading').innerHTML = '❌ โหลดผิดพลาด: ' + err.message;
             }
         }
-        
+
         function renderSettings() {
-            document.getElementById('event-name').value = settings.event_name || '';
-            document.getElementById('event-date').value = settings.event_date || '';
+            document.getElementById('event-name').value     = settings.event_name     || '';
+            document.getElementById('event-date').value     = settings.event_date     || '';
             document.getElementById('event-location').value = settings.event_location || '';
-            document.getElementById('logo-url').value = settings.logo_url || '';
-            
-            document.getElementById('color-primary').value = settings.color_primary || '#0d2b5e';
-            document.getElementById('color-accent').value = settings.color_accent || '#f0c040';
-            document.getElementById('bg-color').value = settings.bg_color || '#f0f2f7';
-            document.getElementById('wheel-color-a').value = settings.wheel_color_a || '#ff6b6b';
-            document.getElementById('wheel-color-b').value = settings.wheel_color_b || '#4ecdc4';
-            document.getElementById('wheel-text-a').value = settings.wheel_text_a || '#ffffff';
-            document.getElementById('wheel-text-b').value = settings.wheel_text_b || '#ffffff';
-            
-            updateColorDisplay();
-            
-            document.getElementById('field-generation').checked = settings.field_generation !== false;
-            document.getElementById('field-province').checked = settings.field_province !== false;
-            document.getElementById('field-occupation').checked = settings.field_occupation !== false;
-            document.getElementById('field-organization').checked = settings.field_organization !== false;
-            document.getElementById('field-email').checked = settings.field_email !== false;
-            document.getElementById('field-address').checked = settings.field_address !== false;
-            
-            document.getElementById('pin-lottery').value = settings.pin_lottery || '';
-            document.getElementById('pin-remote').value = settings.pin_remote || '';
-            
+            document.getElementById('logo-url').value       = settings.logo_url       || '';
+
+            document.getElementById('banner-url').value     = settings.banner_url     || '';
+            document.getElementById('line-friend-url').value = settings.line_friend_url || '';
+            document.getElementById('line-greeting').value  = settings.line_greeting  || '';
             document.getElementById('line-winner-msg').value = settings.line_winner_msg || '';
-            document.getElementById('line-greeting').value = settings.line_greeting || '';
-            
+
+            document.getElementById('color-primary').value  = settings.color_primary  || '#0d2b5e';
+            document.getElementById('color-accent').value   = settings.color_accent   || '#f0c040';
+            document.getElementById('bg-color').value       = settings.bg_color       || '#f0f2f7';
+            document.getElementById('wheel-color-a').value  = settings.wheel_color_a  || '#ff6b6b';
+            document.getElementById('wheel-color-b').value  = settings.wheel_color_b  || '#4ecdc4';
+            document.getElementById('wheel-text-a').value   = settings.wheel_text_a   || '#ffffff';
+            document.getElementById('wheel-text-b').value   = settings.wheel_text_b   || '#ffffff';
+            updateColorPreviews();
+
             document.getElementById('promptpay-number').value = settings.promptpay_number || '';
-            
+
+            document.getElementById('field-generation').checked  = settings.field_generation  !== false;
+            document.getElementById('field-province').checked    = settings.field_province    !== false;
+            document.getElementById('field-occupation').checked  = settings.field_occupation  !== false;
+            document.getElementById('field-organization').checked = settings.field_organization !== false;
+            document.getElementById('field-email').checked       = settings.field_email       !== false;
+            document.getElementById('field-address').checked     = settings.field_address     !== false;
+
+            document.getElementById('pin-lottery').value = settings.pin_lottery || '';
+            document.getElementById('pin-remote').value  = settings.pin_remote  || '';
+
             // QR preview
             if (settings.promptpay_file_id) {
                 qrFileId = settings.promptpay_file_id;
-                document.getElementById('qr-preview').innerHTML = `
-                    <img class="qr-img" src="${driveImg(qrFileId, 500)}" alt="promptpay-qr">
-                    <div style="margin-top: 8px; font-size: 12px; color: #666;">File ID: ${qrFileId}</div>
-                `;
+                document.getElementById('qr-preview').innerHTML =
+                    `<img class="qr-img" src="${API.driveImg(qrFileId,500)}" alt="qr">`;
+            }
+            // Banner preview
+            if (settings.banner_url) {
+                bannerFileId = settings.banner_url;
+                document.getElementById('banner-preview').innerHTML =
+                    `<img class="banner-thumb" src="${API.driveImg(bannerFileId,600)}" alt="banner">`;
             }
         }
-        
-        function updateColorDisplay() {
-            const primary = document.getElementById('color-primary').value;
-            const accent = document.getElementById('color-accent').value;
-            const bg = document.getElementById('bg-color').value;
 
-            document.getElementById('color-primary-display').style.backgroundColor = primary;
-            document.getElementById('color-primary-display').textContent = primary;
-
-            document.getElementById('color-accent-display').style.backgroundColor = accent;
-            document.getElementById('color-accent-display').textContent = accent;
-
-            document.getElementById('bg-color-display').style.backgroundColor = bg;
-            document.getElementById('bg-color-display').textContent = bg;
+        function updateColorPreviews() {
+            const fields = ['color-primary','color-accent','bg-color'];
+            fields.forEach(id => {
+                const v = document.getElementById(id).value;
+                const d = document.getElementById(id + '-display');
+                if (d) { d.style.backgroundColor = v; d.textContent = v; }
+            });
         }
 
-        document.getElementById('color-primary').addEventListener('change', updateColorDisplay);
-        document.getElementById('color-accent').addEventListener('change', updateColorDisplay);
-        document.getElementById('bg-color').addEventListener('change', updateColorDisplay);
-        
-        // QR File Upload Handler — อัปโหลดไป Google Drive จริง
-        document.getElementById('qr-file').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            toast('📤 กำลังอัปโหลด QR code...', 'info');
+        ['color-primary','color-accent','bg-color','wheel-color-a','wheel-color-b'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateColorPreviews);
+        });
+
+        // QR upload
+        document.getElementById('qr-file').addEventListener('change', async e => {
+            const file = e.target.files[0]; if (!file) return;
+            API.toast('📤 กำลังอัปโหลด QR...', 'info');
             const reader = new FileReader();
-            reader.onload = async (ev) => {
+            reader.onload = async ev => {
                 try {
-                    const res = await API.postAuth('uploadSlip', {
-                        dataUrl: ev.target.result,
-                        filename: 'promptpay_qr_' + Date.now() + '.png'
-                    }, authToken);
+                    const res = await API.postAuth('uploadSlip', { dataUrl: ev.target.result, filename: 'promptpay_qr_' + Date.now() + '.png' }, authToken);
                     qrFileId = res.id;
-                    document.getElementById('qr-preview').innerHTML = `
-                        <img class="qr-img" src="${driveImg(qrFileId, 500)}" alt="qr-preview">
-                        <div style="margin-top:8px;font-size:12px;color:#666;">File ID: ${qrFileId}</div>
-                    `;
-                    toast('✓ อัปโหลด QR code แล้ว', 'success');
-                } catch (err) {
-                    toast('❌ อัปโหลดผิดพลาด: ' + err.message, 'error');
-                }
+                    document.getElementById('qr-preview').innerHTML = `<img class="qr-img" src="${API.driveImg(qrFileId,500)}" alt="qr">`;
+                    API.toast('✓ อัปโหลด QR แล้ว', 'success');
+                } catch (err) { API.toast('❌ ' + err.message, 'error'); }
             };
             reader.readAsDataURL(file);
         });
-        
-        async function saveSettings() {
-            const updatedSettings = {
-                event_name: document.getElementById('event-name').value,
-                event_date: document.getElementById('event-date').value,
-                event_location: document.getElementById('event-location').value,
-                logo_url: document.getElementById('logo-url').value,
-                color_primary: document.getElementById('color-primary').value,
-                color_accent: document.getElementById('color-accent').value,
-                bg_color: document.getElementById('bg-color').value,
-                wheel_color_a: document.getElementById('wheel-color-a').value,
-                wheel_color_b: document.getElementById('wheel-color-b').value,
-                wheel_text_a: document.getElementById('wheel-text-a').value,
-                wheel_text_b: document.getElementById('wheel-text-b').value,
-                field_generation: document.getElementById('field-generation').checked,
-                field_province: document.getElementById('field-province').checked,
-                field_occupation: document.getElementById('field-occupation').checked,
-                field_organization: document.getElementById('field-organization').checked,
-                field_email: document.getElementById('field-email').checked,
-                field_address: document.getElementById('field-address').checked,
-                pin_lottery: document.getElementById('pin-lottery').value,
-                pin_remote: document.getElementById('pin-remote').value,
-                line_winner_msg: document.getElementById('line-winner-msg').value,
-                line_greeting: document.getElementById('line-greeting').value,
-                promptpay_number: document.getElementById('promptpay-number').value,
-                promptpay_file_id: qrFileId
+
+        // Banner upload
+        document.getElementById('banner-file').addEventListener('change', async e => {
+            const file = e.target.files[0]; if (!file) return;
+            API.toast('📤 กำลังอัปโหลด Banner...', 'info');
+            const reader = new FileReader();
+            reader.onload = async ev => {
+                try {
+                    const res = await API.postAuth('uploadSlip', { dataUrl: ev.target.result, filename: 'shop_banner_' + Date.now() + '.jpg' }, authToken);
+                    bannerFileId = res.id;
+                    document.getElementById('banner-url').value = bannerFileId;
+                    document.getElementById('banner-preview').innerHTML = `<img class="banner-thumb" src="${API.driveImg(bannerFileId,600)}" alt="banner">`;
+                    API.toast('✓ อัปโหลด Banner แล้ว', 'success');
+                } catch (err) { API.toast('❌ ' + err.message, 'error'); }
             };
-            
-            const btn = event.target;
-            btn.disabled = true;
-            btn.innerHTML = '<div class="spinner"></div> บันทึก...';
-            
+            reader.readAsDataURL(file);
+        });
+
+        async function saveSettings() {
+            const updated = {
+                event_name:        document.getElementById('event-name').value,
+                event_date:        document.getElementById('event-date').value,
+                event_location:    document.getElementById('event-location').value,
+                logo_url:          document.getElementById('logo-url').value,
+                banner_url:        document.getElementById('banner-url').value || bannerFileId,
+                line_friend_url:   document.getElementById('line-friend-url').value,
+                line_greeting:     document.getElementById('line-greeting').value,
+                line_winner_msg:   document.getElementById('line-winner-msg').value,
+                color_primary:     document.getElementById('color-primary').value,
+                color_accent:      document.getElementById('color-accent').value,
+                bg_color:          document.getElementById('bg-color').value,
+                wheel_color_a:     document.getElementById('wheel-color-a').value,
+                wheel_color_b:     document.getElementById('wheel-color-b').value,
+                wheel_text_a:      document.getElementById('wheel-text-a').value,
+                wheel_text_b:      document.getElementById('wheel-text-b').value,
+                promptpay_number:  document.getElementById('promptpay-number').value,
+                promptpay_file_id: qrFileId,
+                field_generation:  document.getElementById('field-generation').checked,
+                field_province:    document.getElementById('field-province').checked,
+                field_occupation:  document.getElementById('field-occupation').checked,
+                field_organization: document.getElementById('field-organization').checked,
+                field_email:       document.getElementById('field-email').checked,
+                field_address:     document.getElementById('field-address').checked,
+                pin_lottery:       document.getElementById('pin-lottery').value,
+                pin_remote:        document.getElementById('pin-remote').value
+            };
+
+            const btn = document.getElementById('save-btn');
+            btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
             try {
-                await API.postAuth('updateSettings', updatedSettings, authToken);
-                toast('✓ บันทึกตั้งค่าแล้ว', 'success');
-                settings = updatedSettings;
+                await API.postAuth('updateSettings', updated, authToken);
+                API.toast('✓ บันทึกตั้งค่าแล้ว', 'success');
+                settings = API.withDefaults(updated);
+                API.applyTheme(settings);
             } catch (err) {
-                toast('❌ บันทึกผิดพลาด: ' + err.message, 'error');
+                API.toast('❌ บันทึกผิดพลาด: ' + err.message, 'error');
             } finally {
-                btn.disabled = false;
-                btn.innerHTML = '✓ บันทึกตั้งค่า';
+                btn.disabled = false; btn.textContent = '✓ บันทึกตั้งค่าทั้งหมด';
             }
         }
-        
+
         function logout() {
-            if (confirm('ต้องการออกจากระบบ?')) {
-                clearSession();
-                location.href = '../admin/index.html';
-            }
+            API.clearSession(); API.clearKey('access-code'); location.replace('../login.html');
         }
-        
+
         init();
     </script>
 </body>

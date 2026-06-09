@@ -8,12 +8,8 @@
     <link rel="stylesheet" href="../theme.css">
     <style>
         * { box-sizing: border-box; }
-        body { background: #eef0f5; padding: 12px; font-family: Sarabun, sans-serif; }
-        .admin-container { max-width: 1100px; margin: 0 auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
-        .header h1 { margin: 0; color: var(--color-primary); font-family: Trirong; font-size: 20px; }
-        .logout-btn { padding: 8px 16px; background: #d32f2f; color: white; border: none; border-radius: 6px; cursor: pointer; font-family: Sarabun; font-size: 14px; }
-        .back-btn { padding: 8px 14px; background: #dde1ea; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-family: Sarabun; }
+        body { background: #eef0f5; margin: 0; font-family: Sarabun, sans-serif; }
+        .admin-container { max-width: 1100px; margin: 0 auto; padding: 12px; }
 
         /* Stats */
         .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
@@ -167,15 +163,23 @@
     </style>
 </head>
 <body>
-<div class="admin-container">
-
-    <div class="header">
-        <div class="header-left">
-            <button type="button" onclick="location.href='index.html'" class="back-btn">← กลับ</button>
-            <h1>🛒 รายการสั่งซื้อ</h1>
+<header class="page-header">
+    <div class="ph-left">
+        <img class="ph-logo" data-logo alt="">
+        <div class="ph-info">
+            <div class="ph-event" data-event-name>Event</div>
+            <div class="ph-user"><span class="ph-role" id="ph-role">ADMIN</span></div>
         </div>
-        <button type="button" class="logout-btn" onclick="logout()">🚪 ออกจากระบบ</button>
     </div>
+    <div class="ph-center">
+        <div class="ph-title">🛒 รายการสั่งซื้อ</div>
+    </div>
+    <div class="ph-right">
+        <a href="index.html" class="ph-nav-btn">← Dashboard</a>
+        <button type="button" class="ph-logout" onclick="logout()">🚪 ออก</button>
+    </div>
+</header>
+<div class="admin-container">
 
     <!-- Stats -->
     <div class="stats-bar" id="stats-bar"></div>
@@ -382,6 +386,9 @@ async function manualRefresh() { _countdown = REFRESH_SEC; setCountdown(_countdo
 async function init() {
     authToken = API.getKey('admin-token') || API.getKey('access-code');
     if (!authToken) { location.replace('../login.html'); return; }
+    const session = API.getSession();
+    if (session && session.role) document.getElementById('ph-role').textContent = session.role.toUpperCase();
+    await API.bootTheme();
 
     // โหลด settings สำหรับ label (event_name)
     try {

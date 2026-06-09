@@ -41,26 +41,37 @@
     .bigbtn:disabled { background: #c7ccd6; box-shadow: none; cursor: not-allowed; color: #eef; }
     .winner-row { padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); margin-bottom: 8px; }
     .winner-row .nm { font-weight: 700; font-family: var(--font-display); font-size: 1.1rem; }
+    .hidden { display: none; }
+    .btn-white { background: #fff; }
+    .btn-white-mb { background: #fff; margin-bottom: 12px; }
+    .mode-label { display: block; font-size: .85rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 6px; }
   </style>
 </head>
 <body class="app-bg">
-  <div class="app-bar">
-    <button class="navback" onclick="goBack()">‹</button>
-    <img class="logo" data-logo alt="" />
-    <div>
-      <div class="title">รีโมทจับรางวัล</div>
-      <div class="subtitle">ADMIN · REMOTE</div>
+  <header class="page-header">
+    <div class="ph-left">
+      <img class="ph-logo" data-logo alt="">
+      <div class="ph-info">
+        <div class="ph-event" data-event-name>Event</div>
+        <div class="ph-user"><span class="ph-role" id="ph-role">ADMIN</span></div>
+      </div>
     </div>
-  </div>
+    <div class="ph-center">
+      <div class="ph-title">🎯 รีโมทจับรางวัล</div>
+    </div>
+    <div class="ph-right">
+      <a href="index.html" class="ph-nav-btn">← Dashboard</a>
+    </div>
+  </header>
 
   <div class="container">
     <div id="loading" class="loading"><div class="spinner"></div>กำลังโหลด...</div>
 
-    <div id="app" style="display:none">
+    <div id="app" class="hidden">
       <div class="card gold-top">
         <div class="summary" id="summary"></div>
-        <button class="btn btn-ghost" style="background:#fff;margin-bottom:12px" onclick="togglePanel()">⚙️ ตั้งค่าการจับ</button>
-        <button class="btn btn-primary" id="prepBtn" onclick="prepare()">📋 เตรียมวงล้อ (ส่งรายชื่อขึ้นจอ)</button>
+        <button type="button" class="btn btn-ghost btn-white-mb" onclick="togglePanel()">⚙️ ตั้งค่าการจับ</button>
+        <button type="button" class="btn btn-primary" id="prepBtn" onclick="prepare()">📋 เตรียมวงล้อ (ส่งรายชื่อขึ้นจอ)</button>
       </div>
 
       <!-- แผงตั้งค่า -->
@@ -87,31 +98,31 @@
           <label class="sw"><input type="checkbox" id="f_excl" checked onchange="onChange()" /><span class="track"></span></label>
         </div>
         <div class="field"><label>ของรางวัล</label><select id="reward" onchange="onChange()"></select></div>
-        <label style="display:block;font-size:.85rem;font-weight:600;color:var(--ink-soft);margin-bottom:6px">โหมดการจับ</label>
+        <label class="mode-label">โหมดการจับ</label>
         <div class="mode-toggle">
-          <button id="m-one" class="active" onclick="setMode('single')">ทีละคน</button>
-          <button id="m-multi" onclick="setMode('multi')">หลายคนพร้อมกัน</button>
+          <button type="button" id="m-one" class="active" onclick="setMode('single')">ทีละคน</button>
+          <button type="button" id="m-multi" onclick="setMode('multi')">หลายคนพร้อมกัน</button>
         </div>
-        <div class="field mt" id="countWrap" style="display:none">
+        <div class="field mt hidden" id="countWrap">
           <label>จำนวนผู้ชนะต่อการหมุน</label>
           <input class="input" id="count" type="number" inputmode="numeric" value="3" min="1" max="50" oninput="onChange()" />
         </div>
-        <button class="btn btn-primary mt" onclick="donePanel()">เสร็จ</button>
+        <button type="button" class="btn btn-primary mt" onclick="donePanel()">เสร็จ</button>
       </div>
 
       <!-- โซนหมุน -->
-      <div class="card spin-zone" id="spinZone" style="display:none">
+      <div class="card spin-zone hidden" id="spinZone">
         <div class="gauge"><div class="fill" id="gaugeFill"></div></div>
         <div class="gauge-label" id="gaugeLabel">กดปุ่มค้างเพื่อชาร์จพลัง แล้วปล่อย</div>
-        <button class="bigbtn" id="bigBtn" disabled>กดค้าง<br>เพื่อหมุน</button>
+        <button type="button" class="bigbtn" id="bigBtn" disabled>กดค้าง<br>เพื่อหมุน</button>
       </div>
 
       <div class="row mt">
-        <button class="btn btn-ghost btn-sm" style="background:#fff" onclick="resetWheel()">↺ ล้างจอ</button>
-        <button class="btn btn-ghost btn-sm" style="background:#fff" onclick="openDisplay()">🖥️ เปิดจอวงล้อ</button>
+        <button type="button" class="btn btn-ghost btn-sm btn-white" onclick="resetWheel()">↺ ล้างจอ</button>
+        <button type="button" class="btn btn-ghost btn-sm btn-white" onclick="openDisplay()">🖥️ เปิดจอวงล้อ</button>
       </div>
 
-      <div id="result" class="card" style="display:none"></div>
+      <div id="result" class="card hidden"></div>
     </div>
   </div>
 
@@ -135,8 +146,8 @@
       rewards.forEach(function (r, i) {
         sel.innerHTML += '<option value="' + i + '">' + ((r.name || '') + (r.value ? ' (' + r.value + ')' : '')) + '</option>';
       });
-      API.qs('#loading').style.display = 'none';
-      API.qs('#app').style.display = 'block';
+      API.qs('#loading').classList.add('hidden');
+      API.qs('#app').classList.remove('hidden');
       bindHold();
       onChange();
     })();
@@ -186,7 +197,7 @@
       mode = m;
       API.qs('#m-one').classList.toggle('active', m === 'single');
       API.qs('#m-multi').classList.toggle('active', m === 'multi');
-      API.qs('#countWrap').style.display = (m === 'multi') ? 'block' : 'none';
+      API.qs('#countWrap').classList.toggle('hidden', m !== 'multi');
       invalidatePrepare(); renderSummary();
     }
 
@@ -206,7 +217,7 @@
       var count = (mode === 'multi') ? Math.max(1, parseInt(API.qs('#count').value || 1, 10)) : 1;
       var pbtn = API.qs('#prepBtn');
       if (!opts.silent) { pbtn.disabled = true; pbtn.textContent = 'กำลังส่งรายชื่อขึ้นจอ...'; }
-      API.qs('#spinZone').style.display = 'block';
+      API.qs('#spinZone').classList.remove('hidden');
       API.qs('#gaugeLabel').textContent = 'กำลังเตรียมวงล้อ...';
       var b = API.qs('#bigBtn'); b.disabled = true;
 
@@ -221,7 +232,7 @@
       }
       // อัปเดตจำนวนผู้มีสิทธิ์ในสรุป
       API.qs('#summary').dataset.c = res.people; renderSummary();
-      if (!opts.keepResult) API.qs('#result').style.display = 'none';
+      if (!opts.keepResult) API.qs('#result').classList.add('hidden');
 
       // รอจอรับรายชื่อ (~1.8 วิ) แล้วเปิดปุ่มหมุน
       setTimeout(function () {
@@ -289,7 +300,7 @@
 
     function showResult(state) {
       var winners = state.winners || (state.winner ? [state.winner] : []);
-      var box = API.qs('#result'); box.style.display = 'block'; box.className = 'card gold-top';
+      var box = API.qs('#result'); box.classList.remove('hidden'); box.className = 'card gold-top';
       var rewardLabel = state.reward_name || state.reward_value || 'ของรางวัล';
       var html = '<h2>🏆 ผู้ชนะรอบ ' + (state.round || '') + '</h2><p class="muted">รางวัล: ' + rewardLabel + ' · ส่ง LINE แล้ว ✅</p>';
       winners.forEach(function (w) {
@@ -300,7 +311,7 @@
       box.scrollIntoView({ behavior: 'smooth' });
     }
 
-    async function resetWheel() { await API.postAuth('resetWheel', {}); API.qs('#result').style.display = 'none'; invalidatePrepare(); API.toast('ล้างจอแล้ว'); }
+    async function resetWheel() { await API.postAuth('resetWheel', {}); API.qs('#result').classList.add('hidden'); invalidatePrepare(); API.toast('ล้างจอแล้ว'); }
     function openDisplay() { window.open('rewards.html', '_blank'); }
   </script>
 </body>
