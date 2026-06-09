@@ -600,7 +600,9 @@
                     profileData = await API.getProfile();
                 } catch (e) { isLIFF = false; }
 
-                // แสดงรูปโปรไฟล์ LINE แทน logo + profile bar
+                await Promise.all([loadProducts(), loadSettings()]);
+
+                // แสดงรูปโปรไฟล์ LINE หลัง bootTheme (ไม่งั้น bootTheme ทับ logo)
                 if (isLIFF && profileData && profileData.pictureUrl) {
                     const logoEl = document.querySelector('.shop-header-logo');
                     if (logoEl) {
@@ -612,8 +614,6 @@
                     document.getElementById('shop-line-profile-bar').classList.remove('hidden');
                     document.getElementById('line-friend-banner').classList.add('hidden');
                 }
-
-                await Promise.all([loadProducts(), loadSettings()]);
 
                 if (isLIFF && profileData && profileData.userId) {
                     try {
