@@ -111,6 +111,12 @@
         .form-group textarea { resize: vertical; min-height: 70px; }
         .req { color: #d32f2f; }
         .prefilled-note { font-size: 11px; color: #4caf50; margin-top: 3px; }
+        .line-profile-banner { display: flex; align-items: center; gap: 12px; background: #e8f5e9; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; border: 1px solid #c8e6c9; }
+        .line-avatar { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; border: 2px solid #4caf50; flex-shrink: 0; }
+        .line-display-name { font-weight: 700; color: #1b5e20; font-size: 14px; }
+        .line-linked { font-size: 11px; color: #4caf50; margin-top: 2px; }
+        .line-add-friend-banner { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #fff8e1; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; border: 1px solid #ffe082; font-size: 13px; color: #6d4c00; }
+        .btn-add-friend { background: #06c755; color: #fff; border-radius: 6px; padding: 6px 14px; font-size: 12px; text-decoration: none; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
 
         .loading { text-align: center; padding: 20px; color: #666; }
         .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite; }
@@ -262,6 +268,19 @@
 
             <!-- Step 1: Shipping info -->
             <div id="checkout-step1">
+                <!-- LINE profile / add-friend banner -->
+                <div id="line-profile-banner" class="line-profile-banner hidden">
+                    <img id="line-avatar" class="line-avatar" src="" alt="">
+                    <div>
+                        <div id="line-display-name" class="line-display-name"></div>
+                        <div class="line-linked">🔗 เชื่อมต่อ LINE แล้ว</div>
+                    </div>
+                </div>
+                <div id="line-add-friend-banner" class="line-add-friend-banner hidden">
+                    <span>เพิ่มเพื่อนเพื่อรับการแจ้งเตือนคำสั่งซื้อ</span>
+                    <a id="line-add-friend-link" href="#" target="_blank" class="btn-add-friend">+ เพิ่มเพื่อน LINE</a>
+                </div>
+
                 <div class="payment-section">
                     <h3>📦 ข้อมูลการจัดส่ง</h3>
                     <div class="form-group">
@@ -849,6 +868,23 @@
             const nameInput  = document.getElementById('customer-name');
             const phoneInput = document.getElementById('customer-phone');
 
+            // LINE profile banner
+            if (isLIFF && profileData && profileData.userId) {
+                const avatarEl = document.getElementById('line-avatar');
+                if (profileData.pictureUrl) avatarEl.src = profileData.pictureUrl;
+                else avatarEl.style.display = 'none';
+                document.getElementById('line-display-name').textContent = profileData.displayName || '';
+                document.getElementById('line-profile-banner').classList.remove('hidden');
+                document.getElementById('line-add-friend-banner').classList.add('hidden');
+            } else {
+                document.getElementById('line-profile-banner').classList.add('hidden');
+                const addFriendBanner = document.getElementById('line-add-friend-banner');
+                addFriendBanner.classList.remove('hidden');
+                const friendUrl = (shopSettings && shopSettings.line_friend_url) ? shopSettings.line_friend_url : '#';
+                document.getElementById('line-add-friend-link').href = friendUrl;
+            }
+
+            const addressInput = document.getElementById('customer-address');
             if (registrationData) {
                 const fullName = ((registrationData.first_name || '') + ' ' + (registrationData.last_name || '')).trim();
                 if (fullName && !nameInput.value) {
@@ -858,6 +894,9 @@
                 if (registrationData.phone && !phoneInput.value) {
                     phoneInput.value = registrationData.phone;
                     document.getElementById('phone-prefilled').classList.remove('hidden');
+                }
+                if (registrationData.address && !addressInput.value) {
+                    addressInput.value = registrationData.address;
                 }
             } else if (isLIFF && profileData && profileData.displayName && !nameInput.value) {
                 nameInput.value = profileData.displayName;
@@ -1088,6 +1127,12 @@
             API.setKey('shop-cart', '{}');
             updateCartBadge();
             document.getElementById('customer-address').value = '';
+            document.getElementById('customer-name').value = '';
+            document.getElementById('customer-phone').value = '';
+            document.getElementById('name-prefilled').classList.add('hidden');
+            document.getElementById('phone-prefilled').classList.add('hidden');
+            document.getElementById('line-profile-banner').classList.add('hidden');
+            document.getElementById('line-add-friend-banner').classList.add('hidden');
             document.getElementById('slip-preview').innerHTML = '';
             document.getElementById('ocr-status').classList.add('hidden');
             document.getElementById('discount-code-input').value = '';
