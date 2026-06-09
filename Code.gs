@@ -128,7 +128,8 @@ function route_(action, p) {
 
     // ---------- admin manage ----------
     case 'getAdminSettings': requireKey_(p); return { ok: true, settings: getSettingsMap_() };
-    case 'verifyOrder':    requireKey_(p); return verifyOrder_(p);
+    case 'verifyOrder':        requireKey_(p); return verifyOrder_(p);
+    case 'updateOrderAddress': requireKey_(p); return updateOrderAddress_(p);
     case 'updateSettings': requireKey_(p); return updateSettings_(p);
     case 'saveProduct':    requireKey_(p); return saveProduct_(p);
     case 'deleteProduct':  requireKey_(p); return deleteRowById_('products', 'id', p.id);
@@ -535,6 +536,16 @@ function createOrder_(p) {
   return { ok: true, order_id: order_id };
 }
 
+function updateOrderAddress_(p) {
+  var rowNum = findRow_('orders', 'order_id', p.order_id);
+  if (!rowNum) return { ok: false, error: 'order not found' };
+  var sh = sheet_('orders'); var h = getHeaders_('orders');
+  var col = h.indexOf('address');
+  if (col < 0) return { ok: false, error: 'no address column in orders sheet' };
+  sh.getRange(rowNum, col + 1).setValue(p.address || '');
+  return { ok: true };
+}
+
 function verifyOrder_(p) {
   var rowNum = findRow_('orders', 'order_id', p.order_id);
   if (!rowNum) return { ok: false, error: 'order not found' };
@@ -553,11 +564,15 @@ function verifyOrder_(p) {
     }).join('\n');
     var msg;
     if (status === 'rejected') {
-      msg = '❌ คำสั่งซื้อ ' + o.order_id + '\nไม่ผ่านการตรวจสอบ กรุณาติดต่อเจ้าหน้าที่';
-    } else {
-      msg = '✅ ยืนยันคำสั่งซื้อ\nกำลังจัดส่งสินค้า\n\n' +
+      msg = '❌ คำสั่งซื้อไม่ผ่านการตรวจสอบ\n' +
+            '📋 เลขที่: ' + o.order_id + '\n\n' +
             itemsText +
-            '\n\n📦 ขอบคุณที่ไว้วางใจ!';
+            '\n\nกรุณาติดต่อเจ้าหน้าที่เพื่อดำเนินการต่อ';
+    } else {
+      msg = '✅ ยืนยันคำสั่งซื้อแล้ว!\n' +
+            '📋 เลขที่: ' + o.order_id + '\n\n' +
+            itemsText +
+            '\n\n📦 กำลังจัดเตรียมสินค้า\nขอบคุณที่ไว้วางใจ!';
     }
     sendLineText_(o.line_user_id, msg);
   }
@@ -1016,6 +1031,25 @@ function testLineToMe() {
   var reg = { reg_id: 'TEST123', first_name: 'จักรกริช', last_name: 'เลิศวิทยารัตน์', nickname: 'ยุ่น', generation: '44' };
   var f = pushLine_(uid, [ buildRegFlex_(reg) ]);
   Logger.log('3) ผลส่ง Flex card: ' + JSON.stringify(f));
+}
+
+// ---- เพิ่มคอลัมน์ที่ขาดใน orders sheet (รันครั้งเดียวจาก Script Editor) ----
+function setupOrdersColumns_() {
+  var sh = sheet_('orders');
+  if (!sh) { Logger.log('❌ orders sheet not found'); return; }
+  var needed = ['line_user_id', 'address', 'discount_code', 'discount_percent'];
+  var added = [];
+  needed.forEach(function(col) {
+    var headers = getHeaders_('orders'); // refresh each time
+    if (headers.indexOf(col) < 0) {
+      sh.getRange(1, sh.getLastColumn() + 1).setValue(col);
+      added.push(col);
+      Logger.log('✅ เพิ่มคอลัมน์: ' + col);
+    } else {
+      Logger.log('— มีอยู่แล้ว: ' + col);
+    }
+  });
+  Logger.log('setupOrdersColumns เสร็จสิ้น — เพิ่ม: [' + added.join(', ') + ']');
 }
 
 // ---- ตรวจสอบ Script Properties (ADMIN_KEY / LINE_TOKEN) ----

@@ -498,6 +498,15 @@
                     profileData = await API.getProfile();
                 } catch (e) { isLIFF = false; }
 
+                // แสดงรูปโปรไฟล์ LINE แทน logo
+                if (isLIFF && profileData && profileData.pictureUrl) {
+                    const logoEl = document.querySelector('.shop-header-logo');
+                    if (logoEl) {
+                        logoEl.src = profileData.pictureUrl;
+                        logoEl.classList.add('is-line-avatar');
+                    }
+                }
+
                 await Promise.all([loadProducts(), loadSettings()]);
 
                 if (isLIFF && profileData && profileData.userId) {

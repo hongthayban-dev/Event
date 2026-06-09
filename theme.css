@@ -786,6 +786,11 @@ tbody tr:nth-child(odd) {
   border-radius: 6px;
   flex-shrink: 0;
 }
+.shop-header-logo.is-line-avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255,255,255,.55);
+}
 
 .shop-header-info {
   min-width: 0;

@@ -90,6 +90,9 @@
         .btn-view   { background: var(--color-accent); color: #333; }
         .btn:disabled { opacity: .5; cursor: not-allowed; }
 
+        .line-dot { display:inline-block; width:8px; height:8px; border-radius:50%; vertical-align:middle; margin-left:5px; flex-shrink:0; }
+        .line-dot.has-line  { background:#00c300; box-shadow:0 0 0 2px rgba(0,195,0,.2); }
+        .line-dot.no-line   { background:#ddd; }
         .loading { text-align: center; padding: 40px; }
         .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #ddd; border-top-color: var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -128,6 +131,11 @@
         .pl-addr-label { font-size:10px; font-weight:700; color:#666; letter-spacing:1px; margin-bottom:4px; }
         .pl-addr-name  { font-size:15px; font-weight:700; color:#333; }
         .pl-addr-detail { font-size:12px; color:#555; margin-top:3px; line-height:1.5; }
+        .pl-addr-edit-wrap { display:flex; align-items:flex-start; gap:6px; margin-top:3px; }
+        .pl-addr-input { font-size:12px; color:#555; line-height:1.5; border:1px solid #ccc; border-radius:5px; padding:4px 7px; width:100%; resize:vertical; font-family:Sarabun,sans-serif; }
+        .pl-addr-save-btn { font-size:11px; background:var(--color-primary); color:#fff; border:none; border-radius:5px; padding:4px 9px; cursor:pointer; white-space:nowrap; font-family:Sarabun,sans-serif; }
+        .pl-addr-edit-btn { font-size:11px; background:none; border:none; color:var(--color-primary); cursor:pointer; padding:1px 3px; vertical-align:middle; }
+        .hidden { display:none; }
         .pl-addr-phone  { font-size:13px; font-weight:700; color:#0d2b5e; margin-top:4px; }
 
         .pl-routing { text-align:center; padding:12px 16px; border-top:1.5px solid #333; border-bottom:1.5px solid #333; }
@@ -260,7 +268,16 @@
                 <div class="pl-addr-box">
                     <div class="pl-addr-label">ผู้รับ (TO)</div>
                     <div class="pl-addr-name" id="pl-to-name">—</div>
-                    <div class="pl-addr-detail" id="pl-to-addr"></div>
+                    <div id="pl-to-addr-view">
+                        <span class="pl-addr-detail" id="pl-to-addr"></span>
+                        <button type="button" class="pl-addr-edit-btn" onclick="startEditAddr()" title="แก้ไขที่อยู่">✏️</button>
+                    </div>
+                    <div id="pl-to-addr-edit" class="hidden">
+                        <div class="pl-addr-edit-wrap">
+                            <textarea class="pl-addr-input" id="pl-addr-input" rows="3"></textarea>
+                            <button type="button" class="pl-addr-save-btn" onclick="saveAddr()">บันทึก</button>
+                        </div>
+                    </div>
                     <div class="pl-addr-phone" id="pl-to-phone"></div>
                 </div>
             </div>
@@ -491,7 +508,7 @@ function renderOrders() {
         <tr class="ord-row row-${o.status}" id="row-${sid}" onclick="toggleExpand('${sid}')">
             <td><span class="arrow" id="arr-${sid}">▶</span></td>
             <td><strong style="font-family:monospace;font-size:12px">${o.order_id}</strong></td>
-            <td>${o.customer_name || '—'}</td>
+            <td>${o.customer_name || '—'}<span class="line-dot ${o.line_user_id ? 'has-line' : 'no-line'}" title="${o.line_user_id ? 'มี LINE: ' + o.line_user_id : 'ไม่มี LINE'}"></span></td>
             <td>${o.phone || '—'}</td>
             <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#666">${shortSummary}</td>
             <td style="text-align:right;font-weight:700;color:var(--color-accent)">${API.fmtBaht(o.total_amount)}</td>
@@ -537,8 +554,9 @@ function buildExpandHTML(o) {
           </div>`
         : `<div><label>📸 สลิป</label><p>ไม่มีสลิป</p></div>`;
 
+    const verifyLabel = o.line_user_id ? '✓ ยืนยันและส่ง LINE' : '✓ ยืนยัน';
     const actionBtns = o.status === 'pending'
-        ? `<button class="btn btn-verify" onclick="verifyOrder(this,'${o.order_id}')">✓ ยืนยันและส่ง LINE</button>
+        ? `<button class="btn btn-verify" onclick="verifyOrder(this,'${o.order_id}')">${verifyLabel}</button>
            <button class="btn btn-reject" onclick="rejectOrder(this,'${o.order_id}')">✗ ปฏิเสธ</button>`
         : `<span style="font-size:13px;color:#666">${o.status==='verified'?'✅ ยืนยันแล้ว':'✗ ปฏิเสธแล้ว'} (${o.verified_at ? new Date(o.verified_at).toLocaleDateString('th-TH') : '—'})</span>`;
 
@@ -553,6 +571,8 @@ function buildExpandHTML(o) {
                 <p>${o.created_at ? new Date(o.created_at).toLocaleString('th-TH') : '—'}</p>
                 <label style="margin-top:10px">💰 ยอดสลิป</label>
                 <p>${o.slip_amount ? API.fmtBaht(o.slip_amount) : '—'}</p>
+                <label style="margin-top:10px">💬 LINE User ID</label>
+                <p style="font-size:11px;word-break:break-all;color:${o.line_user_id ? '#00a800' : '#aaa'}">${o.line_user_id || '(ไม่มี)'}</p>
             </div>
         </div>
 
@@ -617,7 +637,10 @@ async function rejectOrder(btn, orderId) {
 }
 
 // ════════ Print Label ════════
+let labelOrderId = '';
+
 function openPrintLabel(orderId) {
+    labelOrderId = orderId;
     const o = orders.find(x => x.order_id === orderId);
     if (!o) return;
 
@@ -676,12 +699,43 @@ function openPrintLabel(orderId) {
     document.getElementById('pl-footer-order').textContent = o.order_id;
     document.getElementById('pl-slip-amount').textContent = o.slip_amount ? API.fmtBaht(o.slip_amount) : '—';
 
+    // Reset address edit state
+    document.getElementById('pl-to-addr-view').classList.remove('hidden');
+    document.getElementById('pl-to-addr-edit').classList.add('hidden');
+
     // Open modal
     document.getElementById('print-modal-bg').classList.add('open');
 
     // Auto-print on desktop
     if (window.innerWidth >= 992) {
         requestAnimationFrame(() => setTimeout(doPrint, 400));
+    }
+}
+
+function startEditAddr() {
+    const current = document.getElementById('pl-to-addr').textContent;
+    document.getElementById('pl-addr-input').value = current === '(ไม่ระบุ)' ? '' : current;
+    document.getElementById('pl-to-addr-view').classList.add('hidden');
+    document.getElementById('pl-to-addr-edit').classList.remove('hidden');
+    document.getElementById('pl-addr-input').focus();
+}
+
+async function saveAddr() {
+    const newAddr = document.getElementById('pl-addr-input').value.trim();
+    const btn = document.querySelector('.pl-addr-save-btn');
+    btn.disabled = true; btn.textContent = '⏳';
+    try {
+        await API.postAuth('updateOrderAddress', { order_id: labelOrderId, address: newAddr });
+        document.getElementById('pl-to-addr').textContent = newAddr || '(ไม่ระบุ)';
+        const o = orders.find(x => x.order_id === labelOrderId);
+        if (o) o.address = newAddr;
+        document.getElementById('pl-to-addr-view').classList.remove('hidden');
+        document.getElementById('pl-to-addr-edit').classList.add('hidden');
+        API.toast('บันทึกที่อยู่แล้ว', 'success');
+    } catch (err) {
+        API.toast('❌ ' + err.message, 'error');
+    } finally {
+        btn.disabled = false; btn.textContent = 'บันทึก';
     }
 }
 
