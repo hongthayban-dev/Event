@@ -25,6 +25,8 @@ async function getProfile() {
   return liff.getProfile();
 }
 
+
+
 // ========== API HELPERS (private) ==========
 async function fetchJSON_(url, options) {
   const resp = await fetch(url, options);
