@@ -857,21 +857,23 @@
 
         function checkOptSelected() {
             if (!pendingProduct) return false;
-            const hasColor = pendingProduct.colors && pendingProduct.colors.length > 0;
-            const hasSize  = pendingProduct.sizes  && pendingProduct.sizes.length  > 0;
-            if (hasColor && !selectedColor) {
+            const colorSec = document.getElementById('opt-color-section');
+            const sizeSec  = document.getElementById('opt-size-section');
+            const colorVisible = colorSec && colorSec.style.display !== 'none';
+            const sizeVisible  = sizeSec  && sizeSec.style.display  !== 'none';
+            if (colorVisible && !selectedColor) {
                 API.toast('กรุณาเลือกสี', 'warning');
                 scrollToOptSection('opt-color-section');
                 return false;
             }
-            if (hasSize && !selectedSize) {
+            if (sizeVisible && !selectedSize) {
                 API.toast('กรุณาเลือกขนาด', 'warning');
                 scrollToOptSection('opt-size-section');
                 return false;
             }
             if (!selectedVariant) {
                 API.toast('กรุณาเลือกตัวเลือก', 'warning');
-                scrollToOptSection('opt-color-section');
+                scrollToOptSection(colorVisible ? 'opt-color-section' : 'opt-size-section');
                 return false;
             }
             return true;
