@@ -122,7 +122,7 @@ async function ocrReceiptAmount(imageBase64) {
 
 // ========== DRIVE IMAGE ==========
 function driveImg(fileId, size = 500) {
-  return `https://lh3.googleusercontent.com/d/${fileId}=w${size}`;
+  return `https://drive.google.com/thumbnail?id=${fileId}&sz=w${size}`;
 }
 
 // ========== DEFAULT SETTINGS ==========
@@ -151,7 +151,10 @@ const DEFAULT_SETTINGS = {
   promptpay_number: '',
   promptpay_file_id: '',
   banner_url: '',
-  line_friend_url: ''
+  line_friend_url: '',
+  liff_url: '',
+  discount_code: '',
+  discount_percent: 0
 };
 
 function withDefaults(settings) {
@@ -292,7 +295,10 @@ function toast(message, type = 'info') {
 // ========== FIELD TOGGLE ==========
 function fieldOn(settings, key) {
   if (!settings) return false;
-  return settings['field_' + key] !== false;
+  var val = settings['field_' + key];
+  // Handle boolean false AND string 'FALSE'/'false' from Google Sheet
+  if (val === false || String(val).toUpperCase() === 'FALSE') return false;
+  return true;
 }
 
 // ========== QR CODE ==========

@@ -2,6 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
+  <link rel="icon" href="data:,">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ตั้งค่าระบบ</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=Trirong:wght@700&display=swap" rel="stylesheet">
@@ -43,7 +44,7 @@
         .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .banner-thumb { width: 100%; max-width: 220px; aspect-ratio: 1; object-fit: cover; border-radius: 8px; border: 2px solid var(--color-accent); display: block; margin-top: 6px; }
+        .banner-thumb { width: 100%; max-width: 260px; aspect-ratio: 4/3; object-fit: cover; border-radius: 8px; border: 2px solid var(--color-accent); display: block; margin-top: 6px; }
         .hidden { display: none; }
     </style>
 </head>
@@ -100,9 +101,9 @@
             <div class="settings-card">
                 <h3>🖼️ แบนเนอร์ร้านค้า</h3>
                 <div class="form-group">
-                    <label>Banner ร้านค้า (Google Drive File ID) — สัดส่วน 1:1</label>
+                    <label>Banner ร้านค้า (Google Drive File ID) — สัดส่วน 4:3</label>
                     <input type="text" id="banner-url" placeholder="File ID จาก Google Drive">
-                    <div class="note">แสดงที่หน้าร้านค้า ควรเป็นภาพสี่เหลี่ยมจัตุรัส</div>
+                    <div class="note">แสดงที่หน้าร้านค้า แนะนำขนาด 800×600 px (4:3)</div>
                 </div>
                 <div class="form-group">
                     <label class="qr-label" for="banner-file">📤 อัปโหลด Banner ร้านค้า</label>
@@ -118,6 +119,11 @@
                     <label>ลิงก์เพิ่มเพื่อน LINE OA</label>
                     <input type="url" id="line-friend-url" placeholder="https://line.me/R/ti/p/@xxxxxxx">
                     <div class="note">แสดง banner "เพิ่มเพื่อน LINE" ในหน้าร้านค้า</div>
+                </div>
+                <div class="form-group">
+                    <label>LIFF URL (สำหรับปุ่มในบัตรลงทะเบียน)</label>
+                    <input type="url" id="liff-url" placeholder="https://liff.line.me/xxxxxxxxxx">
+                    <div class="note">ใส่ URL ของ LIFF เพื่อให้กดเปิดบัตรจากในแชท LINE ได้</div>
                 </div>
                 <div class="form-group">
                     <label>ข้อความสวัสดี (ใช้ {name})</label>
@@ -217,6 +223,23 @@
                 </div>
             </div>
 
+            <!-- Discount -->
+            <div class="settings-card">
+                <h3>🏷️ ส่วนลด</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>รหัสส่วนลด</label>
+                        <input type="text" id="discount-code" placeholder="เช่น WELCOME10">
+                        <div class="note">ผู้ซื้อกรอกรหัสนี้ที่หน้าชำระเงิน</div>
+                    </div>
+                    <div class="form-group">
+                        <label>ส่วนลด (%)</label>
+                        <input type="number" id="discount-percent" placeholder="เช่น 10" min="0" max="100">
+                        <div class="note">จำนวนเปอร์เซ็นต์ที่ลดจากยอดรวม</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Security -->
             <div class="settings-card">
                 <h3>🔐 ความปลอดภัย</h3>
@@ -274,8 +297,11 @@
             document.getElementById('event-location').value = settings.event_location || '';
             document.getElementById('logo-url').value       = settings.logo_url       || '';
 
-            document.getElementById('banner-url').value     = settings.banner_url     || '';
+            document.getElementById('banner-url').value      = settings.banner_url      || '';
             document.getElementById('line-friend-url').value = settings.line_friend_url || '';
+            document.getElementById('liff-url').value        = settings.liff_url        || '';
+            document.getElementById('discount-code').value   = settings.discount_code   || '';
+            document.getElementById('discount-percent').value = settings.discount_percent || '';
             document.getElementById('line-greeting').value  = settings.line_greeting  || '';
             document.getElementById('line-winner-msg').value = settings.line_winner_msg || '';
 
@@ -343,14 +369,14 @@
             reader.readAsDataURL(file);
         });
 
-        // Banner upload
+        // Banner upload → BANNER_FOLDER_ID
         document.getElementById('banner-file').addEventListener('change', async e => {
             const file = e.target.files[0]; if (!file) return;
             API.toast('📤 กำลังอัปโหลด Banner...', 'info');
             const reader = new FileReader();
             reader.onload = async ev => {
                 try {
-                    const res = await API.postAuth('uploadSlip', { dataUrl: ev.target.result, filename: 'shop_banner_' + Date.now() + '.jpg' }, authToken);
+                    const res = await API.postAuth('uploadBanner', { dataUrl: ev.target.result, filename: 'shop_banner_' + Date.now() + '.jpg' }, authToken);
                     bannerFileId = res.id;
                     document.getElementById('banner-url').value = bannerFileId;
                     document.getElementById('banner-preview').innerHTML = `<img class="banner-thumb" src="${API.driveImg(bannerFileId,600)}" alt="banner">`;
@@ -368,6 +394,9 @@
                 logo_url:          document.getElementById('logo-url').value,
                 banner_url:        document.getElementById('banner-url').value || bannerFileId,
                 line_friend_url:   document.getElementById('line-friend-url').value,
+                liff_url:          document.getElementById('liff-url').value,
+                discount_code:     document.getElementById('discount-code').value,
+                discount_percent:  document.getElementById('discount-percent').value,
                 line_greeting:     document.getElementById('line-greeting').value,
                 line_winner_msg:   document.getElementById('line-winner-msg').value,
                 color_primary:     document.getElementById('color-primary').value,

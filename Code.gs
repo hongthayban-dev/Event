@@ -16,8 +16,9 @@
 
 // ---- ค่าคงที่ ----
 const SHEET_ID       = '1QCQM1Y65YG9Mgt1g9VlCSdYlOQ5ZAFLVTyunJgn62no';
-const SLIP_FOLDER_ID        = '15UDvwjf-3J4bBZeRihtodgNgL2sPGxMF'; // โฟลเดอร์เก็บสลิปชำระเงิน 
-const PRODUCT_IMG_FOLDER_ID = '1ovjadtqJPx9nkw4sCEQ9gRhmYsnu3Znv'; // โฟลเดอร์เก็บรูปสินค้า 
+const SLIP_FOLDER_ID        = '15UDvwjf-3J4bBZeRihtodgNgL2sPGxMF'; // โฟลเดอร์เก็บสลิปชำระเงิน
+const PRODUCT_IMG_FOLDER_ID = '1ovjadtqJPx9nkw4sCEQ9gRhmYsnu3Znv'; // โฟลเดอร์เก็บรูปสินค้า
+const BANNER_FOLDER_ID      = '15Wl9uB-a9g7-vb5rtutGSi9b3fXlSr_c'; // โฟลเดอร์เก็บ Banner ร้านค้า
 const LINE_PUSH_URL  = 'https://api.line.me/v2/bot/message/push';
 
 // ---- ตัวช่วยพื้นฐาน ----
@@ -102,6 +103,9 @@ function route_(action, p) {
     case 'uploadSlip':   return uploadSlip_(p);
     case 'ocrSlip':      return ocrSlip_(p);
     case 'uploadProductImg': return uploadProductImg_(p);
+    case 'uploadBanner': return uploadBanner_(p);
+    case 'getLocationData': return getLocationData_();
+    case 'applyDiscount': return applyDiscount_(p);
     case 'staffLogin':   return staffLogin_(p);
     case 'verifyPin':    return verifyPin_(p);
 
@@ -316,6 +320,9 @@ function register_(p) {
     phone: p.phone || '',
     generation: p.generation || '',
     province: p.province || '',
+    district: p.district || '',
+    subdistrict: p.subdistrict || '',
+    postal_code: p.postal_code || '',
     occupation: p.occupation || '',
     organization: p.organization || '',
     email: p.email || '',
@@ -358,7 +365,18 @@ function checkin_(p) {
   sh.getRange(rowNum, ci).setValue('TRUE');
   sh.getRange(rowNum, h.indexOf('checkin_at') + 1).setValue(new Date());
   sh.getRange(rowNum, h.indexOf('checkin_by') + 1).setValue(p.checkin_by || '');
-  return { ok: true, already_checked_in: already, registration: rowObj_('registrations', rowNum) };
+  var reg = rowObj_('registrations', rowNum);
+  // ส่ง LINE แจ้งผู้เข้างานว่าเช็คอินสำเร็จ (เฉพาะครั้งแรก)
+  if (!already && reg.line_user_id) {
+    var name = String(reg.nickname || reg.first_name || '');
+    var timeStr = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'HH:mm น.');
+    var ciMsg = '✅ เช็คอินสำเร็จ!' +
+      (name ? '\nสวัสดี ' + name + '!' : '') +
+      '\n🕐 เวลาเข้างาน: ' + timeStr +
+      '\n\nขอให้สนุกกับงาน 🎉';
+    sendLineText_(reg.line_user_id, ciMsg);
+  }
+  return { ok: true, already_checked_in: already, registration: reg };
 }
 
 // ============================================================
@@ -455,6 +473,8 @@ function saveProduct_(p) {
 function createOrder_(p) {
   var order_id = 'O' + Date.now().toString(36).toUpperCase();
   var itemsStr = (typeof p.items === 'string') ? p.items : JSON.stringify(p.items || []);
+  var discountPercent = Number(p.discount_percent || 0);
+  var discountCode = String(p.discount_code || '');
   appendByHeaders_('orders', {
     order_id: order_id,
     line_user_id: p.line_user_id || '',
@@ -463,8 +483,8 @@ function createOrder_(p) {
     address: p.address || '',
     items: itemsStr,
     total_amount: p.total_amount || 0,
-    slip_amount: p.slip_amount || '',
-    promptpay_ref: p.promptpay_ref || '',
+    discount_code: discountCode,
+    discount_percent: discountPercent || '',
     slip_url: p.slip_url || '',
     status: 'pending',
     created_at: new Date(),
@@ -473,20 +493,43 @@ function createOrder_(p) {
   });
 
   // ส่งสรุปคำสั่งซื้อไปใน LINE chat
+  var lineOk = true;
   if (p.line_user_id) {
     var items = [];
     try { items = JSON.parse(itemsStr); } catch(e) {}
+    var subtotal = items.reduce(function(s, i) { return s + Number(i.price) * Number(i.qty); }, 0);
+    var total = Number(p.total_amount) || 0;
     var itemsText = items.map(function(i) {
       var v = [i.color, i.size].filter(Boolean).join('/');
       return '• ' + i.name + (v ? ' (' + v + ')' : '') + ' ×' + i.qty + ' = ฿' + (Number(i.price) * Number(i.qty)).toLocaleString('th-TH');
     }).join('\n');
-    var total = Number(p.total_amount) || 0;
+    var discountLine = '';
+    if (discountPercent > 0 && subtotal !== total) {
+      discountLine = '\n🏷️ ส่วนลด ' + discountPercent + '%: -฿' + (subtotal - total).toLocaleString('th-TH');
+    }
+    var addressLine = p.address ? '\n📍 ที่อยู่: ' + p.address : '';
     var msg = '🛍️ ได้รับคำสั่งซื้อแล้ว!\n\n' +
-              '📋 เลขที่: ' + order_id + '\n\n' +
-              itemsText + '\n\n' +
+              '📋 เลขที่: ' + order_id + '\n' +
+              '👤 ชื่อ: ' + (p.customer_name || '') + '\n' +
+              '📞 โทร: ' + (p.phone || '') +
+              addressLine + '\n\n' +
+              itemsText +
+              discountLine + '\n\n' +
               '💰 รวม: ฿' + total.toLocaleString('th-TH') + '\n\n' +
-              '⏳ Staff กำลังตรวจสอบสลิป';
-    sendLineText_(p.line_user_id, msg);
+              '⏳ โปรดรอการยืนยันจากแอดมินตอบกลับ';
+    var lineResult = sendLineText_(p.line_user_id, msg);
+    lineOk = lineResult.ok;
+  }
+
+  // ถ้าส่ง LINE ไม่สำเร็จ ตั้ง status เป็น 'ยืนยันไม่สำเร็จ'
+  if (!lineOk) {
+    var failRow = findRow_('orders', 'order_id', order_id);
+    if (failRow) {
+      var failSh = sheet_('orders'); var failH = getHeaders_('orders');
+      var sIdx = failH.indexOf('status');
+      if (sIdx >= 0) failSh.getRange(failRow, sIdx + 1).setValue('ยืนยันไม่สำเร็จ');
+    }
+    return { ok: true, order_id: order_id, line_error: true };
   }
 
   return { ok: true, order_id: order_id };
@@ -571,6 +614,11 @@ function uploadProductImg_(p) {
   return uploadToFolder_(p, PRODUCT_IMG_FOLDER_ID);
 }
 
+// อัปโหลด Banner ร้านค้า → BANNER_FOLDER_ID
+function uploadBanner_(p) {
+  return uploadToFolder_(p, BANNER_FOLDER_ID);
+}
+
 function uploadToFolder_(p, folderId) {
   var m = String(p.dataUrl || '').match(/^data:(.+);base64,(.*)$/);
   if (!m) return { ok: false, error: 'bad dataUrl' };
@@ -579,6 +627,65 @@ function uploadToFolder_(p, folderId) {
   var file = folder.createFile(blob);
   try { file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
   return { ok: true, id: file.getId(), url: 'https://drive.google.com/uc?export=view&id=' + file.getId() };
+}
+
+// ดึงข้อมูลจังหวัด/อำเภอ/ตำบล จาก sheet tab ที่มี gid=177526447
+function getLocationData_() {
+  var sheets = ss_().getSheets();
+  var locSheet = null;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].getSheetId() === 177526447) { locSheet = sheets[i]; break; }
+  }
+  if (!locSheet) return { ok: false, error: 'location sheet not found (gid=177526447)' };
+
+  var values = locSheet.getDataRange().getValues();
+  if (values.length < 2) return { ok: true, data: [] };
+
+  var rawHeaders = values[0].map(function(h) { return String(h).trim(); });
+  var colMap = {};
+  var aliases = {
+    province:    ['province','จังหวัด','Province','PROVINCE'],
+    district:    ['district','อำเภอ','อำเภอ/เขต','District','DISTRICT'],
+    subdistrict: ['subdistrict','ตำบล','ตำบล/แขวง','Subdistrict','SUBDISTRICT'],
+    postal_code: ['postal_code','รหัสไปรษณีย์','zipcode','zip','Postal Code','postal code','ZIP']
+  };
+  rawHeaders.forEach(function(h, i) {
+    Object.keys(aliases).forEach(function(key) {
+      if (aliases[key].indexOf(h) >= 0) colMap[key] = i;
+    });
+  });
+
+  // ถ้าหาไม่พบด้วย aliases ให้ลองใช้ตำแหน่ง col 0-3
+  if (Object.keys(colMap).length < 4) {
+    if (!colMap.province)    colMap.province    = 0;
+    if (!colMap.district)    colMap.district    = 1;
+    if (!colMap.subdistrict) colMap.subdistrict = 2;
+    if (!colMap.postal_code) colMap.postal_code = 3;
+  }
+
+  var data = [];
+  for (var r = 1; r < values.length; r++) {
+    var row = values[r];
+    if (row.join('') === '') continue;
+    data.push({
+      province:    String(row[colMap.province]    || '').trim(),
+      district:    String(row[colMap.district]    || '').trim(),
+      subdistrict: String(row[colMap.subdistrict] || '').trim(),
+      postal_code: String(row[colMap.postal_code] || '').trim()
+    });
+  }
+  return { ok: true, data: data };
+}
+
+// ตรวจสอบรหัสส่วนลด
+function applyDiscount_(p) {
+  var m = getSettingsMap_();
+  var code = String(m.discount_code || '').trim();
+  if (!code) return { ok: true, valid: false };
+  if (String(p.code || '').trim() === code) {
+    return { ok: true, valid: true, discount_percent: Number(m.discount_percent || 0) };
+  }
+  return { ok: true, valid: false };
 }
 
 // ============================================================
@@ -858,6 +965,18 @@ function buildRegFlex_(reg) {
   body.push({ type: 'separator', margin: 'lg', color: '#e3e8f2' });
   body.push({ type: 'text', text: 'รหัส: ' + reg.reg_id, size: 'xxs', align: 'center', color: '#9aa6bd', margin: 'md' });
 
+  var liffUrl = String(m.liff_url || '');
+  var footerContents = [
+    { type: 'text', text: 'แสดงบัตรนี้ที่จุดลงทะเบียน', size: 'xs', color: '#5b6b86', align: 'center', wrap: true }
+  ];
+  if (liffUrl) {
+    footerContents.push({
+      type: 'button',
+      action: { type: 'uri', label: '📱 เปิดบัตรในแอป', uri: liffUrl },
+      style: 'primary', color: primary, margin: 'md', height: 'sm'
+    });
+  }
+
   return {
     type: 'flex',
     altText: 'บัตรลงทะเบียน ' + eventName,
@@ -874,7 +993,7 @@ function buildRegFlex_(reg) {
       body: { type: 'box', layout: 'vertical', spacing: 'sm', contents: body },
       footer: {
         type: 'box', layout: 'vertical', backgroundColor: '#f4f6fb', paddingAll: '12px',
-        contents: [{ type: 'text', text: 'แสดงบัตรนี้ที่จุดลงทะเบียน', size: 'xs', color: '#5b6b86', align: 'center', wrap: true }]
+        contents: footerContents
       },
       styles: { footer: { separator: true } }
     }

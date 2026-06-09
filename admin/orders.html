@@ -2,6 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
+  <link rel="icon" href="data:,">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🛒 รายการสั่งซื้อ</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=Trirong:wght@700&display=swap" rel="stylesheet">
@@ -476,6 +477,8 @@ function renderOrders() {
             ? '<span class="badge badge-pending">⏳ รอยืนยัน</span>'
             : o.status === 'verified'
             ? '<span class="badge badge-verified">✓ ยืนยันแล้ว</span>'
+            : o.status === 'ยืนยันไม่สำเร็จ'
+            ? '<span class="badge badge-rejected" style="background:#ffe0b2;color:#6d3a00;">⚠️ ยืนยันไม่สำเร็จ</span>'
             : '<span class="badge badge-rejected">✗ ปฏิเสธ</span>';
         const items = parseItems(o.items);
         const itemsSummary = items.length
