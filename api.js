@@ -13,10 +13,11 @@ async function liffInit(silentFail) {
     if (silentFail) return;
     throw new Error('LIFF SDK not loaded');
   }
-  // ต้องมี liff.state ใน URL เท่านั้นจึง init
-  // ป้องกัน redirect ในเบราว์เซอร์ปกติ และป้องกัน fail เมื่อเปิดลิงก์ธรรมดาใน LINE
-  var isLiffUrl = location.search.includes('liff.state') || location.hash.includes('liff.state');
-  if (!isLiffUrl) {
+  var hasLiffState = location.search.includes('liff.state') || location.hash.includes('liff.state');
+  // ถ้าอยู่ใน LINE in-app browser ให้ init เสมอ (token อาจ cache ไว้จาก load ครั้งก่อน)
+  // ถ้าเปิดในเบราว์เซอร์ปกติ ต้องมี liff.state เท่านั้น (ป้องกัน redirect loop)
+  var inLineClient = liff.isInClient();
+  if (!hasLiffState && !inLineClient) {
     if (silentFail) return;
     throw new Error('Not in LIFF context');
   }
