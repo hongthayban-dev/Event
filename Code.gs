@@ -399,6 +399,14 @@ function normalizeProduct_(p) {
   }
   if (!Array.isArray(p.variants)) p.variants = [];
 
+  // parse Image options column → imageOptions object { "color::size": fileId }
+  var rawImgOpt = p['Image options'] || '';
+  if (typeof rawImgOpt === 'string' && rawImgOpt) {
+    try { p.imageOptions = JSON.parse(rawImgOpt); } catch (e) { p.imageOptions = {}; }
+  } else {
+    p.imageOptions = {};
+  }
+
   // คำนวณ summary สำหรับ frontend
   if (p.variants.length > 0) {
     var prices = p.variants.map(function(v){ return Number(v.sellPrice) || 0; }).filter(Boolean);
@@ -447,7 +455,8 @@ function saveProduct_(p) {
       'img_url 3': prod.img_url3 || '',
       'img_url 4': prod.img_url4 || '',
       'img_url 5': prod.img_url5 || '',
-      variants: variantsVal
+      variants: variantsVal,
+      'Image options': JSON.stringify(prod.imageOptions || {})
     });
   } else {
     var sh = sheet_('products'); var h = getHeaders_('products');
@@ -467,6 +476,8 @@ function saveProduct_(p) {
     });
     var vIdx = h.indexOf('variants');
     if (vIdx >= 0) sh.getRange(rowNum, vIdx+1).setValue(variantsVal);
+    var imgOptIdx = h.indexOf('Image options');
+    if (imgOptIdx >= 0) sh.getRange(rowNum, imgOptIdx+1).setValue(JSON.stringify(prod.imageOptions || {}));
   }
   return { ok: true, id: prod.id };
 }

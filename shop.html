@@ -101,12 +101,6 @@
         .addr-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .req { color: #d32f2f; }
         .prefilled-note { font-size: 11px; color: #4caf50; margin-top: 3px; }
-        .shop-lp-bar { display: flex; align-items: center; gap: 10px; background: #f0fff4; border: 1px solid #b2dfdb; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; }
-        .shop-lp-bar img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid #00c300; flex-shrink: 0; }
-        .shop-lp-name { font-weight: 700; font-size: .95rem; color: #1a3d1a; }
-        .shop-lp-sub { font-size: 11px; color: #52a06e; margin-top: 2px; }
-        .shop-lp-avatar-ph { width: 42px; height: 42px; border-radius: 50%; background: #06c755; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; border: 2px solid #00c300; }
-        #shop-lp-avatar { display: none; }
         .line-profile-banner { display: flex; align-items: center; gap: 12px; background: #e8f5e9; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; border: 1px solid #c8e6c9; }
         .line-avatar { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; border: 2px solid #4caf50; flex-shrink: 0; }
         .line-display-name { font-weight: 700; color: #1b5e20; font-size: 14px; }
@@ -146,9 +140,13 @@
         .opt-section { margin-bottom: 14px; }
         .opt-section label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 8px; color: #555; }
         .opt-pills { display: flex; flex-wrap: wrap; gap: 8px; }
-        .opt-pill { padding: 8px 16px; border: 1.5px solid #ddd; border-radius: 999px; background: #fff; cursor: pointer; font-family: Sarabun; font-size: 14px; }
+        .opt-pill { padding: 8px 16px; border: 1.5px solid #ddd; border-radius: 999px; background: #fff; cursor: pointer; font-family: Sarabun; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
         .opt-pill.selected { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
         .opt-pill.out-of-stock { opacity: .35; cursor: not-allowed; text-decoration: line-through; }
+        .pill-icon { width: 26px; height: 26px; border-radius: 5px; object-fit: cover; flex-shrink: 0; }
+        .product-price-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
+        .product-add-btn { width: 30px; height: 30px; border-radius: 50%; background: var(--color-primary); color: #fff; border: none; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,.22); flex-shrink: 0; transition: transform .15s; padding: 0; line-height: 1; }
+        .product-add-btn:active { transform: scale(.88); }
         .variant-info-box { padding: 12px 14px; background: #f0f4ff; border-radius: 10px; margin: 12px 0; display: none; }
         .variant-info-price { font-weight: 700; color: var(--color-primary); font-size: 22px; }
         .variant-info-stock { font-size: 13px; color: #666; margin-top: 2px; }
@@ -204,16 +202,6 @@
             <!-- Shop Banner -->
             <div id="banner-wrap" class="hidden">
                 <img id="banner-img" class="shop-banner" alt="banner">
-            </div>
-
-            <!-- LINE Profile Bar (always visible) -->
-            <div id="shop-line-profile-bar" class="shop-lp-bar">
-                <img id="shop-lp-avatar" src="" alt="">
-                <div id="shop-lp-avatar-ph" class="shop-lp-avatar-ph">💚</div>
-                <div>
-                    <div class="shop-lp-name" id="shop-lp-name">สวัสดี ยินดีต้อนรับ 👋</div>
-                    <div class="shop-lp-sub" id="shop-lp-sub"></div>
-                </div>
             </div>
 
             <div class="loading" id="products-loading">
@@ -443,6 +431,32 @@
         let selectedColor   = null;
         let selectedSize    = null;
         let selectedVariant = null;
+        let _varImgIndexMap = {};
+
+        // Lookup variant image fileId from product.imageOptions
+        function _varImg(product, color, size) {
+            const opts = (product && product.imageOptions) ? product.imageOptions : {};
+            const key = (color || '') + '::' + (size || '');
+            if (opts[key]) return opts[key];
+            if (color) {
+                const k = Object.keys(opts).find(k => k.startsWith(color + '::'));
+                if (k) return opts[k];
+            }
+            if (size) {
+                const k = Object.keys(opts).find(k => k.endsWith('::' + size));
+                if (k) return opts[k];
+            }
+            return '';
+        }
+
+        function openProductById(id, ev) {
+            if (ev) ev.stopPropagation();
+            const p = products.find(x => x.id === id);
+            if (!p) return;
+            const hasVariants = Array.isArray(p.variants) && p.variants.length > 0;
+            if (hasVariants) openVariantModal(p);
+            else addToCart(p);
+        }
 
         // ════════════════════════════════
         //  Image Slider (modal)
@@ -605,9 +619,6 @@
 
                 await Promise.all([loadProducts(), loadSettings()]);
 
-                // อัปเดต profile bar หลัง bootTheme
-                const avatarEl = document.getElementById('shop-lp-avatar');
-                const avatarPh = document.getElementById('shop-lp-avatar-ph');
                 if (isLIFF && profileData.userId) {
                     const logoEl = document.querySelector('.shop-header-logo');
                     if (logoEl && profileData.pictureUrl) {
@@ -615,13 +626,10 @@
                         logoEl.src = profileData.pictureUrl;
                         logoEl.classList.add('is-line-avatar');
                     }
-                    if (profileData.pictureUrl) {
-                        avatarEl.src = profileData.pictureUrl;
-                        avatarEl.style.display = 'block';
-                        avatarPh.style.display = 'none';
+                    const headerName = document.querySelector('.shop-header-name');
+                    if (headerName && profileData.displayName) {
+                        headerName.textContent = profileData.displayName;
                     }
-                    document.getElementById('shop-lp-name').textContent = profileData.displayName || 'สวัสดี 👋';
-                    document.getElementById('shop-lp-sub').textContent = '🔗 เชื่อมต่อ LINE แล้ว';
                 }
 
                 if (isLIFF && profileData && profileData.userId) {
@@ -702,10 +710,16 @@
                     </div>
                     <div class="product-info">
                         <div class="product-name">${p.name}</div>
-                        <div class="product-price">${priceStr}</div>
+                        <div class="product-price-row">
+                            <div class="product-price">${priceStr}</div>
+                            ${!isOutOfStock ? `<button type="button" class="product-add-btn" onclick="openProductById('${p.id}',event)">+</button>` : ''}
+                        </div>
                         <div class="product-stock ${isOutOfStock ? 'stock-0' : ''}">${isOutOfStock ? 'หมด' : '✓ มีสินค้า'}</div>
                     </div>`;
-                if (!isOutOfStock) card.addEventListener('click', () => addToCart(p));
+                card.addEventListener('click', (e) => {
+                    if (isOutOfStock || e.target.closest('.product-add-btn')) return;
+                    openProductById(p.id);
+                });
                 grid.appendChild(card);
             });
         }
@@ -729,9 +743,14 @@
             selectedSize    = null;
             selectedVariant = null;
 
-            initSlider([product.img_url1, product.img_url2, product.img_url3, product.img_url4, product.img_url5]);
+            // Build slider with product images + unique imageOptions images
+            const prodImgs = [product.img_url1, product.img_url2, product.img_url3, product.img_url4, product.img_url5].filter(Boolean);
+            const seen = new Set(prodImgs);
+            Object.values(product.imageOptions || {}).forEach(fid => { if (fid && !seen.has(fid)) { seen.add(fid); prodImgs.push(fid); } });
+            _varImgIndexMap = {};
+            prodImgs.forEach((fid, i) => { _varImgIndexMap[fid] = i; });
+            initSlider(prodImgs);
 
-            const allVariants = Array.isArray(product.variants) ? product.variants : [];
             const colors = [...new Set(allVariants.map(v => v.color).filter(Boolean))];
             const sizes  = [...new Set(allVariants.map(v => v.size).filter(Boolean))];
 
@@ -760,7 +779,9 @@
                 colorSec.classList.remove('hidden');
                 document.getElementById('opt-colors').innerHTML = colors.map(c => {
                     const hasStock = allVariants.some(v => v.color === c && v.stock > 0);
-                    return `<button type="button" class="opt-pill${hasStock?'':' out-of-stock'}" onclick="${hasStock?`selectColor('${c}')`:'void(0)'}">${c}</button>`;
+                    const vImgId = _varImg(product, c, '');
+                    const icon = vImgId ? `<img class="pill-icon" src="${API.driveImg(vImgId, 80)}" alt="" onerror="this.style.display='none'">` : '';
+                    return `<button type="button" class="opt-pill${hasStock?'':' out-of-stock'}" onclick="${hasStock?`selectColor('${c}')`:'void(0)'}">${icon}${c}</button>`;
                 }).join('');
             } else {
                 colorSec.classList.add('hidden');
@@ -795,7 +816,9 @@
             const sizes = [...new Set(filtered.map(v => v.size).filter(Boolean))];
             document.getElementById('opt-sizes').innerHTML = sizes.map(s => {
                 const hasStock = filtered.some(v => v.size === s && v.stock > 0);
-                return `<button type="button" class="opt-pill${hasStock?'':' out-of-stock'}" onclick="${hasStock?`selectSize('${s}')`:'void(0)'}">${s}</button>`;
+                const vImgId = _varImg(pendingProduct, selectedColor || '', s);
+                const icon = vImgId ? `<img class="pill-icon" src="${API.driveImg(vImgId, 80)}" alt="" onerror="this.style.display='none'">` : '';
+                return `<button type="button" class="opt-pill${hasStock?'':' out-of-stock'}" onclick="${hasStock?`selectSize('${s}')`:'void(0)'}">${icon}${s}</button>`;
             }).join('');
         }
 
@@ -847,6 +870,10 @@
                 infoBox.style.display = 'none';
                 confirmBtn.disabled = false; buyNowBtn.disabled = false;
             }
+
+            // Jump slider to the most specific variant image available
+            const jumpImg = _varImg(pendingProduct, selectedColor || '', selectedSize || '');
+            if (jumpImg && _varImgIndexMap[jumpImg] !== undefined) goSlide(_varImgIndexMap[jumpImg]);
         }
 
         function scrollToOptSection(id) {

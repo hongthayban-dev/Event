@@ -130,6 +130,11 @@
         .v-del:hover { background: #ef9a9a; }
         .v-dup { background: #e8f5e9; color: #2e7d32; border: none; border-radius: 4px; padding: 5px 9px; cursor: pointer; font-size: 14px; margin-right: 4px; }
         .v-dup:hover { background: #a5d6a7; }
+        /* Variant image */
+        .v-img-cell { width: 54px; text-align: center; vertical-align: middle; }
+        .v-img-label { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; background: #f0f2f8; border-radius: 7px; cursor: pointer; overflow: hidden; border: 1.5px dashed #ccc; transition: border-color .15s; font-size: 18px; }
+        .v-img-label:hover { border-color: var(--color-primary); background: #dde1ea; }
+        .v-img-thumb-sm { width: 44px; height: 44px; object-fit: cover; border-radius: 6px; display: block; }
         .btn-add-variant { padding: 8px 14px; background: #e8f0fe; color: var(--color-primary); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; font-family: Sarabun; }
         .section-label { font-weight: 600; font-size: 14px; margin: 16px 0 6px; display: block; color: #333; }
 
@@ -266,7 +271,7 @@
                 <table class="variants-table">
                     <thead>
                         <tr>
-                            <th>สี</th><th>ขนาด</th><th>ราคาทุน (฿)</th><th>ราคาขาย (฿) *</th><th>สต็อก *</th><th></th>
+                            <th>สี</th><th>ขนาด</th><th>ราคาทุน (฿)</th><th>ราคาขาย (฿) *</th><th>สต็อก *</th><th>รูป</th><th></th>
                         </tr>
                     </thead>
                     <tbody id="variants-body"></tbody>
@@ -648,13 +653,25 @@ async function saveStock(productId, vi) {
 // ════════════════════════════════
 function addVariantRow(v, afterTr) {
     v = v || {};
+    const imgUrl = v._imgUrl || '';
     const tr = document.createElement('tr');
+    tr.dataset.sku = v.sku || '';
+    tr.dataset.varImgUrl = imgUrl;
+    const imgContent = imgUrl
+        ? `<img class="v-img-thumb-sm" src="${API.driveImg(imgUrl, 100)}" alt="">`
+        : '📷';
     tr.innerHTML = `
         <td><input type="text" class="v-color" placeholder="เช่น ดำ" value="${v.color||''}"></td>
         <td><input type="text" class="v-size"  placeholder="เช่น S"  value="${v.size||''}"></td>
         <td><input type="number" class="v-cost"  placeholder="0" value="${v.costPrice||''}" min="0"></td>
         <td><input type="number" class="v-sell"  placeholder="0" value="${v.sellPrice||''}" min="0"></td>
         <td><input type="number" class="v-stock" placeholder="0" value="${v.stock||''}"     min="0"></td>
+        <td class="v-img-cell">
+            <label class="v-img-label" title="อัปโหลดรูป variant">
+                <span class="v-img-ph">${imgContent}</span>
+                <input type="file" class="v-img-file" accept="image/*" style="display:none" onchange="handleVariantImgUpload(this)">
+            </label>
+        </td>
         <td style="white-space:nowrap">
             <button type="button" class="v-dup" onclick="dupVariantRow(this)" title="คัดลอก">⎘</button>
             <button type="button" class="v-del" onclick="this.closest('tr').remove()">✕</button>
@@ -663,14 +680,33 @@ function addVariantRow(v, afterTr) {
     else document.getElementById('variants-body').appendChild(tr);
     return tr;
 }
+async function handleVariantImgUpload(input) {
+    if (!input.files || !input.files[0]) return;
+    const tr = input.closest('tr');
+    const ph = input.closest('.v-img-label').querySelector('.v-img-ph');
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        ph.innerHTML = '<span class="spinner-sm"></span>';
+        try {
+            const res = await API.postAuth('uploadProductImg', { dataUrl: e.target.result, filename: 'var_' + Date.now() + '.jpg' }, authToken);
+            tr.dataset.varImgUrl = res.id || '';
+            ph.innerHTML = `<img class="v-img-thumb-sm" src="${API.driveImg(res.id, 100)}" alt="">`;
+        } catch (err) {
+            ph.innerHTML = '❌';
+            API.toast('อัปโหลดรูปผิดพลาด: ' + err.message, 'error');
+        }
+    };
+    reader.readAsDataURL(input.files[0]);
+}
 function dupVariantRow(btn) {
     const tr = btn.closest('tr');
     const v = {
-        color: tr.querySelector('.v-color').value,
-        size:  tr.querySelector('.v-size').value,
+        color:     tr.querySelector('.v-color').value,
+        size:      tr.querySelector('.v-size').value,
         costPrice: tr.querySelector('.v-cost').value,
         sellPrice: tr.querySelector('.v-sell').value,
-        stock:     tr.querySelector('.v-stock').value
+        stock:     tr.querySelector('.v-stock').value,
+        _imgUrl:   tr.dataset.varImgUrl || ''
     };
     const newTr = addVariantRow(v, tr);
     newTr.querySelector('.v-size').focus();
@@ -744,8 +780,14 @@ function editProduct(productId) {
     }
     document.getElementById('variants-body').innerHTML = '';
     const vars = Array.isArray(p.variants) ? p.variants : [];
-    if (vars.length) vars.forEach(v => addVariantRow(v));
-    else addVariantRow();
+    const imgOpts = p.imageOptions || {};
+    if (vars.length) {
+        vars.forEach(v => {
+            const key = (v.color || '') + '::' + (v.size || '');
+            v._imgUrl = imgOpts[key] || '';
+            addVariantRow(v);
+        });
+    } else addVariantRow();
     document.getElementById('save-btn').textContent = '✓ บันทึกการแก้ไข';
     document.getElementById('add').scrollIntoView({ behavior: 'smooth' });
 }
@@ -770,8 +812,15 @@ async function saveProduct() {
     if (!name) { API.toast('❌ กรอกชื่อสินค้า', 'error'); return; }
     if (!variants.length) { API.toast('❌ ต้องมีตัวเลือกอย่างน้อย 1 แถว', 'error'); return; }
     if (variants.some(v => !v.sellPrice)) { API.toast('❌ ทุกตัวเลือกต้องมีราคาขาย', 'error'); return; }
+    const imageOptions = {};
+    document.querySelectorAll('#variants-body tr').forEach(tr => {
+        const color  = tr.querySelector('.v-color').value.trim();
+        const size   = tr.querySelector('.v-size').value.trim();
+        const imgUrl = tr.dataset.varImgUrl || '';
+        if (imgUrl) imageOptions[`${color}::${size}`] = imgUrl;
+    });
     const product = {
-        id: editingId || null, name, category, description: desc, variants,
+        id: editingId || null, name, category, description: desc, variants, imageOptions,
         img_url1: document.getElementById('img1').value,
         img_url2: document.getElementById('img2').value,
         img_url3: document.getElementById('img3').value,
