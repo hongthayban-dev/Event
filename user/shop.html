@@ -581,19 +581,23 @@
         async function initShop() {
             try {
                 try {
-                    await API.liffInit(true);
-                    const p = await API.getProfile();
-                    if (p && p.userId) {
-                        profileData = p; isLIFF = true;
-                        try { sessionStorage.setItem('shop-liff-profile', JSON.stringify(p)); } catch(_) {}
+                    const liffOk = await API.liffInit(true);
+                    if (liffOk) {
+                        const p = await API.getProfile();
+                        if (p && p.userId) {
+                            profileData = p; isLIFF = true;
+                            try { sessionStorage.setItem('shop-liff-profile', JSON.stringify(p)); } catch(_) {}
+                        }
                     }
                 } catch (e) {
-                    // LIFF init failed — try session cache (covers page reload after liff.state is removed)
+                    console.error('[Shop] LIFF profile error:', e);
+                }
+                // Restore from session cache if LIFF not available (handles page reload)
+                if (!isLIFF) {
                     try {
                         const cached = sessionStorage.getItem('shop-liff-profile');
                         if (cached) { const p = JSON.parse(cached); if (p && p.userId) { profileData = p; isLIFF = true; } }
                     } catch(_) {}
-                    if (!isLIFF) console.error('[Shop] LIFF profile error:', e);
                 }
 
                 await Promise.all([loadProducts(), loadSettings()]);

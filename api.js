@@ -30,9 +30,10 @@ async function liffInit(silentFail) {
   }
   if (!liff.isLoggedIn()) {
     console.warn('[LIFF] not logged in after init');
-    if (silentFail) return;
+    if (silentFail) return false;
     throw new Error('LIFF: Not logged in');
   }
+  return true;
 }
 
 async function getProfile() {
