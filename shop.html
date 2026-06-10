@@ -198,27 +198,30 @@
     </header>
 
     <!-- ══ Products View ══ -->
-    <div id="view-products" class="shop-wrap">
+    <div id="view-products">
 
-        <!-- Shop Banner -->
-        <div id="banner-wrap" class="hidden">
-            <img id="banner-img" class="shop-banner" alt="banner">
-        </div>
-
-        <!-- LINE Profile Bar (always visible) -->
-        <div id="shop-line-profile-bar" class="shop-lp-bar">
-            <img id="shop-lp-avatar" src="" alt="">
-            <div id="shop-lp-avatar-ph" class="shop-lp-avatar-ph">💚</div>
-            <div>
-                <div class="shop-lp-name" id="shop-lp-name">สวัสดี ยินดีต้อนรับ 👋</div>
-                <div class="shop-lp-sub" id="shop-lp-sub"></div>
+        <div class="shop-wrap">
+            <!-- Shop Banner -->
+            <div id="banner-wrap" class="hidden">
+                <img id="banner-img" class="shop-banner" alt="banner">
             </div>
-        </a>
 
-        <!-- Loading / Grid -->
-        <div class="loading" id="products-loading">
-            <div class="spinner"></div> กำลังโหลดสินค้า...
+            <!-- LINE Profile Bar (always visible) -->
+            <div id="shop-line-profile-bar" class="shop-lp-bar">
+                <img id="shop-lp-avatar" src="" alt="">
+                <div id="shop-lp-avatar-ph" class="shop-lp-avatar-ph">💚</div>
+                <div>
+                    <div class="shop-lp-name" id="shop-lp-name">สวัสดี ยินดีต้อนรับ 👋</div>
+                    <div class="shop-lp-sub" id="shop-lp-sub"></div>
+                </div>
+            </div>
+
+            <div class="loading" id="products-loading">
+                <div class="spinner"></div> กำลังโหลดสินค้า...
+            </div>
         </div>
+
+        <!-- Products Grid (full width, outside shop-wrap) -->
         <div class="product-grid hidden" id="products-grid"></div>
 
     </div>
