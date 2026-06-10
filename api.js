@@ -13,16 +13,22 @@ async function liffInit(silentFail) {
     if (silentFail) return;
     throw new Error('LIFF SDK not loaded');
   }
-  // เรียก liff.init() เฉพาะเมื่ออยู่ใน LINE app หรือเปิดผ่าน LIFF URL
-  // ถ้าเปิดในเบราว์เซอร์ปกติโดยตรง จะ skip เพื่อกันไม่ให้ redirect ไป LINE Login
-  var isLineApp = /\bLine\b/i.test(navigator.userAgent);
+  // ต้องมี liff.state ใน URL เท่านั้นจึง init
+  // ป้องกัน redirect ในเบราว์เซอร์ปกติ และป้องกัน fail เมื่อเปิดลิงก์ธรรมดาใน LINE
   var isLiffUrl = location.search.includes('liff.state') || location.hash.includes('liff.state');
-  if (!isLineApp && !isLiffUrl) {
+  if (!isLiffUrl) {
     if (silentFail) return;
     throw new Error('Not in LIFF context');
   }
-  await liff.init({ liffId: CONFIG.LIFF_ID });
+  try {
+    await liff.init({ liffId: CONFIG.LIFF_ID });
+  } catch (err) {
+    console.error('[LIFF] liff.init failed:', err);
+    if (silentFail) return;
+    throw err;
+  }
   if (!liff.isLoggedIn()) {
+    console.warn('[LIFF] not logged in after init');
     if (silentFail) return;
     throw new Error('LIFF: Not logged in');
   }

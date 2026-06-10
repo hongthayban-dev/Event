@@ -598,7 +598,7 @@
                     await API.liffInit(true);
                     const p = await API.getProfile();
                     if (p && p.userId) { profileData = p; isLIFF = true; }
-                } catch (e) { isLIFF = false; }
+                } catch (e) { console.error('[Shop] LIFF profile error:', e); isLIFF = false; }
 
                 await Promise.all([loadProducts(), loadSettings()]);
 
@@ -606,6 +606,7 @@
                 if (isLIFF && profileData.userId) {
                     const logoEl = document.querySelector('.shop-header-logo');
                     if (logoEl && profileData.pictureUrl) {
+                        logoEl.style.display = '';   // reset ในกรณีที่ bootTheme ซ่อนไว้
                         logoEl.src = profileData.pictureUrl;
                         logoEl.classList.add('is-line-avatar');
                     }
