@@ -8,21 +8,19 @@ const CONFIG = {
 };
 
 // ========== LIFF ==========
-async function liffInit(silentFail) {
+async function liffInit(silentFail, liffId) {
   if (!window.liff) {
     if (silentFail) return;
     throw new Error('LIFF SDK not loaded');
   }
   var hasLiffState = location.search.includes('liff.state') || location.hash.includes('liff.state');
-  // ถ้าอยู่ใน LINE in-app browser ให้ init เสมอ (token อาจ cache ไว้จาก load ครั้งก่อน)
-  // ถ้าเปิดในเบราว์เซอร์ปกติ ต้องมี liff.state เท่านั้น (ป้องกัน redirect loop)
   var inLineClient = liff.isInClient();
   if (!hasLiffState && !inLineClient) {
     if (silentFail) return;
     throw new Error('Not in LIFF context');
   }
   try {
-    await liff.init({ liffId: CONFIG.LIFF_ID });
+    await liff.init({ liffId: liffId || CONFIG.LIFF_ID });
   } catch (err) {
     console.error('[LIFF] liff.init failed:', err);
     if (silentFail) return;

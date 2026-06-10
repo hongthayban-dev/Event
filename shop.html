@@ -584,7 +584,7 @@
         async function initShop() {
             try {
                 try {
-                    const liffOk = await API.liffInit(true);
+                    const liffOk = await API.liffInit(true, '2010308553-x1EP6RyP');
                     if (liffOk) {
                         const p = await API.getProfile();
                         if (p && p.userId) {
