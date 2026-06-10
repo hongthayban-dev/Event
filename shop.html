@@ -597,8 +597,17 @@
                 try {
                     await API.liffInit(true);
                     const p = await API.getProfile();
-                    if (p && p.userId) { profileData = p; isLIFF = true; }
-                } catch (e) { console.error('[Shop] LIFF profile error:', e); isLIFF = false; }
+                    if (p && p.userId) {
+                        profileData = p; isLIFF = true;
+                        try { sessionStorage.setItem('shop-liff-profile', JSON.stringify(p)); } catch(_) {}
+                    }
+                } catch (e) {
+                    try {
+                        const cached = sessionStorage.getItem('shop-liff-profile');
+                        if (cached) { const p = JSON.parse(cached); if (p && p.userId) { profileData = p; isLIFF = true; } }
+                    } catch(_) {}
+                    if (!isLIFF) console.error('[Shop] LIFF profile error:', e);
+                }
 
                 await Promise.all([loadProducts(), loadSettings()]);
 
