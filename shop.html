@@ -751,6 +751,7 @@
             prodImgs.forEach((fid, i) => { _varImgIndexMap[fid] = i; });
             initSlider(prodImgs);
 
+            const allVariants = Array.isArray(product.variants) ? product.variants : [];
             const colors = [...new Set(allVariants.map(v => v.color).filter(Boolean))];
             const sizes  = [...new Set(allVariants.map(v => v.size).filter(Boolean))];
 
