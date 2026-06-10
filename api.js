@@ -171,6 +171,7 @@ const DEFAULT_SETTINGS = {
   discount_percent: 0
 };
 
+
 function withDefaults(settings) {
   const out = Object.assign({}, DEFAULT_SETTINGS);
   if (settings) Object.keys(settings).forEach(k => { if (settings[k] !== '' && settings[k] !== null && settings[k] !== undefined) out[k] = settings[k]; });
