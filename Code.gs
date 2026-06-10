@@ -456,7 +456,8 @@ function saveProduct_(p) {
       'img_url 4': prod.img_url4 || '',
       'img_url 5': prod.img_url5 || '',
       variants: variantsVal,
-      'Image options': JSON.stringify(prod.imageOptions || {})
+      'Image options': JSON.stringify(prod.imageOptions || {}),
+      shipping_cost: prod.shipping_cost || 0
     });
   } else {
     var sh = sheet_('products'); var h = getHeaders_('products');
@@ -468,7 +469,8 @@ function saveProduct_(p) {
       { col: 'img_url 2',   key: 'img_url2' },
       { col: 'img_url 3',   key: 'img_url3' },
       { col: 'img_url 4',   key: 'img_url4' },
-      { col: 'img_url 5',   key: 'img_url5' }
+      { col: 'img_url 5',   key: 'img_url5' },
+      { col: 'shipping_cost', key: 'shipping_cost' }
     ];
     fieldMap.forEach(function(f) {
       var idx = h.indexOf(f.col);

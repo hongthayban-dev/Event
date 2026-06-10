@@ -231,6 +231,10 @@
                     <span>สินค้า:</span>
                     <span id="subtotal">฿0</span>
                 </div>
+                <div class="total-row">
+                    <span>ค่าจัดส่ง:</span>
+                    <span id="shipping-display">จัดส่งฟรี！</span>
+                </div>
                 <div class="total-amount">
                     <span>รวม:</span>
                     <span id="total">฿0</span>
@@ -357,6 +361,10 @@
                         <span id="discount-label-display">ส่วนลด:</span>
                         <span id="discount-amount-display" class="discount-saved"></span>
                     </div>
+                    <div class="total-row">
+                        <span>ค่าจัดส่ง:</span>
+                        <span id="shipping-display-checkout">จัดส่งฟรี！</span>
+                    </div>
                     <div class="total-amount">
                         <span>ยอดรวมทั้งหมด:</span>
                         <span id="final-total">฿0</span>
@@ -447,6 +455,15 @@
                 if (k) return opts[k];
             }
             return '';
+        }
+
+        function calcShipping() {
+            const items = Object.values(cart).filter(i => i.qty > 0);
+            if (!items.length) return 0;
+            return Math.max(...items.map(i => i.shippingCost || 0));
+        }
+        function fmtShipping(amt) {
+            return amt > 0 ? API.fmtBaht(amt) : 'จัดส่งฟรี！';
         }
 
         function openProductById(id, ev) {
@@ -938,6 +955,7 @@
                     color: variant.color || '', size: variant.size || '',
                     sellPrice: variant.sellPrice || 0,
                     variantStock: variant.stock || 0,
+                    shippingCost: Number(product.shipping_cost) || 0,
                     qty: 0, _cartKey: cartKey
                 };
             }
@@ -1027,8 +1045,10 @@
             }).join('');
 
             const subtotal = items.reduce((sum, i) => sum + (i.sellPrice || 0) * i.qty, 0);
-            document.getElementById('subtotal').textContent = API.fmtBaht(subtotal);
-            document.getElementById('total').textContent   = API.fmtBaht(subtotal);
+            const shipping = calcShipping();
+            document.getElementById('subtotal').textContent        = API.fmtBaht(subtotal);
+            document.getElementById('shipping-display').textContent = fmtShipping(shipping);
+            document.getElementById('total').textContent           = API.fmtBaht(subtotal + shipping);
             document.getElementById('cart-total').classList.remove('hidden');
             document.getElementById('checkout-btn-wrap').classList.remove('hidden');
         }
@@ -1114,7 +1134,8 @@
             const items = Object.values(cart).filter(i => i.qty > 0);
             const subtotal = items.reduce((s, i) => s + i.sellPrice * i.qty, 0);
             const discountAmt = appliedDiscount > 0 ? Math.round(subtotal * appliedDiscount / 100) : 0;
-            const total = subtotal - discountAmt;
+            const shipping = calcShipping();
+            const total = subtotal - discountAmt + shipping;
 
             document.getElementById('order-mini-summary').innerHTML =
                 items.map(i => {
@@ -1134,6 +1155,7 @@
             } else {
                 discRow.classList.add('hidden');
             }
+            document.getElementById('shipping-display-checkout').textContent = fmtShipping(shipping);
             document.getElementById('final-total').textContent = API.fmtBaht(total);
         }
 
@@ -1248,19 +1270,21 @@
                 }));
                 const subtotal = items.reduce((sum, i) => sum + (i.sellPrice||0) * i.qty, 0);
                 const discountAmt = appliedDiscount > 0 ? Math.round(subtotal * appliedDiscount / 100) : 0;
-                const total = subtotal - discountAmt;
+                const shipping = calcShipping();
+                const total = subtotal - discountAmt + shipping;
 
                 const res = await API.post('createOrder', {
                     line_user_id:   profileData.userId || '',
                     customer_name:  name, phone, address,
                     items:          JSON.stringify(itemsData),
                     total_amount:   total,
+                    shipping_amount: shipping,
                     discount_code:  appliedDiscountCode,
                     discount_percent: appliedDiscount || '',
                     slip_url:       slipUrl
                 });
 
-                showOrderSuccess(res.order_id, items, total, discountAmt);
+                showOrderSuccess(res.order_id, items, total, discountAmt, shipping);
                 clearCart();
             } catch (err) {
                 API.toast('❌ ส่งคำสั่งซื้อผิดพลาด: ' + err.message, 'error');
@@ -1273,7 +1297,7 @@
         // ════════════════════════════════
         //  Order success overlay
         // ════════════════════════════════
-        function showOrderSuccess(orderId, items, total, discountAmt) {
+        function showOrderSuccess(orderId, items, total, discountAmt, shipping) {
             const itemsHtml = items.map(i => {
                 const v = [i.color, i.size].filter(Boolean).join(' ');
                 return `<div class="success-item-row">
@@ -1284,6 +1308,7 @@
             const discountHtml = (discountAmt > 0)
                 ? `<div class="success-item-row"><span>ส่วนลด ${appliedDiscount}%</span><span class="discount-saved">-${API.fmtBaht(discountAmt)}</span></div>`
                 : '';
+            const shippingHtml = `<div class="success-item-row"><span>ค่าจัดส่ง</span><span>${fmtShipping(shipping || 0)}</span></div>`;
 
             const waitNote = `<div class="success-note">โปรดรอการยืนยันจากแอดมินตอบกลับ</div>`;
             const friendBtn = (!isLIFF && settings.line_friend_url)
@@ -1301,6 +1326,7 @@
                     <div class="success-items">
                         ${itemsHtml}
                         ${discountHtml}
+                        ${shippingHtml}
                         <div class="success-total-row"><span>รวมทั้งหมด</span><span>${API.fmtBaht(total)}</span></div>
                     </div>
                     ${friendBtn}

@@ -264,6 +264,10 @@
                 <label>คำอธิบาย</label>
                 <textarea id="product-desc" placeholder="รายละเอียดสินค้า..."></textarea>
             </div>
+            <div class="form-group">
+                <label>ค่าจัดส่ง (฿) <span style="font-weight:400;font-size:12px;color:#888">— เว้นว่างหรือ 0 = จัดส่งฟรี</span></label>
+                <input type="number" id="product-shipping" placeholder="0" min="0" style="width:180px">
+            </div>
 
             <span class="section-label">ตัวเลือกสินค้า (variants) *</span>
             <p style="font-size:12px;color:#888;margin:0 0 8px">แต่ละแถวคือ 1 ตัวเลือก เช่น สีดำ ไซซ์ S — SKU จะถูกสร้างอัตโนมัติ</p>
@@ -768,6 +772,7 @@ function editProduct(productId) {
     document.getElementById('product-name').value     = p.name || '';
     document.getElementById('product-category').value = p.category || '';
     document.getElementById('product-desc').value     = p.description || '';
+    document.getElementById('product-shipping').value = p.shipping_cost || '';
     resetImgInputs();
     for (let i = 1; i <= 5; i++) {
         const fid = p['img_url'+i] || ''; if (!fid) continue;
@@ -798,6 +803,7 @@ function cancelEdit() {
     document.getElementById('product-name').value = '';
     document.getElementById('product-category').value = '';
     document.getElementById('product-desc').value = '';
+    document.getElementById('product-shipping').value = '';
     document.getElementById('variants-body').innerHTML = '';
     resetImgInputs();
     document.getElementById('save-btn').textContent = '✓ บันทึกสินค้า';
@@ -805,9 +811,10 @@ function cancelEdit() {
 }
 
 async function saveProduct() {
-    const name     = document.getElementById('product-name').value.trim();
-    const category = document.getElementById('product-category').value.trim();
-    const desc     = document.getElementById('product-desc').value.trim();
+    const name         = document.getElementById('product-name').value.trim();
+    const category     = document.getElementById('product-category').value.trim();
+    const desc         = document.getElementById('product-desc').value.trim();
+    const shippingCost = parseFloat(document.getElementById('product-shipping').value) || 0;
     const variants = getVariantsData();
     if (!name) { API.toast('❌ กรอกชื่อสินค้า', 'error'); return; }
     if (!variants.length) { API.toast('❌ ต้องมีตัวเลือกอย่างน้อย 1 แถว', 'error'); return; }
@@ -821,6 +828,7 @@ async function saveProduct() {
     });
     const product = {
         id: editingId || null, name, category, description: desc, variants, imageOptions,
+        shipping_cost: shippingCost,
         img_url1: document.getElementById('img1').value,
         img_url2: document.getElementById('img2').value,
         img_url3: document.getElementById('img3').value,
