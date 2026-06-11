@@ -612,7 +612,7 @@ tbody tr:nth-child(odd) {
 .page-header {
   display: flex;
   align-items: center;
-  background: var(--navy-grad);
+  background: var(--color-primary);
   color: #fff;
   padding: 10px 16px;
   position: sticky;
