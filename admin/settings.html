@@ -341,12 +341,15 @@
         }
 
         function updateColorPreviews() {
+            const root = document.documentElement;
             const fields = ['color-primary','color-accent','bg-color'];
             fields.forEach(id => {
                 const v = document.getElementById(id).value;
                 const d = document.getElementById(id + '-display');
                 if (d) { d.style.backgroundColor = v; d.textContent = v; }
             });
+            root.style.setProperty('--color-primary', document.getElementById('color-primary').value);
+            root.style.setProperty('--color-accent', document.getElementById('color-accent').value);
         }
 
         ['color-primary','color-accent','bg-color','wheel-color-a','wheel-color-b'].forEach(id => {
