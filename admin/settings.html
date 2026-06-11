@@ -421,7 +421,7 @@
             const btn = document.getElementById('save-btn');
             btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
             try {
-                await API.postAuth('updateSettings', updated, authToken);
+                await API.postAuth('updateSettings', { settings: updated }, authToken);
                 API.toast('✓ บันทึกตั้งค่าแล้ว', 'success');
                 settings = API.withDefaults(updated);
                 API.applyTheme(settings);

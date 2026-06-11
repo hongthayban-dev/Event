@@ -232,6 +232,7 @@ function getPublicSettings_() {
 
 function updateSettings_(p) {
   var upd = p.settings;
+  if (typeof upd === 'string') { try { upd = JSON.parse(upd); } catch (e) { upd = null; } }
   if (!upd || typeof upd !== 'object') return { ok: false, error: 'missing settings object' };
   var sh = sheet_('settings');
   if (!sh) return { ok: false, error: 'settings sheet not found' };
