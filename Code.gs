@@ -817,6 +817,7 @@ function prepare_(p) {
     reward_value: p.reward_value || '',
     mode: p.mode || 'single',
     slots: display.length,
+    eligible_count: pool.length,
     pool: display
   };
   setWheelState_(state);
@@ -862,6 +863,7 @@ function spinPhysics_(p) {
     power: power,
     landingIndex: landingIndex,
     slots: displayPool.length,
+    eligible_count: pool.length,
     pool: displayPool,
     winners: winners.map(function (w) {
       return {
@@ -909,6 +911,7 @@ function requestSpin_(p) {
     filters: filters,
     reward_name: p.reward_name || '',
     reward_value: p.reward_value || '',
+    eligible_count: pool.length,
     pool: display,
     winners: winners.map(function (w) {
       return {
