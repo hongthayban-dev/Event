@@ -125,7 +125,7 @@
         soundOn = true;
       } catch (e) { soundOn = false; }
       API.qs('#startScreen').classList.add('hide');
-      poll(); setInterval(poll, 1500);
+      schedulePoll();
     }
 
     // ----- เสียง -----
@@ -280,6 +280,8 @@
       if (eligible > 0) document.getElementById('info-eligible').textContent = eligible;
       document.getElementById('info-round').textContent = st.round ? 'ที่ ' + st.round : '—';
     }
+
+    function schedulePoll() { poll().then(function () { setTimeout(schedulePoll, 1500); }); }
 
     async function poll() {
       var res = await API.get('getWheelState').catch(function () { return null; });

@@ -138,9 +138,11 @@
     (async function () {
       session = API.getSession();
       if (!session || !session.username) { location.href = '../staff/index.html'; return; }
-      await API.bootTheme().catch(function () {});
-      var rw = await API.get('getRewards');
-      rewards = (rw.rewards || []);
+      var _init = await Promise.all([
+        API.bootTheme().catch(function () { return {}; }),
+        API.get('getRewards').catch(function () { return { rewards: [] }; })
+      ]);
+      rewards = (_init[1].rewards || []);
       var sel = API.qs('#reward');
       sel.innerHTML = '<option value="">— ไม่ระบุของรางวัล —</option>';
       rewards.forEach(function (r, i) {
@@ -289,9 +291,8 @@
       if (!res.ok) { API.toast(res.error === 'no eligible participants' ? 'ไม่มีผู้มีสิทธิ์' : (res.error || 'หมุนไม่สำเร็จ')); invalidatePrepare(); return; }
 
       var dur = 3.5 + (p / 100) * 3.5;
-      setTimeout(async function () {
-        var st = await API.get('getWheelState');
-        showResult(st.state || {});
+      setTimeout(function () {
+        showResult(res.state || {});
         API.qs('#gaugeFill').style.width = '0%';
         // เตรียมรอบใหม่อัตโนมัติ (รายชื่ออัปเดต/ตัดคนที่เพิ่งได้) — กดหมุนต่อได้เลย
         prepare({ silent: true, keepResult: true });
