@@ -51,6 +51,23 @@
     .start-btn-wrap { max-width: 320px; font-size: 1.2rem; padding: 20px; }
     .start-hint { color: var(--accent); margin-top: 18px; font-size: .9rem; }
     .start-ev-title { margin-bottom: 18px; }
+
+    /* Content row layout */
+    .content-row { display: flex; align-items: center; justify-content: center; gap: clamp(16px, 3vmin, 48px); }
+    .wheel-col { display: flex; flex-direction: column; align-items: center; }
+
+    /* Right reward panel */
+    .reward-panel { width: clamp(180px, 20vmin, 260px); background: rgba(255,255,255,.08); border-radius: 20px; border: 1px solid rgba(255,255,255,.15); padding: 18px 14px; display: flex; flex-direction: column; align-items: center; gap: 10px; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+    .rp-label { font-size: .7rem; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); font-weight: 700; opacity: .9; }
+    .rp-img { width: 100%; max-height: 140px; object-fit: contain; border-radius: 12px; border: 1px solid rgba(255,255,255,.15); }
+    .rp-name { font-family: var(--font-display); font-weight: 700; font-size: clamp(1rem,2.2vmin,1.5rem); text-align: center; color: #fff; word-break: break-word; }
+    .rp-value { font-size: .85rem; color: var(--accent); font-weight: 600; text-align: center; }
+    .rp-divider { width: 80%; height: 1px; background: rgba(255,255,255,.18); }
+    .rp-stats { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+    .rp-stat { display: flex; justify-content: space-between; align-items: center; font-size: .78rem; }
+    .rp-stat-label { opacity: .7; }
+    .rp-stat-val { font-weight: 700; color: var(--accent); font-size: 1rem; }
+    .rp-img-hidden { display: none; }
   </style>
 </head>
 <body>
@@ -76,12 +93,27 @@
 
   <div class="ev-title" data-event-name>วงล้อจับรางวัล</div>
   <div class="ev-sub">LUCKY DRAW</div>
-  <div class="stage">
-    <div class="pointer"></div>
-    <div id="wheelWrap"></div>
-    <div class="hub">🎁</div>
+  <div class="content-row">
+    <div class="wheel-col">
+      <div class="stage">
+        <div class="pointer"></div>
+        <div id="wheelWrap"></div>
+        <div class="hub">🎁</div>
+      </div>
+      <div class="status" id="status">พร้อมจับรางวัล</div>
+    </div>
+    <div class="reward-panel" id="reward-panel">
+      <div class="rp-label">🏆 ของรางวัล</div>
+      <img id="rp-img" class="rp-img rp-img-hidden" src="" alt="รูปรางวัล">
+      <div class="rp-name" id="rp-name">—</div>
+      <div class="rp-value" id="rp-value"></div>
+      <div class="rp-divider"></div>
+      <div class="rp-stats">
+        <div class="rp-stat"><span class="rp-stat-label">ผู้มีสิทธิ์</span><span class="rp-stat-val" id="rp-eligible">—</span></div>
+        <div class="rp-stat"><span class="rp-stat-label">รอบที่</span><span class="rp-stat-val" id="rp-round">—</span></div>
+      </div>
+    </div>
   </div>
-  <div class="status" id="status">พร้อมจับรางวัล</div>
 
   <div id="reveal" onclick="closeReveal()">
     <div class="label">🏆 ผู้โชคดี</div>
@@ -105,11 +137,17 @@
     var currentRotation = 0, lastRound = -1, lastStatus = '', lastToken = 0, busy = false;
     var poolCache = [], poolToken = 0;
     var audioCtx = null, soundOn = false, started = false;
+    var rewardsList = [];
 
     function goBack() { location.href = 'remote.html'; }
 
     (async function () {
-      var s = await API.bootTheme().catch(function () { return {}; });
+      var results = await Promise.all([
+        API.bootTheme().catch(function () { return {}; }),
+        API.get('getRewards').catch(function () { return { rewards: [] }; })
+      ]);
+      var s = results[0];
+      rewardsList = results[1].rewards || [];
       WA = s.wheel_color_a || WA; WB = s.wheel_color_b || WB;
       TA = s.wheel_text_a || TA; TB = s.wheel_text_b || TB;
       showIdle();
@@ -139,12 +177,17 @@
       o.connect(g); g.connect(audioCtx.destination);
       o.start(); o.stop(audioCtx.currentTime + 0.06);
     }
-    function playSpinTicks(durSec) {
+    function playSpinTicks(durSec, numSlots, spinPower) {
       if (!audioCtx) return;
-      var N = Math.round(durSec * 9), dur = durSec * 1000;
-      for (var k = 0; k < N; k++) {
+      numSlots = numSlots || 12;
+      var spins = 4 + Math.round((spinPower || 60) / 100 * 8);
+      var N = spins * numSlots;
+      var dur = durSec * 1000;
+      for (var k = 1; k <= N; k++) {
         var frac = k / N;
-        setTimeout(tick, dur * (1 - Math.pow(1 - frac, 2.3)));
+        // constant-deceleration model: t = dur*(1 - sqrt(1-frac))
+        // matches wheel slowing: fast ticks at start, slow ticks at end
+        setTimeout(tick, dur * (1 - Math.sqrt(1 - frac)));
       }
     }
     function playFanfare() { if (!soundOn) return; var f = document.getElementById('fanfare'); try { f.currentTime = 0; f.play(); } catch (e) {} }
@@ -228,7 +271,7 @@
       var power = state.power || 60;
       var spinDur = 3.5 + (power / 100) * 3.5;
       API.qs('#status').textContent = 'กำลังจับรางวัล...';
-      setTimeout(function () { spinToIndex(idx, n, power); playSpinTicks(spinDur); }, 60);
+      setTimeout(function () { spinToIndex(idx, n, power); playSpinTicks(spinDur, n, power); }, 60);
       setTimeout(function () { showReveal(state); busy = false; }, spinDur * 1000 + 560);
     }
 
@@ -279,6 +322,20 @@
       }
       if (eligible > 0) document.getElementById('info-eligible').textContent = eligible;
       document.getElementById('info-round').textContent = st.round ? 'ที่ ' + st.round : '—';
+
+      // Right reward panel
+      document.getElementById('rp-name').textContent = st.reward_name || (st.reward_value ? '' : '—');
+      document.getElementById('rp-value').textContent = st.reward_value || '';
+      document.getElementById('rp-eligible').textContent = eligible > 0 ? eligible : '—';
+      document.getElementById('rp-round').textContent = st.round ? st.round : '—';
+      var rImg = document.getElementById('rp-img');
+      var rw = rewardsList.find(function(r) { return r.name === st.reward_name; });
+      if (rw && rw.img_url) {
+        rImg.src = API.driveImg(rw.img_url, 400);
+        rImg.classList.remove('rp-img-hidden');
+      } else {
+        rImg.classList.add('rp-img-hidden');
+      }
     }
 
     function schedulePoll() { poll().then(function () { setTimeout(schedulePoll, 1500); }); }
