@@ -115,6 +115,7 @@ const API = {
   toast,
   fieldOn,
   driveImg,
+  driveImgWithFallback,
   ocrReceiptAmount,
   loadQRLibrary,
   generateQRCode,
@@ -137,6 +138,23 @@ async function ocrReceiptAmount(imageBase64) {
 // ========== DRIVE IMAGE ==========
 function driveImg(fileId, size = 500) {
   return `https://drive.google.com/thumbnail?id=${fileId}&sz=w${size}`;
+}
+
+// thumbnail?id= บางครั้งโดน rate-limit/บล็อกหากเรียกตรงจากเบราว์เซอร์ — ถ้าโหลดไม่ขึ้นให้ลองรูปแบบ URL อื่นแทน
+function driveImgWithFallback(el, fileId, size = 500) {
+  if (!el || !fileId) return;
+  const urls = [
+    `https://drive.google.com/thumbnail?id=${fileId}&sz=w${size}`,
+    `https://lh3.googleusercontent.com/d/${fileId}=w${size}`,
+    `https://drive.google.com/uc?export=view&id=${fileId}`
+  ];
+  let i = 0;
+  el.onerror = function () {
+    i++;
+    if (i < urls.length) el.src = urls[i];
+    else el.onerror = null;
+  };
+  el.src = urls[0];
 }
 
 // ========== DEFAULT SETTINGS ==========
@@ -198,7 +216,7 @@ async function bootTheme() {
       if (settings.event_location) el.textContent = settings.event_location;
     });
     document.querySelectorAll('[data-logo]').forEach(el => {
-      if (settings.logo_url) el.src = driveImg(settings.logo_url);
+      if (settings.logo_url) driveImgWithFallback(el, settings.logo_url);
       else el.style.display = 'none';
     });
     return settings;
