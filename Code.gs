@@ -59,8 +59,8 @@ function handle_(e, method) {
       pairs.forEach(function (pair) {
         var eqIdx = pair.indexOf('=');
         if (eqIdx < 0) return;
-        var key = decodeURIComponent(pair.substring(0, eqIdx));
-        var value = decodeURIComponent(pair.substring(eqIdx + 1));
+        var key = decodeURIComponent(pair.substring(0, eqIdx).replace(/\+/g, ' '));
+        var value = decodeURIComponent(pair.substring(eqIdx + 1).replace(/\+/g, ' '));
         
         // พยายาม parse เป็น JSON ก่อน ถ้าใช้งาน ก็ใช้ string
         try {
