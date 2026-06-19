@@ -62,8 +62,11 @@ API.getSession()
 API.clearSession()
 API.fmtBaht(amount)
 API.driveImg(fileId, size)
+API.driveImgWithFallback(el, fileId, size)  // เซต el.src + ลอง URL อื่นอัตโนมัติถ้า thumbnail format โดน rate-limit/บล็อก (thumbnail → lh3.googleusercontent.com → uc?export=view)
 API.fieldOn(settings, key)
 ```
+
+> **รูป Google Drive โหลดไม่ขึ้น:** ใช้ `API.driveImgWithFallback(el, fileId)` แทน `API.driveImg()` ตรงๆ ทุกครั้งที่เซต `<img>.src` — endpoint `/thumbnail` ของ Drive ไม่รองรับการฮอตลิงก์อย่างเป็นทางการ บางครั้งโหลดไม่ขึ้นในเบราว์เซอร์จริงทั้งที่ลิงก์เข้าถึงได้ปกติ (ทดสอบด้วย curl ผ่าน)
 
 ## Response Pattern
 
@@ -91,7 +94,7 @@ const products = await API.get('getProducts');
 ### Public (ไม่ต้องมี key)
 - `getSettings` — public settings (ซ่อน PIN)
 - `getProducts`, `getRewards`, `getRegistration`
-- `register`, `createOrder`, `uploadSlip`, `staffLogin`, `verifyPin`
+- `register`, `createOrder`, `uploadSlip`, `uploadBanner`, `uploadLogo`, `uploadProductImg`, `staffLogin`, `verifyPin`
 - `getWheelState`, `getWheelPool`
 
 ### Staff/Admin (ต้องมี admin_key)
