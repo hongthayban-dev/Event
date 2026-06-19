@@ -96,11 +96,6 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>โลโก้งาน</label>
-                    <input type="text" id="logo-url" placeholder="File ID จาก Google Drive">
-                    <div class="note">รองรับ Google Drive File ID หรืออัปโหลดรูปด้านล่าง</div>
-                </div>
-                <div class="form-group">
                     <label class="qr-label" for="logo-file">📤 อัปโหลดโลโก้งาน</label>
                     <input type="file" id="logo-file" class="qr-input" accept="image/*">
                     <div id="logo-preview" class="qr-preview"></div>
@@ -110,11 +105,6 @@
             <!-- Shop Banner -->
             <div class="settings-card">
                 <h3>🖼️ แบนเนอร์ร้านค้า</h3>
-                <div class="form-group">
-                    <label>Banner ร้านค้า (Google Drive File ID) — สัดส่วน 4:3</label>
-                    <input type="text" id="banner-url" placeholder="File ID จาก Google Drive">
-                    <div class="note">แสดงที่หน้าร้านค้า แนะนำขนาด 800×600 px (4:3)</div>
-                </div>
                 <div class="form-group">
                     <label class="qr-label" for="banner-file">📤 อัปโหลด Banner ร้านค้า</label>
                     <input type="file" id="banner-file" class="qr-input" accept="image/*">
@@ -315,13 +305,11 @@
             document.getElementById('event-name').value     = settings.event_name     || '';
             document.getElementById('event-date').value     = settings.event_date     || '';
             document.getElementById('event-location').value = settings.event_location || '';
-            document.getElementById('logo-url').value       = settings.logo_url       || '';
             if (settings.logo_url) {
                 logoFileId = settings.logo_url;
                 setPreviewImg('logo-preview', logoFileId, 'qr-img', 300);
             }
 
-            document.getElementById('banner-url').value      = settings.banner_url      || '';
             document.getElementById('line-friend-url').value = settings.line_friend_url || '';
             document.getElementById('liff-url').value        = settings.liff_url        || '';
             document.getElementById('discount-code').value   = settings.discount_code   || '';
@@ -415,7 +403,6 @@
                 try {
                     const res = await API.postAuth('uploadLogo', { dataUrl: ev.target.result, filename: 'logo_' + Date.now() + '.png' }, authToken);
                     logoFileId = res.id;
-                    document.getElementById('logo-url').value = logoFileId;
                     setPreviewImg('logo-preview', logoFileId, 'qr-img', 300);
                     API.toast('✓ อัปโหลดโลโก้แล้ว', 'success');
                 } catch (err) { API.toast('❌ ' + err.message, 'error'); }
@@ -432,7 +419,6 @@
                 try {
                     const res = await API.postAuth('uploadBanner', { dataUrl: ev.target.result, filename: 'shop_banner_' + Date.now() + '.jpg' }, authToken);
                     bannerFileId = res.id;
-                    document.getElementById('banner-url').value = bannerFileId;
                     setPreviewImg('banner-preview', bannerFileId, 'banner-thumb', 600);
                     API.toast('✓ อัปโหลด Banner แล้ว', 'success');
                 } catch (err) { API.toast('❌ ' + err.message, 'error'); }
@@ -445,8 +431,8 @@
                 event_name:        document.getElementById('event-name').value,
                 event_date:        document.getElementById('event-date').value,
                 event_location:    document.getElementById('event-location').value,
-                logo_url:          document.getElementById('logo-url').value || logoFileId,
-                banner_url:        document.getElementById('banner-url').value || bannerFileId,
+                logo_url:          logoFileId || settings.logo_url || '',
+                banner_url:        bannerFileId || settings.banner_url || '',
                 line_friend_url:   document.getElementById('line-friend-url').value,
                 liff_url:          document.getElementById('liff-url').value,
                 discount_code:     document.getElementById('discount-code').value,
