@@ -284,6 +284,12 @@
         let bannerFileId = '';
         let logoFileId = '';
 
+        function setPreviewImg(containerId, fileId, className, size) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<img class="${className}" alt="">`;
+            API.driveImgWithFallback(container.querySelector('img'), fileId, size);
+        }
+
         async function init() {
             authToken = API.getKey('admin-token') || API.getKey('access-code');
             if (!authToken) { location.replace('../login.html'); return; }
@@ -312,8 +318,7 @@
             document.getElementById('logo-url').value       = settings.logo_url       || '';
             if (settings.logo_url) {
                 logoFileId = settings.logo_url;
-                document.getElementById('logo-preview').innerHTML =
-                    `<img class="qr-img" src="${API.driveImg(logoFileId,300)}" alt="logo">`;
+                setPreviewImg('logo-preview', logoFileId, 'qr-img', 300);
             }
 
             document.getElementById('banner-url').value      = settings.banner_url      || '';
@@ -348,14 +353,12 @@
             // QR preview
             if (settings.promptpay_file_id) {
                 qrFileId = settings.promptpay_file_id;
-                document.getElementById('qr-preview').innerHTML =
-                    `<img class="qr-img" src="${API.driveImg(qrFileId,500)}" alt="qr">`;
+                setPreviewImg('qr-preview', qrFileId, 'qr-img', 500);
             }
             // Banner preview
             if (settings.banner_url) {
                 bannerFileId = settings.banner_url;
-                document.getElementById('banner-preview').innerHTML =
-                    `<img class="banner-thumb" src="${API.driveImg(bannerFileId,600)}" alt="banner">`;
+                setPreviewImg('banner-preview', bannerFileId, 'banner-thumb', 600);
             }
         }
 
@@ -396,7 +399,7 @@
                 try {
                     const res = await API.postAuth('uploadSlip', { dataUrl: ev.target.result, filename: 'promptpay_qr_' + Date.now() + '.png' }, authToken);
                     qrFileId = res.id;
-                    document.getElementById('qr-preview').innerHTML = `<img class="qr-img" src="${API.driveImg(qrFileId,500)}" alt="qr">`;
+                    setPreviewImg('qr-preview', qrFileId, 'qr-img', 500);
                     API.toast('✓ อัปโหลด QR แล้ว', 'success');
                 } catch (err) { API.toast('❌ ' + err.message, 'error'); }
             };
@@ -413,7 +416,7 @@
                     const res = await API.postAuth('uploadLogo', { dataUrl: ev.target.result, filename: 'logo_' + Date.now() + '.png' }, authToken);
                     logoFileId = res.id;
                     document.getElementById('logo-url').value = logoFileId;
-                    document.getElementById('logo-preview').innerHTML = `<img class="qr-img" src="${API.driveImg(logoFileId,300)}" alt="logo">`;
+                    setPreviewImg('logo-preview', logoFileId, 'qr-img', 300);
                     API.toast('✓ อัปโหลดโลโก้แล้ว', 'success');
                 } catch (err) { API.toast('❌ ' + err.message, 'error'); }
             };
@@ -430,7 +433,7 @@
                     const res = await API.postAuth('uploadBanner', { dataUrl: ev.target.result, filename: 'shop_banner_' + Date.now() + '.jpg' }, authToken);
                     bannerFileId = res.id;
                     document.getElementById('banner-url').value = bannerFileId;
-                    document.getElementById('banner-preview').innerHTML = `<img class="banner-thumb" src="${API.driveImg(bannerFileId,600)}" alt="banner">`;
+                    setPreviewImg('banner-preview', bannerFileId, 'banner-thumb', 600);
                     API.toast('✓ อัปโหลด Banner แล้ว', 'success');
                 } catch (err) { API.toast('❌ ' + err.message, 'error'); }
             };

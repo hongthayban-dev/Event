@@ -482,7 +482,7 @@
       if (!current) return;
       API.qs('#card-event').textContent = settings.event_name || 'งาน';
       var logoEl = API.qs('#card-logo');
-      if (settings.logo_url) { logoEl.src = API.driveImg(settings.logo_url); logoEl.style.display = ''; }
+      if (settings.logo_url) { logoEl.style.display = ''; API.driveImgWithFallback(logoEl, settings.logo_url); }
       else { logoEl.style.display = 'none'; }
       API.qs('#card-name').textContent = ((current.first_name || '') + ' ' + (current.last_name || '')).trim();
       API.qs('#card-nick').textContent = current.nickname ? '(' + current.nickname + ')' : '';
