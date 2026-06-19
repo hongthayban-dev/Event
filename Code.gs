@@ -105,6 +105,7 @@ function route_(action, p) {
     case 'ocrSlip':      return ocrSlip_(p);
     case 'uploadProductImg': return uploadProductImg_(p);
     case 'uploadBanner': return uploadBanner_(p);
+    case 'uploadLogo':   return uploadLogo_(p);
     case 'getLocationData': return getLocationData_();
     case 'applyDiscount': return applyDiscount_(p);
     case 'staffLogin':   return staffLogin_(p);
@@ -650,6 +651,11 @@ function uploadProductImg_(p) {
 
 // อัปโหลด Banner ร้านค้า → BANNER_FOLDER_ID
 function uploadBanner_(p) {
+  return uploadToFolder_(p, BANNER_FOLDER_ID);
+}
+
+// อัปโหลดโลโก้งาน → BANNER_FOLDER_ID
+function uploadLogo_(p) {
   return uploadToFolder_(p, BANNER_FOLDER_ID);
 }
 
